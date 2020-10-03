@@ -1,0 +1,87 @@
+target_set = {}
+script.vars.slice(1, script.vars.length).each do |noun|
+  target_set[noun] = true
+end
+
+module Ewave
+  @DOWNSTREAM_HOOK_NAME = "ewave_downstream_hook"
+  @grouplist = []
+
+  def self.populate_group()
+    @grouplist.clear()
+    complete = false
+
+    checkgroupline = proc { |line|
+      line =~ /exist="\-[0-9]+" noun=".*">(.*)<\/a> is (?:following you|the leader of your group|also a member of your group)/i
+      if !$1.nil?
+        @grouplist.push($1)
+        @groupset[$1] = true
+      end
+    }
+
+    action = proc { |server_string|
+      if checkgroupline.call(server_string)
+        nil
+      elsif server_string =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
+        complete = true
+        nil
+      else
+        server_string
+      end
+    }
+    DownstreamHook.add(@DOWNSTREAM_HOOK_NAME, action)
+    $_SERVER_.puts "group"
+    waitfor "group status is currently", "to set your group status", "You are not currently in a group"
+    wait_until { complete }
+    DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME)
+  end
+
+  def self.main(target_set)
+    populate_group()
+    before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
+    echo @grouplist
+
+    echo "Starting"
+    last_room = Room.current.id
+    fresh_room = true
+
+    while true
+      if last_room != Room.current.id
+        populate_group()
+        fresh_room = true
+        last_room = Room.current.id
+      end
+
+      need_wave = ((checkpcs - @grouplist).count == 0) && GameObj.npcs.any? do |npc|
+        target_set[npc.noun] && !npc.status && !npc.name.start_with?("animated ")
+      end
+      if need_wave
+        # ewave
+        Spell[410].cast()
+        GameObj.pcs.each do |s|
+          if s.status =~ /lying|prone/
+            fput "pull #{s.noun}"
+          end
+        end
+
+        # 518
+        if fresh_room
+          waitcastrt?
+          fput "stance off" if checkstance != "offensive"
+          fput "incant 518 air" if checkmana >= 18
+          waitcastrt?
+          fput 'stance def' if checkstance != 'defensive'
+          put 'sym mana'
+          if checkmana > 375
+            fput 'send 37 kasparaitis'
+          end
+          fresh_room = false
+        end
+      end
+
+      sleep 0.25
+    end
+  end
+end
+
+Ewave.main(target_set)

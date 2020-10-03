@@ -1,0 +1,36 @@
+leader = "Azanoth"
+
+if bounty? != "You are not currently assigned a task."
+  echo "Already have bounty"
+  exit
+end
+
+def message(text)
+  string = ""
+  if $fake_stormfront then string.concat("\034GSL\r\n ") else string.concat("<pushBold\/>") end
+  if (text.index('\n'))
+    text.split('\n').each { |line| string.concat("| #{line}") }
+  else
+    string.concat("| " + text)
+  end
+  if $fake_stormfront then string.concat("\034GSM\r\n ") else string.concat("<popBold\/>") end
+  _respond string
+end
+
+if Spell[9003].active? and bounty? == "You are not currently assigned a task."
+  echo "Waiting to be ready to get bounty."
+  while Spell[9003].active
+    message "Next Bounty: #{Spell[9003].timeleft.round(2)} minutes"
+    message "Next Group Bounty: #{Spell[9056].timeleft.round(2)} minutes" if Spell[9056].active?
+    sleep [Spell[9003].timeleft * 60, 30].min()
+  end
+end
+
+kill_script "swapbounty" if running? "swapbounty"
+Script.run("swapbounty")
+
+start_time = Time.now.to_f
+if Char.name != leader
+  wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } or start_time < Time.now.to_f - 10 }
+  fput "join #{leader}"
+end

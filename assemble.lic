@@ -1,0 +1,5 @@
+['Azanoth', 'Aranthius', 'Etherium', 'Kasparaitis'].each { |char|
+    next if Char.name == char
+    Script.run('login', char)
+    sleep 3
+}

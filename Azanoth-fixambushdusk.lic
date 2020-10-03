@@ -1,0 +1,9 @@
+in_arena = true
+
+loop {
+    line = get
+    if line =~ /^You cannot aim that high!/
+        sleep 0.5
+        put 'kill'
+    end
+}

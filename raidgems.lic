@@ -1,0 +1,59 @@
+gem_count = script.vars[1]
+gems = script.vars.slice(2, 10).join(" ").downcase
+if !gem_count or !gems or !gem_count.to_i()
+  echo "USAGE: ;raid-gems <count> <gems>"
+  exit
+end
+
+original_room_id = Room.current.id
+
+waitrt?
+waitcastrt?
+put "store all"
+fput "stow all"
+
+def do_raid(gem_count, gems)
+  put "go op"
+  put "go curt"
+
+  status_tags
+  open_result = dothistimeout "open locker", 5, /exist=".*?" noun="(?:chest)"/
+  status_tags
+
+  if open_result =~ /exist="(\d+)" noun="(chest)"/
+    locker_id = $1
+    echo locker_id
+    echo "Looking for #{gem_count} #{gems}"
+
+    locker_contents = GameObj.containers[locker_id]
+    unless locker_contents
+      dothistimeout "look in ##{locker_id}", 3, /^In the/
+      locker_contents = GameObj.containers[locker_id]
+    end
+    return "Failed to find locker contents" if !locker_contents
+
+    gem_re = Regexp.new gems
+    gem_re2 = Regexp.new "#{gems}s"
+    jar = locker_contents.find { |item| item.noun == "jar" and (item.after_name =~ gem_re or item.after_name =~ gem_re2) }
+    return "Failed to find jar" if !jar
+
+    put "get ##{jar.id} from chest"
+    gem_count.to_i().times do
+      fput "shake my jar"
+      fput "stow left"
+    end
+
+    fput "put my jar in chest"
+    fput "close locker"
+    return nil
+  end
+  return "Failed to find locker/chest"
+end
+
+Script.run("go2", "paupers")
+
+error = do_raid(gem_count, gems)
+echo "ERROR: #{ERROR}" if error
+
+Script.run("go2", 'gemshop')
+echo ";multi #{gem_count}, get my #{gems}, sell my #{gems}" # TODO singular

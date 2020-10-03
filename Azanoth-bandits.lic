@@ -1,0 +1,78 @@
+target_set = {}
+script.vars.slice(1, script.vars.length).each do |noun|
+  target_set[noun] = true
+end
+
+module AzAttack
+  @DOWNSTREAM_HOOK_NAME = "azattack_downstream_hook"
+  @grouplist = []
+
+  def self.populate_group()
+    @grouplist.clear()
+    complete = false
+
+    checkgroupline = proc { |line|
+      line =~ /exist="\-[0-9]+" noun=".*">(.*)<\/a> is (?:following you|the leader of your group|also a member of your group)/i
+      if !$1.nil?
+        @grouplist.push($1)
+        @groupset[$1] = true
+      end
+    }
+
+    action = proc { |server_string|
+      if checkgroupline.call(server_string)
+        nil
+      elsif server_string =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
+        complete = true
+        nil
+      else
+        server_string
+      end
+    }
+    DownstreamHook.add(@DOWNSTREAM_HOOK_NAME, action)
+    $_SERVER_.puts "group"
+    waitfor "group status is currently", "to set your group status", "You are not currently in a group"
+    wait_until { complete }
+    DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME)
+  end
+
+  def self.main(target_set)
+    populate_group()
+    before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
+    echo @grouplist
+    echo "Starting"
+    fput "war shout"
+
+    while true
+      targets = GameObj.npcs.select do |npc|
+        target_set[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")
+      end
+
+      need_attack = ((checkpcs - @grouplist).count == 0) && targets.length > 0
+
+      if need_attack and !running? "sloot"
+        # ewave
+        fput "stand" until standing?
+        fput "stance off" until checkstance == "offensive"
+        fput 'cman surge' if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
+        if Spell[9005].active? || targets.length < 2
+          if checkstamina >= 15
+            put "cman mblow ##{targets[0].id}"
+            put "cman mblow ##{targets[1].id}" if targets.length > 1
+          else
+            put "kill"
+          end
+        else
+          put "mstrike ##{targets[0].id}"
+          put "mstrike ##{targets[1].id}" if targets.length > 1
+        end
+        rt = checkrt
+        sleep(rt - 1) if rt > 2
+      end
+
+      sleep 0.25
+    end
+  end
+end
+
+AzAttack.main(target_set)
