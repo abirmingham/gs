@@ -50,7 +50,7 @@ module AzBandit
     # Go to bounty area
     rooms_list = populate_rooms_list()
     if !rooms_list.include? Room.current.id
-      Script.run("go2", "#{rooms_list[0]}")
+      move_to_bounty_area(rooms_list[0])
       if Room.current.id != rooms_list[0]
         echo "Failed to get to bounty area"
         exit
@@ -59,7 +59,7 @@ module AzBandit
 
     # Handle first room
     echo "Handling first room" if @DEBUG
-    wait_for_battle() if should_wait_for_battle?()
+    wait_for_battle() if should_wait_for_actions?()
 
     # Main loop - handle remaining rooms
     echo "Handling remaining rooms" if @DEBUG
@@ -91,7 +91,7 @@ module AzBandit
       rooms_list.delete(Room.current.id)
 
       # Possibly wait for battle
-      if should_wait_for_battle?()
+      if should_wait_for_actions?()
         wait_for_battle()
         exit if all_done?()
       end
@@ -101,11 +101,13 @@ module AzBandit
   def self.pause_if_stragglers()
     stragglers = find_stragglers()
     if stragglers.length > 0
-      put 'look'
-      sleep 1 # try again in a second - this thing is fiddly
+      put "look"
+      sleep 0.5 # try again in a second - this thing is fiddly
+      put "look"
+      sleep 0.5
       stragglers = find_stragglers()
       return if stragglers.length == 0
-      fput "whisper ooc group We left behind #{stragglers.join(' and ')}"
+      fput "whisper ooc group We left behind #{stragglers.join(" and ")}"
       echo "Oops - despite GroupMovement, we left someone behind. Rectify and ;unpause"
       pause_script
     end
@@ -115,6 +117,24 @@ module AzBandit
     pc_set = {}
     GameObj.pcs.each { |pc| pc_set[pc.noun] = true }
     return @grouplist.select { |name| !pc_set[name] }
+  end
+
+  def self.move_to_bounty_area(first_room_id)
+    # BEGIN handle jacked up KF map
+    Script.run("go2", "28919") if is_kraken_falls_bounty() # move past jacked up map
+    if @bounty_text =~ /Muddy Village/
+      Script.run("go2", "29022")
+      fput "go village"
+    elsif @bounty_text =~ /Black Weald/
+      Script.run("go2", "29028")
+      fput "go trail"
+    end
+    # END
+    Script.run("go2", "#{first_room_id}") unless Room.current.id == first_room_id
+  end
+
+  def self.is_kraken_falls_bounty()
+    return !!(@bounty_text =~ /Widowmaker's Road/ or @bounty_text =~ /Muddy Village/ or @bounty_text =~ /Cliffwalk/ or @bounty_text =~ /Black Weald/)
   end
 
   def self.populate_rooms_list()
@@ -219,9 +239,9 @@ module AzBandit
     return (checkpcs - @grouplist).count > 0
   end
 
-  def self.should_wait_for_battle?()
-    echo "should_wait_for_battle?" if @DEBUG
-    if has_targets?() and !is_poaching?()
+  def self.should_wait_for_actions?()
+    echo "should_wait_for_actions?" if @DEBUG
+    if (has_targets?() or has_loot?()) and !is_poaching?()
       return true
     else
       return false
@@ -229,7 +249,7 @@ module AzBandit
   end
 
   def self.step_to_next_room(room_id)
-    return if should_wait_for_battle?()
+    return if should_wait_for_actions?()
 
     # Pull group members to feet
     GameObj.pcs.each { |pc|
@@ -256,7 +276,7 @@ module AzBandit
         sleep 0.1
       }
       sleep 0.1
-      return if should_wait_for_battle?()
+      return if should_wait_for_actions?()
     end
 
     return if is_poaching?()
@@ -274,7 +294,7 @@ module AzBandit
     # Wait @ROOM_PAUSE_TIME to see if bandits are hiding
     start_time = Time.now.to_f
     loop {
-      return if should_wait_for_battle?()
+      return if should_wait_for_actions?()
       if (start_time < Time.now.to_f - @ROOM_PAUSE_TIME)
         echo "Timed out" if @DEBUG
         return

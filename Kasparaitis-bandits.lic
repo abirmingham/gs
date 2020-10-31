@@ -5,18 +5,17 @@ end
 
 module TenThirty
   @DOWNSTREAM_HOOK_NAME = "1030_downstream_hook"
+  @FRIENDS = ['Aranthius', 'Azanoth']
   @grouplist = []
 
   def self.populate_group()
     @grouplist.clear()
+    @FRIENDS.each { |f| @grouplist.push(f) }
     complete = false
 
     checkgroupline = proc { |line|
       line =~ /exist="\-[0-9]+" noun=".*">(.*)<\/a> is (?:following you|the leader of your group|also a member of your group)/i
-      if !$1.nil?
-        @grouplist.push($1)
-        @groupset[$1] = true
-      end
+      @grouplist.push($1) if $1 && !@grouplist.include?($1)
     }
 
     action = proc { |server_string|

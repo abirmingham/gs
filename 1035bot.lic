@@ -1,0 +1,8 @@
+loop {
+    line = get
+    if line =~ /1035 please/ and checkmana > 70
+        put 'prep 1035'
+        put 'cast'
+    end
+    sleep 0.1
+}

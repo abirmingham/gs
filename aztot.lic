@@ -1,0 +1,207 @@
+echo "Assumptions:"
+echo "1) You have ;bigshot quick set up to kill ghosts"
+echo "2) 'get my key' will get your ToT entry key"
+echo "3) You are okay with 'stow left|right|all' for putting away stuff (including after bigshot quick)"
+echo "4) You start in 26460, 26460, at 29257, or inside ToT in one of the TOT_TRACK rooms"
+echo "If you haven't read these please ;k aztot now"
+
+TOT_OUTSIDE_ENTRANCE = 26460
+TOT_ENTRANCE = 29257
+TOT_EXIT = 26504
+TOT_TRACK = [29284, 29285, 29286, 29287, 29288, 29289, 29290, 29291, 29292, 29293, 29294, 29295, 29296, 29297, 29298, 29299, 29300, 29301, 29302, 29303, 29304, 29305, 29306, 29307, 29308, 29309, 29310]
+TOT_TRACK_SET = TOT_TRACK.map { |id| [id, true] }.to_h
+SCRIPTS = ['briefcombat', 'spellsmerge']
+NL = 10.chr
+
+# BEGIN make stuff quiet
+silence_me
+SCRIPTS.each { |x| Script.start(x) }
+fput 'set description off'
+DownstreamHook.add("#{script.name}_squelch", proc { |str|
+    match = [/^You've recently knocked on this /, /^Wait \d+ sec/, /\.\.\.wait \d+ second/, /You are now in an? \w+ stance\.\s$/, /^You knock on a /, /^Obvious exits: /, /^Obvious paths: /, /Setting stance to guarded\.\s$/, /^Roundtime changed to/, /^The last vestiges of the/, /^You concentrate intently, focusing all your energies/, /^You explode into a fury of strikes and ripostes,/, /^You are already holding /, /^You feint /, / just arrived\.\s$/, /^You put an? /, /^You remove an? /, /^You swing an? /, /^You are not holding anything/, /^You do not currently have a target/, /^You feel recovered from your whirlwind/, /^A drop of water slides down your face and beads at the end of your nose/, /^Drops of water fall from your fingertip/, /dripping water into damp pools around your feet\.\s$/, /^Except for a bit of slight dampness here and there/].find { |x| str =~ x }
+    if match
+        nil
+    else
+        str
+    end
+})
+
+before_dying {
+    SCRIPTS.each { |x| Script.kill(x) }
+    fput 'set description on'
+    DownstreamHook.remove("#{script.name}_squelch")
+    if Char.name == 'Aranthius' || Char.name == 'Azanoth'
+        stop_script 'symbolz'
+        stop_script 'volnrestore'
+    end
+}
+# END
+
+fput 'inv enh on' if Char.name == 'Azanoth'
+if Char.name == 'Aranthius' || Char.name == 'Azanoth'
+    start_script 'symbolz'
+    start_script 'volnrestore'
+end
+
+def stow_treat()
+    treats = {
+        'token' => true,
+        'candy' => true,
+        'species' => true,
+    }
+    fput "stow left" if treats[GameObj.left_hand.noun]
+    fput "stow right" if treats[GameObj.right_hand.noun]
+end
+
+def gatekeeper_in_room?()
+    return GameObj.npcs.any? { |npc| npc.name == 'blue-tinged pale female ghost' }
+end
+
+if Room.current.id != TOT_OUTSIDE_ENTRANCE && Room.current.id != TOT_EXIT && !gatekeeper_in_room?() && !TOT_TRACK_SET[Room.current.id]
+    raise "Bad starting area. Re-read assumptions"
+end
+
+def move_until_end(direction)
+    result = ''
+    until result =~ /^You can't go there/
+        result = dothistimeout direction, 3, /Obvious paths|Obvious exits|You can't go there/
+    end
+end
+
+def knock(cmd)
+    status_tags
+    result = dothistimeout cmd, 3, /<pushBold.*<popBold<a|You knock|You've recently knocked|You don't have time/
+    # echo result
+    status_tags
+    creature_result = result.match(/<pushBold.*?exist="(\d+)"/)
+    return creature_result[1] if creature_result
+    return nil
+end
+
+def knock_doors()
+    ['knock door', 'knock other door'].each do |cmd|
+        creature_id = knock(cmd)
+        stow_treat()
+        return creature_id if creature_id
+        return nil if Room.current.id == TOT_EXIT
+    end
+    return nil
+end
+
+fput 'stow all'
+creature_id = nil
+rooms_list = TOT_TRACK
+
+loop {
+    if Room.current.id == TOT_EXIT
+        Script.run("go2", TOT_ENTRANCE.to_s)
+        Script.run("go2", TOT_ENTRANCE.to_s) if Room.current.id != TOT_ENTRANCE
+
+    elsif Room.current.id == TOT_OUTSIDE_ENTRANCE
+        dothistimeout 'go trail', 5, /^Obvious paths/
+
+    elsif gatekeeper_in_room?()
+        # at entrance
+
+        # BEGIN hacky char specific stuff
+        if GameObj.pcs.any? { |pc| pc.noun == 'Kasparaitis' }
+            if Char.name == 'Azanoth' && (!Spell[1035].active? || (Spell[1035].active? && Spell[1035].timeleft.to_f * 60 < 20))
+                fput 'join kasparaitis'
+                fput 'whisper ooc group 1035 please'
+                sleep 1
+            end
+            if Char.name === 'Aranthius'
+                if checkmana > 450
+                    fput 'send 25 kaspar'
+                    fput 'sym mana'
+                end
+                fput 'mana pulse' if checkmana < 375
+                if !Spell[401].active? || Spell[401].timeleft < 90
+                    waitcastrt?
+                    sleep 1
+                    fput 'mana spellup'
+                end
+                if !Spell[515].active? || (Spell[515].active? && Spell[515].timeleft.to_f * 60 < 25)
+                    Spell[515].cast()
+                end
+            end
+        end
+        # END
+
+        fput 'stow all'
+        fput 'get my key'
+        result = dothistimeout 'go door', 3, /You have too many items|a fissure in the wall provides a means of escape, as does a brass-tacked ladder|Obvious exits|Obvious paths|You need a barrel key/
+        fput 'go fissure' if result =~ /a fissure in the wall/ # get out of crappy starting room
+        raise "Failed to enter" if result =~ /You have too many items|You need a barrel key/
+
+        put 'stow all'
+        if Room.current.id.nil?
+            put 'down'
+            sleep 1
+        end
+        Script.run("go2", Room.current.find_nearest(rooms_list).to_s)
+
+    elsif creature_id
+        echo 'attacking'
+        put 'look'
+        if Char.name == 'Aranthius'
+            fput 'gird'
+            fput 'stance off' until checkstance == 'offensive'
+            put "incant 917 ##{creature_id}"
+            while GameObj.npcs.find { |x| x.id == creature_id and x.status != 'dead' }
+                rt = checkcastrt
+                sleep(rt > 2 ? rt - 1 : 0.25)
+                put "incant 903 ##{creature_id}"
+            end
+        elsif Char.name == 'Azanoth'
+            fput 'gird'
+            fput 'stance off' until checkstance == 'offensive'
+            put 'cman surge' if !Spell[9606].active?
+            put "wtrick feint ##{creature_id}" if checkstamina > 20
+            while GameObj.npcs.find { |x| x.id == creature_id and x.status != 'dead' }
+                rt = checkrt
+                sleep(rt > 2 ? rt - 1 : 0.25)
+                if !Spell[9005].active?
+                    put "mstrike ##{creature_id}"
+                elsif checkstamina > 20
+                    put "cman mblow ##{creature_id}"
+                else
+                    put "kill ##{creature_id}"
+                end
+            end
+            waitrt?
+            put 'store all'
+        else
+            Script.run("bigshot", "quick ##{creature_id}")
+        end
+        fput "loot ##{creature_id}"
+        put 'stow left' if !GameObj.left_hand.noun.nil?
+        fput 'out'
+        sleep 0.5
+        creature_id = nil
+
+    elsif TOT_TRACK_SET[Room.current.id]
+        fput 'stow left' if !GameObj.left_hand.noun.nil?
+        creature_id = knock_doors()
+        next if creature_id || Room.current.id == TOT_EXIT
+
+        rooms_list = rooms_list.select { |id| id != Room.current.id }
+        rooms_list = TOT_TRACK if rooms_list.length == 0
+        next_room = Room.current.find_nearest(rooms_list)
+        if !next_room
+            put 'l'
+            echo rooms_list
+            echo "Failed to find next room"
+            exit
+        end
+        Script.run("step2", Room.current.find_nearest(rooms_list).to_s)
+    else
+        if GameObj.targets.length > 0
+            # this happens every once in awhile for some reason, not sure why
+            creature_id = GameObj.targets[0].id
+        else
+            echo 'Unknown state - mapdb probably isnt loaded'
+        end
+    end
+    sleep 0.1
+}
