@@ -51,6 +51,7 @@ module TenThirty
         fresh_room = true
       end
 
+      sleep 2 if checkbounty =~ /^You (have )?succeeded/
       need_cast = fresh_room && ((checkpcs - @grouplist).count == 0) && GameObj.npcs.any? do |npc|
         target_set[npc.noun] && !npc.status && !npc.name.start_with?("animated ")
       end

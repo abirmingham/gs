@@ -1,0 +1,22 @@
+TARGETS = 'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman adept initiate seer scout janissary herald champion warlord tormentor triggerman warden captain'
+put 'stance def'
+put 'gird'
+Script.start('standgroup')
+
+if Char.name == 'Kasparaitis'
+  Script.start('isigns')
+  Script.start('tonis')
+else
+  Script.start('symbolz')
+end
+
+if Char.name == 'Aranthius'
+  Script.start('Aranthius-bandits', TARGETS)
+  Script.start('rapid')
+elsif Char.name == 'Kasparaitis'
+  Script.start('Kasparaitis-bandits', TARGETS)
+elsif Char.name == 'Azanoth'
+  fput "inv enh on"
+  fput "cman dervish"
+  Script.start('Azanoth-bandits', TARGETS)
+end

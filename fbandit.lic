@@ -1,13 +1,21 @@
 Room[28814].title = ["[Kraken's Fall Bank]"]
 Room[28870].title = ["[Kraken's Fall Bank, Teller]"]
 
-raise "You aren't ready to finish" if bounty? !~ /^You succeeded/
+raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/
 
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28813]
 scripts_to_kill = ["tonis", "isigns", "symbolz", "ewave", "standgroup", "rapid", "1030", "Aranthius-bandits", "Kasparaitis-bandits", "Azanoth-bandits", "sloot", "looploot"]
 leader = "Azanoth"
+
+def turn_off_enh()
+    result = ''
+    loop {
+        result = dothistimeout "inv enh off", 2, /You already are not accepting|You are no longer accepting the benefits/
+        return if result
+    }
+end
 
 scripts_to_kill.each { |s| Script.kill(s) }
 waitrt?
@@ -21,13 +29,15 @@ fput "disband"
 put "group open"
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
-if checkmind == 'saturated'
-    echo "Mind is saturated - waiting before turning in bounty"
-    while checkmind == 'saturated'
-        fput 'exp' if Time.now.to_f.round(0) % 60 == 0
-        sleep 0.75
-    end
-    wait_while { checkmind == 'saturated' }
+if checkmind == "saturated"
+  echo "Mind is saturated - waiting before turning in bounty"
+  Script.run('waggle')
+  turn_off_enh() if Char.name == 'Azanoth'
+  while checkmind == "saturated"
+    fput "exp" if Time.now.to_f.round(0) % 60 == 0
+    sleep 0.75
+  end
+  wait_while { checkmind == "saturated" }
 end
 Script.run("go2", "advguild")
 npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
@@ -36,11 +46,11 @@ fput "ask ##{npc.id} about bounty"
 Script.run("swapbounty") if Char.name == leader
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 
-fput "inv enh off"
-
 Script.run("bankdrop")
 wait_while { Script.running? "go2" }
 
+turn_off_enh() if Char.name == 'Azanoth'
+Script.run('waggle')
 Script.run("getbounty")
 
 if Char.name != leader
@@ -48,6 +58,11 @@ if Char.name != leader
   start_time = Time.now.to_f
   wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } or start_time < Time.now.to_f - 60 }
   fput "join #{leader}"
+end
+
+if Char.name == 'Azanoth'
+    fput 'armor support kaspar'
+    fput 'armor support aranthius'
 end
 
 fput "bounty"

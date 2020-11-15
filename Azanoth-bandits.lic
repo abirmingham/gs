@@ -5,7 +5,7 @@ end
 
 module AzAttack
   @DOWNSTREAM_HOOK_NAME = "azattack_downstream_hook"
-  @FRIENDS = ['Aranthius', 'Kasparaitis']
+  @FRIENDS = ["Aranthius", "Kasparaitis"]
   @grouplist = []
 
   def self.populate_group()
@@ -41,8 +41,17 @@ module AzAttack
     echo @grouplist
     echo "Starting"
     fput "war shout"
+    room_id = Room.current.id
 
     while true
+      # throttle char
+      if checkbounty =~ /^You (have )?succeeded/
+        sleep 2
+      elsif room_id != Room.current.id
+        sleep 1
+        room_id = Room.current.id
+      end
+
       targets = GameObj.npcs.select do |npc|
         target_set[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")
       end
@@ -53,7 +62,7 @@ module AzAttack
         # ewave
         fput "stand" until standing?
         fput "stance off" until checkstance == "offensive"
-        fput 'cman surge' if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
+        fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
         if Spell[9005].active? || targets.length < 2
           if checkstamina >= 15
             put "cman mblow ##{targets[0].id}"

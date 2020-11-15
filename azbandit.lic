@@ -124,10 +124,10 @@ module AzBandit
     Script.run("go2", "28919") if is_kraken_falls_bounty() # move past jacked up map
     if @bounty_text =~ /Muddy Village/
       Script.run("go2", "29022")
-      fput "go village"
+      move "go village"
     elsif @bounty_text =~ /Black Weald/
       Script.run("go2", "29028")
-      fput "go trail"
+      move "go trail"
     end
     # END
     Script.run("go2", "#{first_room_id}") unless Room.current.id == first_room_id
