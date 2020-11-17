@@ -111,8 +111,11 @@ module AzBandit
       step2(prev_room_id)
       waitrt?
       stragglers.each { |char| fput "hold #{char}" }
+      echo 'a'
       stragglers = identify_stragglers()
+      echo 'b'
       return if stragglers.length == 0 # we got em
+      echo 'c'
       sleep 3
     end
   end
@@ -278,21 +281,27 @@ module AzBandit
         end
       }
       step2(room_id)
-      sleep 0.1 if Room.current.id == start_room_id
+      sleep 0.01
       return if should_wait_for_actions?()
     end
 
     return if is_poaching?()
 
-    buffer = []
+    prebuffer = []
     until (line = get?).nil?
-      buffer.push(line) # drain get? buffer into local buffer
+      prebuffer.push(line) # drain get? buffer into local buffer
     end
 
     # remove entries in local buffer up until most recent room entry
-    while line = buffer.shift()
+    buffer = []
+    i = prebuffer.length - 1
+    while i >= 0
+      line = prebuffer[i]
       break if line =~ /^Obvious paths: / or line =~ /^Obvious exits: /
+      buffer.push line
+      i -= 1
     end
+    buffer = buffer.reverse
 
     # Wait @ROOM_PAUSE_TIME to see if bandits are hiding
     start_time = Time.now.to_f
@@ -305,6 +314,7 @@ module AzBandit
 
       line = buffer.length > 0 ? buffer.shift() : get?
       echo "Scanning #{line}" if @DEBUG
+      echo "Scanning #{line}" # TODO REMOVE ME
 
       if line.nil?
         sleep 0.1
@@ -360,10 +370,10 @@ module AzBandit
       echo "waiting for battle" if @DEBUG
       if has_loot?()
         echo "Waiting for loot to be picked up"
-        sleep 2
+        sleep 1
       elsif has_targets?()
         echo "Waiting for targets to be killed/searched"
-        sleep 2
+        sleep 1
       else
         return
       end

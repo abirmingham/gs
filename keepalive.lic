@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+hide_me
+setpriority(-2)
+n = 0
+while true
+    sleep 60*5
+	fput "exp"
+	n += 1
+	echo "TIMESTAMP ##{n}: #{Time.now}"
+end
