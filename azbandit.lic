@@ -21,7 +21,7 @@ module AzBandit
   # static variables
   @ROOM_PAUSE_TIME = 0.1
   @PROGRESS_UPDATE_INTERVAL = 0.1
-  @DEBUG = false
+  @DEBUG = true
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
   @BANDIT_SET = Set["thief", "rogue", "bandit", "mugger", "outlaw", "highwayman", "marauder", "brigand", "thug", "robber"]
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
@@ -87,7 +87,7 @@ module AzBandit
         prev_room = Room.current.id
         prev_room_poaching = is_poaching?()
         step_to_next_room(next_room)
-        pause_if_stragglers()
+        retrieve_stragglers(prev_room)
       end
       echo "rooms_list #{rooms_list}" if @DEBUG
       rooms_list.delete(Room.current.id)
@@ -100,22 +100,24 @@ module AzBandit
     }
   end
 
-  def self.pause_if_stragglers()
-    stragglers = find_stragglers()
-    if stragglers.length > 0
+  def self.retrieve_stragglers(prev_room_id)
+    stragglers = identify_stragglers()
+    while stragglers.length > 0
+      fput "whisper ooc group We left behind #{stragglers.join(" and ")}"
       put "look"
       sleep 0.5 # try again in a second - this thing is fiddly
       put "look"
       sleep 0.5
-      stragglers = find_stragglers()
+      step2(prev_room_id)
+      waitrt?
+      stragglers.each { |char| fput "hold #{char}" }
+      stragglers = identify_stragglers()
       return if stragglers.length == 0
-      fput "whisper ooc group We left behind #{stragglers.join(" and ")}"
-      echo "Oops - despite GroupMovement, we left someone behind. Rectify and ;unpause"
-      pause_script
+      sleep 3
     end
   end
 
-  def self.find_stragglers()
+  def self.identify_stragglers()
     pc_set = {}
     GameObj.pcs.each { |pc| pc_set[pc.noun] = true }
     return @grouplist.select { |name| !pc_set[name] }
@@ -311,7 +313,7 @@ module AzBandit
 
   def self.step2(destination_room)
     # adapted from step2.lic
-    echo "running step2 towards #{room_id} (current #{Room.current.id})" if @DEBUG
+    echo "running step2 towards #{destination_room} (current #{Room.current.id})" if @DEBUG
     throw "current room was not found in the map database" unless Room.current.id
     throw "destination room was not found in the map database" unless destination_room
 
