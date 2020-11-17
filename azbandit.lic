@@ -30,6 +30,7 @@ module AzBandit
   @DIFFERENT_LOCATION_TASK = "different location bounty"
   @FINISHED = "finished"
   @DENIED = "denied"
+  @MY_CHARS_HACK = ["Kasparaitis", "Azanoth", "Aranthius"]
 
   # dynamic variables
   @grouplist = []
@@ -38,6 +39,7 @@ module AzBandit
   @bounty_location = ""
   @deniers = {}
   @last_progress_update = nil
+  @step2_ways = {}
 
   def self.main()
     # Setup
@@ -45,7 +47,7 @@ module AzBandit
     before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
     @grouplist, @groupset = populate_group()
     @bounty_text, @bounty_location = find_bounty_text()
-    exit if all_done?()
+    exit_azbandit() if all_done?()
 
     # Go to bounty area
     rooms_list = populate_rooms_list()
@@ -93,7 +95,7 @@ module AzBandit
       # Possibly wait for battle
       if should_wait_for_actions?()
         wait_for_battle()
-        exit if all_done?()
+        exit_azbandit() if all_done?()
       end
     }
   end
@@ -266,16 +268,8 @@ module AzBandit
           put "pull #{pc.noun}"
         end
       }
-      echo "running step2 towards #{room_id} (current #{Room.current.id})" if @DEBUG
-      Script.kill("step2") if running? "step2"
-      sleep 0.1
-      Script.start("step2", "#{room_id}")
-      start_time = Time.now.to_f
-      loop {
-        break if Room.current.id != start_room_id or start_time < Time.now.to_f - 2
-        sleep 0.1
-      }
-      sleep 0.1
+      step2(room_id)
+      sleep 0.1 if Room.current.id == start_room_id
       return if should_wait_for_actions?()
     end
 
@@ -315,6 +309,43 @@ module AzBandit
     }
   end
 
+  def self.step2(destination_room)
+    # adapted from step2.lic
+    echo "running step2 towards #{room_id} (current #{Room.current.id})" if @DEBUG
+    throw "current room was not found in the map database" unless Room.current.id
+    throw "destination room was not found in the map database" unless destination_room
+
+    start_room = Room.current.id
+    if start_room == destination_room
+      echo "start room and destination room are the same"
+      return
+    end
+
+    key = "#{start_room}->#{destination_room}"
+
+    unless @step2_ways[key]
+      previous, shortest_distances = Map.dijkstra(Room.current.id, destination_room)
+      unless previous[destination_room]
+        echo "error: failed to find a path between your current room (#{start_room}) and destination room (#{destination_room})"
+        exit
+      end
+      path = [destination_room]
+      path.push(previous[path[-1]]) until previous[path[-1]].nil?
+      path.reverse!
+      @step2_ways[key] = Room.current.wayto[path[path.index(start_room) + 1].to_s]
+    end
+
+    way = @step2_ways[key]
+
+    if way.class == String
+      move way, 2
+    elsif way.class == Proc
+      way.call
+    else
+      throw "error in the map database"
+    end
+  end
+
   def self.wait_for_battle()
     loop {
       echo "waiting for battle" if @DEBUG
@@ -328,6 +359,28 @@ module AzBandit
         return
       end
     }
+  end
+
+  def self.whisper_cmd(char, cmd, arg = "")
+    fput "whisper ooc #{char} do:#{cmd}:#{arg}"
+    while line = get
+      return true if line =~ /^\(OOC\) #{char}'s player whispers, "DONE/
+      return false if line =~ /^\(OOC\) #{char}'s player whispers, "FAIL/
+    end
+  end
+
+  def self.exit_azbandit()
+    if @MY_CHARS_HACK.any? { |char| char == Char.name }
+      throw "Not done" unless bounty? =~ /^You succeeded in your task/
+      @MY_CHARS_HACK.each { |char|
+        if char != Char.name
+          result = whisper_cmd(char, "verify-done")
+          throw "Failed to verify" unless result
+        end
+      }
+      Script.start("fbandit")
+    end
+    exit
   end
 
   def self.all_done?()

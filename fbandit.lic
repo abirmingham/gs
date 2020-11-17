@@ -1,5 +1,6 @@
 Room[28814].title = ["[Kraken's Fall Bank]"]
 Room[28870].title = ["[Kraken's Fall Bank, Teller]"]
+PEOPLE = ['Kasparaitis', 'Azanoth', 'Aranthius']
 
 raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/
 
@@ -20,13 +21,18 @@ end
 scripts_to_kill.each { |s| Script.kill(s) }
 waitrt?
 fput "stance def" if stance != "defensive"
+
+PEOPLE.each { |char|
+    fput "whisper ooc #{char} do:start-script:fbandit" if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
+}
+fput "disband"
+put "group open"
+
 Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confirm")
 npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
 raise "Failed to find npc" if npc.nil?
 fput "ask ##{npc.id} about bounty"
 put "salute"
-fput "disband"
-put "group open"
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 if checkmind == "saturated"
@@ -44,6 +50,14 @@ npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
 raise "Failed to find npc" if npc.nil?
 fput "ask ##{npc.id} about bounty"
 Script.run("swapbounty") if Char.name == leader
+
+if Char.name == 'Aranthius'
+    Script.run("go2", "gemshop")
+    fput "rem pack"
+    fput "sell pack"
+    fput "wear pack"
+end
+
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 
 Script.run("bankdrop")

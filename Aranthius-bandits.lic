@@ -78,9 +78,19 @@ module Ewave
           fresh_room = false
         end
       end
+      Script.run('sloot') if ((checkpcs - @grouplist).count == 0) && has_loot?
 
       sleep 0.25
     end
+  end
+
+  def self.has_loot?()
+    return GameObj.npcs.any? { |n| n.status == "dead" } ||
+             GameObj.loot.any? { |n|
+               n.type == "skin" ||
+               n.type == "gem" ||
+               n.name =~ /coins/
+             }
   end
 end
 

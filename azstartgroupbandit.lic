@@ -14,8 +14,10 @@ fput "leave"
 fput "group open"
 
 GROUP.each { |char|
-    whisper_cmd char, "ungroup" if Char.name != char
-    fput "hold #{char}"
+    if Char.name != char
+        whisper_cmd char, "ungroup"
+        fput "hold #{char}"
+    end
 }
 
 # Wait for share-ready

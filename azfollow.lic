@@ -25,11 +25,17 @@ def run_cmd(leader, cmd, arg)
         fput "whisper ooc #{leader} DONE"
         return
     elsif cmd == "start-script" && arg.length > 0
-        Script.start(arg)
         fput "whisper ooc #{leader} DONE"
+        Script.start(arg)
+        return
+    elsif cmd == "verify-done"
+        result = bounty? =~ /^You succeeded in your task/ ? 'DONE' : 'FAIL'
+        fput "whisper ooc #{leader} #{result}"
+        return
     elsif cmd == "wait_while_active" && arg.length > 0
         wait_while { Spell[arg].active? }
         fput "whisper ooc #{leader} DONE"
+        return
     end
     echo "SWITCH FALL THROUGH"
 end
