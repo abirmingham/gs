@@ -4,8 +4,9 @@ LEADERS = /Azanoth|Kasparaitis|Aranthius/
 
 def run_cmd(leader, cmd, arg)
     echo "run_cmd(#{cmd}, #{arg})"
+    bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
     if cmd == 'exchange-unless' && arg.length > 0
-        if bounty? =~ /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+        if bounty? =~ bounty_re
             if $1 == arg
                 echo "ALREADY HAVE REQUESTED LOCATION"
                 fput "whisper ooc #{leader} DONE"
@@ -32,7 +33,12 @@ def run_cmd(leader, cmd, arg)
         result = bounty? =~ /^You succeeded in your task/ ? 'DONE' : 'FAIL'
         fput "whisper ooc #{leader} #{result}"
         return
+    elsif cmd == "wait_groupbounty_cooldown_unless" && arg.length > 0
+        wait_while { Spell[9056].active? } unless bounty? =~ bounty_re && $1 == arg
+        fput "whisper ooc #{leader} DONE"
+        return
     elsif cmd == "wait_while_active" && arg.length > 0
+        
         wait_while { Spell[arg].active? }
         fput "whisper ooc #{leader} DONE"
         return

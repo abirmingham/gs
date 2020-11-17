@@ -6,7 +6,7 @@ raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/
 
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
-rest = [1844, 28813]
+rest = [1844, 29260]
 scripts_to_kill = ["tonis", "isigns", "symbolz", "ewave", "standgroup", "rapid", "1030", "Aranthius-bandits", "Kasparaitis-bandits", "Azanoth-bandits", "sloot", "looploot"]
 leader = "Azanoth"
 
@@ -22,11 +22,13 @@ scripts_to_kill.each { |s| Script.kill(s) }
 waitrt?
 fput "stance def" if stance != "defensive"
 
-PEOPLE.each { |char|
+if !group? and !rest.include? Room.current.id
+  PEOPLE.each { |char|
     fput "whisper ooc #{char} do:start-script:fbandit" if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
-}
-fput "disband"
-put "group open"
+  }
+  fput "disband"
+  put "group open"
+end
 
 Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confirm")
 npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }

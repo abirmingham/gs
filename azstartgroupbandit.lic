@@ -1,12 +1,22 @@
-GROUP=["Azanoth", "Kasparaitis", "Aranthius"]
+GROUP = ["Azanoth", "Kasparaitis", "Aranthius"]
 
 def whisper_cmd(char, cmd, arg = "")
-    fput "whisper ooc #{char} do:#{cmd}:#{arg}"
-    while line = get
-        return if line =~ /^\(OOC\) #{char}'s player whispers, "DONE/
-        throw "FAIL" if line =~ /^\(OOC\) #{char}'s player whispers, "FAIL/
-    end
+  fput "whisper ooc #{char} do:#{cmd}:#{arg}"
+  while line = get
+    return if line =~ /^\(OOC\) #{char}'s player whispers, "DONE/
+    throw "FAIL" if line =~ /^\(OOC\) #{char}'s player whispers, "FAIL/
+  end
 end
+
+throw "No bounty" unless bounty?
+
+# Identify bounty location
+bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+bounty_location = nil
+if bounty? =~ bounty_re
+  bounty_location = $1
+end
+throw "Failed to find bounty location" unless bounty_location
 
 # Form group
 fput "disband"
@@ -14,34 +24,28 @@ fput "leave"
 fput "group open"
 
 GROUP.each { |char|
-    if Char.name != char
-        whisper_cmd char, "ungroup"
-        fput "hold #{char}"
-    end
+  if Char.name != char
+    whisper_cmd char, "ungroup"
+    fput "hold #{char}"
+  end
 }
 
 # Wait for share-ready
 GROUP.each { |char|
-    whisper_cmd char, "wait_while_active", "9056" if Char.name != char
+  whisper_cmd char, "wait_groupbounty_cooldown_unless", bounty_location if Char.name != char
 }
 
 # Share bounty
-throw "No bounty" unless bounty?
 Script.run("go2", "advguild")
-bounty_location = nil
-if bounty? =~ /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
-    bounty_location = $1
-end
-throw "Failed to find bounty location" unless bounty_location
 
 GROUP.each { |char|
-    if Char.name != char
-        whisper_cmd char, "exchange-unless", bounty_location
-        whisper_cmd char, "start-script", "prep"
-        fput "ask luc to add #{char}"
-    end
+  if Char.name != char
+    whisper_cmd char, "exchange-unless", bounty_location
+    whisper_cmd char, "start-script", "prep"
+    fput "ask luc to add #{char}"
+  end
 }
 
-# Start
+# Go!
 Script.start("prep")
 Script.start("azbandit")

@@ -21,7 +21,7 @@ module AzBandit
   # static variables
   @ROOM_PAUSE_TIME = 0.1
   @PROGRESS_UPDATE_INTERVAL = 0.1
-  @DEBUG = true
+  @DEBUG = false
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
   @BANDIT_SET = Set["thief", "rogue", "bandit", "mugger", "outlaw", "highwayman", "marauder", "brigand", "thug", "robber"]
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
@@ -112,7 +112,7 @@ module AzBandit
       waitrt?
       stragglers.each { |char| fput "hold #{char}" }
       stragglers = identify_stragglers()
-      return if stragglers.length == 0
+      return if stragglers.length == 0 # we got em
       sleep 3
     end
   end
@@ -142,21 +142,28 @@ module AzBandit
   end
 
   def self.populate_rooms_list()
-    if @bounty_text =~ /Widowmaker's Road/
-      return [29021, 29022, 29023, 29024, 29025, 29026, 29027, 29028, 29029, 29030, 29050, 29051, 29053, 29054, 29055]
-    elsif @bounty_text =~ /Muddy Village/
-      return [29047, 29049, 29059, 29060, 29070, 29071, 29066, 29065]
-    elsif @bounty_text =~ /Cliffwalk/
-      return [29129, 29133, 29225, 29226]
-      # elsif @bounty_text =~ /Black Weald/
-      #   return [29227, 29228, 29229, 29234, 29235, 29236]
-    else
-      return Room.list.find_all { |r|
-               r.outside? &&
-               r.location =~ /#{@bounty_location}/i &&
-               r.location !~ @BAD_LOCATIONS
-             }.collect { |r| r.id }
+    $AZBANDIT_ROOM_CACHE = {} unless $AZBANDIT_ROOM_CACHE
+
+    if !$AZBANDIT_ROOM_CACHE[@bounty_text]
+      if @bounty_text =~ /Widowmaker's Road/
+        $AZBANDIT_ROOM_CACHE[@bounty_text] = [29021, 29022, 29023, 29024, 29025, 29026, 29027, 29028, 29029, 29030, 29050, 29051, 29053, 29054, 29055]
+      elsif @bounty_text =~ /Muddy Village/
+        $AZBANDIT_ROOM_CACHE[@bounty_text] = [29047, 29049, 29059, 29060, 29070, 29071, 29066, 29065]
+      elsif @bounty_text =~ /Cliffwalk/
+        $AZBANDIT_ROOM_CACHE[@bounty_text] = [29129, 29133, 29225, 29226]
+        # elsif @bounty_text =~ /Black Weald/
+        #   return [29227, 29228, 29229, 29234, 29235, 29236]
+      else
+        echo "Loading bounty rooms..."
+        $AZBANDIT_ROOM_CACHE[@bounty_text] = Room.list.find_all { |r|
+          r.outside? &&
+          r.location =~ /#{@bounty_location}/i &&
+          r.location !~ @BAD_LOCATIONS
+        }.collect { |r| r.id }
+        echo "...done!"
+      end
     end
+    return $AZBANDIT_ROOM_CACHE[@bounty_text]
   end
 
   def self.populate_group()
@@ -372,7 +379,7 @@ module AzBandit
   end
 
   def self.exit_azbandit()
-    if @MY_CHARS_HACK.any? { |char| char == Char.name }
+    if @MY_CHARS_HACK.any? { |char| char == Char.name } && GameObj.pcs.all? { |char| @MY_CHARS_HACK.include? char.noun }
       throw "Not done" unless bounty? =~ /^You succeeded in your task/
       @MY_CHARS_HACK.each { |char|
         if char != Char.name
