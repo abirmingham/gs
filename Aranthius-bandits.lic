@@ -72,8 +72,8 @@ module Ewave
           waitcastrt?
           fput 'stance def' if checkstance != 'defensive'
           put 'sym mana'
-          if checkmana > 375
-            fput 'send 37 kasparaitis'
+          if checkmana > 450
+            fput 'send 15 kasparaitis'
           end
           fresh_room = false
         end

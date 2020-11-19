@@ -45,8 +45,12 @@ module AzBandit
     # Setup
     fput "flag GroupMovement on"
     before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
+
+    echo 'a'
     @grouplist, @groupset = populate_group()
+    echo 'b'
     @bounty_text, @bounty_location = find_bounty_text()
+    echo 'c'
     exit_azbandit() if all_done?()
 
     # Go to bounty area

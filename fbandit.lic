@@ -38,9 +38,10 @@ put "salute"
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 if checkmind == "saturated"
+  fput "join etherium" if GameObj.pcs.include? { |pc| pc.noun == 'Etherium' }
   echo "Mind is saturated - waiting before turning in bounty"
-  Script.run('waggle')
   turn_off_enh() if Char.name == 'Azanoth'
+  Script.run('waggle')
   while checkmind == "saturated"
     fput "exp" if Time.now.to_f.round(0) % 60 == 0
     sleep 0.75
