@@ -46,11 +46,11 @@ module AzBandit
     fput "flag GroupMovement on"
     before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
 
-    echo 'a'
+    echo "a"
     @grouplist, @groupset = populate_group()
-    echo 'b'
+    echo "b"
     @bounty_text, @bounty_location = find_bounty_text()
-    echo 'c'
+    echo "c"
     exit_azbandit() if all_done?()
 
     # Go to bounty area
@@ -94,7 +94,7 @@ module AzBandit
         retrieve_stragglers(prev_room)
       end
       echo "rooms_list #{rooms_list}" if @DEBUG
-      rooms_list.delete(Room.current.id)
+      rooms_list = rooms_list.reject { |id| id == Room.current.id }
 
       # Possibly wait for battle
       if should_wait_for_actions?()
@@ -107,19 +107,19 @@ module AzBandit
   def self.retrieve_stragglers(prev_room_id)
     stragglers = identify_stragglers()
     while stragglers.length > 0
-      fput "whisper ooc group We left behind #{stragglers.join(" and ")}"
       put "look"
       sleep 0.5 # try again in a second - this thing is fiddly
       put "look"
       sleep 0.5
+      echo "whisper ooc group GameObj.pcs thinks we left behind #{stragglers.join(" and ")}"
       step2(prev_room_id)
       waitrt?
       stragglers.each { |char| fput "hold #{char}" }
-      echo 'a'
+      echo "a"
       stragglers = identify_stragglers()
-      echo 'b'
+      echo "b"
       return if stragglers.length == 0 # we got em
-      echo 'c'
+      echo "c"
       sleep 3
     end
   end
@@ -151,18 +151,18 @@ module AzBandit
   def self.populate_rooms_list()
     $AZBANDIT_ROOM_CACHE = {} unless $AZBANDIT_ROOM_CACHE
 
-    if !$AZBANDIT_ROOM_CACHE[@bounty_text]
+    if !$AZBANDIT_ROOM_CACHE[@bounty_location]
       if @bounty_text =~ /Widowmaker's Road/
-        $AZBANDIT_ROOM_CACHE[@bounty_text] = [29021, 29022, 29023, 29024, 29025, 29026, 29027, 29028, 29029, 29030, 29050, 29051, 29053, 29054, 29055]
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29021, 29022, 29023, 29024, 29025, 29026, 29027, 29028, 29029, 29030, 29050, 29051, 29053, 29054, 29055]
       elsif @bounty_text =~ /Muddy Village/
-        $AZBANDIT_ROOM_CACHE[@bounty_text] = [29047, 29049, 29059, 29060, 29070, 29071, 29066, 29065]
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29047, 29049, 29059, 29060, 29070, 29071, 29066, 29065]
       elsif @bounty_text =~ /Cliffwalk/
-        $AZBANDIT_ROOM_CACHE[@bounty_text] = [29129, 29133, 29225, 29226]
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29129, 29133, 29225, 29226]
         # elsif @bounty_text =~ /Black Weald/
         #   return [29227, 29228, 29229, 29234, 29235, 29236]
       else
         echo "Loading bounty rooms..."
-        $AZBANDIT_ROOM_CACHE[@bounty_text] = Room.list.find_all { |r|
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = Room.list.find_all { |r|
           r.outside? &&
           r.location =~ /#{@bounty_location}/i &&
           r.location !~ @BAD_LOCATIONS
@@ -170,7 +170,7 @@ module AzBandit
         echo "...done!"
       end
     end
-    return $AZBANDIT_ROOM_CACHE[@bounty_text]
+    return $AZBANDIT_ROOM_CACHE[@bounty_location]
   end
 
   def self.populate_group()

@@ -1,58 +1,87 @@
 hide_me
 LEADERS = /Azanoth|Kasparaitis|Aranthius/
 
-
 def run_cmd(leader, cmd, arg)
-    echo "run_cmd(#{cmd}, #{arg})"
-    bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
-    if cmd == 'exchange-unless' && arg.length > 0
-        if bounty? =~ bounty_re
-            if $1 == arg
-                echo "ALREADY HAVE REQUESTED LOCATION"
-                fput "whisper ooc #{leader} DONE"
-                return
-            end
-        end
-        wait_while { Spell[9056].active? }
-        echo "REMOVING"
-        fput "ask luc to remove"
-        fput "ask luc to remove"
+  echo "run_cmd(#{cmd}, #{arg})"
+  bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+  if cmd == "exchange-unless" && arg.length > 0
+    if bounty? =~ bounty_re
+      if $1 == arg
+        echo "ALREADY HAVE REQUESTED LOCATION"
         fput "whisper ooc #{leader} DONE"
         return
-    elsif cmd == "ungroup"
-        fput "disband"
-        fput "leave"
-        fput "group open"
-        fput "whisper ooc #{leader} DONE"
-        return
-    elsif cmd == "start-script" && arg.length > 0
-        fput "whisper ooc #{leader} DONE"
-        Script.start(arg)
-        return
-    elsif cmd == "verify-done"
-        result = bounty? =~ /^You succeeded in your task/ ? 'DONE' : 'FAIL'
-        fput "whisper ooc #{leader} #{result}"
-        return
-    elsif cmd == "wait_groupbounty_cooldown_unless" && arg.length > 0
-        wait_while { Spell[9056].active? } unless bounty? =~ bounty_re && $1 == arg
-        fput "whisper ooc #{leader} DONE"
-        return
-    elsif cmd == "wait_while_active" && arg.length > 0
-        
-        wait_while { Spell[arg].active? }
-        fput "whisper ooc #{leader} DONE"
-        return
+      end
     end
-    echo "SWITCH FALL THROUGH"
+    wait_while { Spell[9056].active? }
+    echo "REMOVING"
+    fput "ask luc to remove"
+    fput "ask luc to remove"
+    fput "whisper ooc #{leader} DONE"
+    return
+  elsif cmd == "ungroup"
+    fput "disband"
+    fput "leave"
+    fput "group open"
+    fput "whisper ooc #{leader} DONE"
+    return
+  elsif cmd == "start-script" && arg.length > 0
+    fput "whisper ooc #{leader} DONE"
+    Script.start(arg)
+    return
+  elsif cmd == "verify-done"
+    result = bounty? =~ /^You succeeded in your task/ ? "DONE" : "FAIL"
+    fput "whisper ooc #{leader} #{result}"
+    return
+  elsif cmd == "wait_groupbounty_cooldown_unless" && arg.length > 0
+    wait_while { Spell[9056].active? } unless bounty? =~ bounty_re && $1 == arg
+    fput "whisper ooc #{leader} DONE"
+    return
+  elsif cmd == "wait_while_active" && arg.length > 0
+    wait_while { Spell[arg].active? }
+    fput "whisper ooc #{leader} DONE"
+    return
+  end
+  echo "SWITCH FALL THROUGH"
+end
+
+def wait_while_indisposed()
+  sleep 0.25 while stunned? || waitrt?
+end
+
+def dothisloop(cmd, timeout, rsp_re)
+  wait_while_indisposed()
+  result = nil
+  while result.nil?
+    result = dothistimeout cmd, timeout, rsp_re
+    break if result
+    sleep 1
+  end
+end
+
+def fix_vocal_cords()
+  is_azbandit_running = Script.running? "azbandit"
+  Script.pause("azbandit") if is_azbandit_running
+  wait_while_indisposed()
+  fput "store left" if !(checkleft && checkright).nil?
+  fput "stow left" if !(checkleft && checkright).nil?
+  dothisloop "get my aloeas stem", 3, /You carefully remove some|You remove/
+  dothisloop "eat my aloeas stem", 3, /You take a bite of/
+  dothisloop "put my stem in my kit", 3, /I could not find what|You carefully add/
+  dothisloop "put my stem in my pack", 3, /I could not find what|You put some/ if checkright == "stem" or checkleft == "stem"
+  wait_while_indisposed()
+  fput "gird"
+  Script.unpause("azbandit") if is_azbandit_running
 end
 
 loop {
-    while line = get?
-        # (OOC) Azanoth's player whispers, "Do:exchange-unless:Muddy Village."
-        if line =~ /^\(OOC\) (#{LEADERS})'s player whispers, "Do:(.*?)\.?"/
-            tokens = $2.split ':'
-            run_cmd $1, tokens[0].downcase, tokens[1]
-        end
+  while line = get?
+    # (OOC) Azanoth's player whispers, "Do:exchange-unless:Muddy Village."
+    if line =~ /slices deep into your vocal cords!$/
+      fix_vocal_cords()
+    elsif line =~ /^\(OOC\) (#{LEADERS})'s player whispers, "Do:(.*?)\.?"/
+      tokens = $2.split ":"
+      run_cmd $1, tokens[0].downcase, tokens[1]
     end
-    sleep 0.1
+  end
+  sleep 0.1
 }

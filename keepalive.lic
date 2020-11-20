@@ -4,7 +4,7 @@ setpriority(-2)
 n = 0
 while true
     sleep 60*5
-	fput "exp"
+	fput "look"
 	n += 1
 	echo "TIMESTAMP ##{n}: #{Time.now}"
 end
