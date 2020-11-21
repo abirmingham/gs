@@ -1,5 +1,5 @@
 target_set = {}
-script.vars.slice(1, script.vars.length).each do |noun|
+'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'.split(' ').each do |noun|
   target_set[noun] = true
 end
 

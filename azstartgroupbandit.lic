@@ -48,4 +48,6 @@ GROUP.each { |char|
 
 # Go!
 Script.start("prep")
+sleep 3 # wait for warcry
+waitrt?
 Script.start("azbandit")
