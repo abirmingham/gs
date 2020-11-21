@@ -25,7 +25,6 @@ module AzBandit
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
   @BANDIT_SET = Set["thief", "rogue", "bandit", "mugger", "outlaw", "highwayman", "marauder", "brigand", "thug", "robber"]
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
-  @DOWNSTREAM_HOOK_NAME = "azbandit_grouphook"
   @NOT_ON_TASK = "not on task"
   @DIFFERENT_LOCATION_TASK = "different location bounty"
   @FINISHED = "finished"
@@ -44,14 +43,15 @@ module AzBandit
   def self.main()
     # Setup
     fput "flag GroupMovement on"
-    before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
 
     echo "a"
     @grouplist, @groupset = populate_group()
+    echo "Group is #{@grouplist.length ? @grouplist.join(', ') : 'empty'}"
     echo "b"
     @bounty_text, @bounty_location = find_bounty_text()
     echo "c"
     exit_azbandit() if all_done?()
+    echo "Bounty location is #{@bounty_location}"
 
     # Go to bounty area
     rooms_list = populate_rooms_list()
@@ -176,31 +176,15 @@ module AzBandit
   def self.populate_group()
     grouplist = []
     groupset = {}
-    complete = false
-
-    checkgroupline = proc { |line|
-      line =~ /exist="\-[0-9]+" noun=".*">(.*)<\/a> is (?:following you|the leader of your group|also a member of your group)/i
-      if !$1.nil?
+    fput "group"
+    while line = get
+      if line =~ /(\w+) is (?:following you|the leader of your group|also a member of your group)/i && !$1.nil?
         grouplist.push($1)
         groupset[$1] = true
+      elsif line =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
+        return [grouplist, groupset]
       end
-    }
-
-    action = proc { |server_string|
-      if checkgroupline.call(server_string)
-        nil
-      elsif server_string =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
-        complete = true
-        nil
-      else
-        server_string
-      end
-    }
-    DownstreamHook.add(@DOWNSTREAM_HOOK_NAME, action)
-    $_SERVER_.puts "group"
-    wait_until { complete }
-    DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME)
-    return [grouplist, groupset]
+    end
   end
 
   def self.find_bounty_text()
@@ -318,7 +302,6 @@ module AzBandit
 
       line = buffer.length > 0 ? buffer.shift() : get?
       echo "Scanning #{line}" if @DEBUG
-      echo "Scanning #{line}" # TODO REMOVE ME
 
       if line.nil?
         sleep 0.1
