@@ -1,0 +1,12 @@
+waitrt?
+fput "store all"
+fput "open my sack"
+fput "get my ether from my sack"
+4.times do
+    result = dothistimeout "raise my ether", 3, /Cast Roundtime|grows ice cold/
+    break if result =~ /grows ice cold/
+    waitcastrt?
+end
+fput "put my ether in my sack"
+fput "close my sack"
+fput "gird"
