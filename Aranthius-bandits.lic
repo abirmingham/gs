@@ -50,11 +50,12 @@ module Ewave
         fresh_room = true
         last_room = Room.current.id
       end
+      find_target = proc { GameObj.npcs.any? { |npc|
+        target_set[npc.noun] && !npc.status && !npc.name.start_with?("animated ")
+      } }
 
       sleep 1 if checkbounty =~ /^You (have )?succeeded/
-      need_wave = ((checkpcs - @grouplist).count == 0) && GameObj.npcs.any? do |npc|
-        target_set[npc.noun] && !npc.status && !npc.name.start_with?("animated ")
-      end
+      need_wave = ((checkpcs - @grouplist).count == 0) && find_target.call()
       if need_wave
         # ewave
         Spell[410].cast()
