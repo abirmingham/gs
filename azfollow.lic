@@ -69,7 +69,7 @@ def fix_vocal_cords()
   dothisloop "put my stem in my pack", 3, /I could not find what|You put some/ if checkright == "stem" or checkleft == "stem"
   wait_while_indisposed()
   fput "gird"
-  sleep 5
+  sleep 10
   Script.unpause("azbandit") if Script.running? "azbandit"
 end
 

@@ -73,13 +73,13 @@ module Ewave
           waitcastrt?
           fput 'stance def' if checkstance != 'defensive'
           put 'sym mana'
-          if checkmana > 450
-            fput 'send 15 kasparaitis'
-          end
+        #   if checkmana > 450
+        #     fput 'send 15 kasparaitis'
+        #   end
           fresh_room = false
         end
       end
-      Script.run('sloot') if ((checkpcs - @grouplist).count == 0) && has_loot?
+    #   Script.run('sloot') if ((checkpcs - @grouplist).count == 0) && has_loot?
 
       sleep 0.25
     end

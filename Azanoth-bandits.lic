@@ -1,5 +1,5 @@
 target_set = {}
-'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'.split(' ').each do |noun|
+"rogue marauder thief mugger bandit brigand robber outlaw thug highwayman".split(" ").each do |noun|
   target_set[noun] = true
 end
 
@@ -39,6 +39,7 @@ module AzAttack
     populate_group()
     before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
     echo @grouplist
+    
     echo "Starting"
     fput "war shout"
     room_id = Room.current.id
@@ -59,7 +60,6 @@ module AzAttack
       need_attack = ((checkpcs - @grouplist).count == 0) && targets.length > 0
 
       if need_attack and !running? "sloot"
-        # ewave
         fput "stand" until standing?
         fput "stance off" until checkstance == "offensive"
         fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
@@ -76,6 +76,8 @@ module AzAttack
         end
         rt = checkrt
         sleep(rt - 1) if rt > 2
+      elsif targets.length == 0
+        fput "stance def" until checkstance == "defensive"
       end
 
       sleep 0.25

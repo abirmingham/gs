@@ -46,7 +46,7 @@ module AzBandit
 
     echo "a"
     @grouplist, @groupset = populate_group()
-    echo "Group is #{@grouplist.length ? @grouplist.join(', ') : 'empty'}"
+    echo "Group is #{@grouplist.length ? @grouplist.join(", ") : "empty"}"
     echo "b"
     @bounty_text, @bounty_location = find_bounty_text()
     echo "c"
@@ -157,9 +157,9 @@ module AzBandit
       elsif @bounty_text =~ /Muddy Village/
         $AZBANDIT_ROOM_CACHE[@bounty_location] = [29047, 29049, 29059, 29060, 29070, 29071, 29066, 29065]
       elsif @bounty_text =~ /Cliffwalk/
-        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29129, 29133, 29225, 29226]
-        # elsif @bounty_text =~ /Black Weald/
-        #   return [29227, 29228, 29229, 29234, 29235, 29236]
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29124, 29120, 29128, 29129, 29133, 29134, 29217, 29219,29223, 29222]
+      elsif @bounty_text =~ /Black Weald/
+        return [29227, 29228, 29229, 29234, 29235, 29236, 29237, 29238, 29239, 29240, 29231, 29230]
       else
         echo "Loading bounty rooms..."
         $AZBANDIT_ROOM_CACHE[@bounty_location] = Room.list.find_all { |r|
@@ -356,8 +356,12 @@ module AzBandit
     loop {
       echo "waiting for battle" if @DEBUG
       if has_loot?()
-        echo "Waiting for loot to be picked up"
-        sleep 1
+        if should_loot?()
+          Script.run("sloot")
+        else
+          echo "Waiting for loot to be picked up"
+          sleep 1
+        end
       elsif has_targets?()
         echo "Waiting for targets to be killed/searched"
         sleep 1
@@ -365,6 +369,10 @@ module AzBandit
         return
       end
     }
+  end
+
+  def self.should_loot?()
+    return @MY_CHARS_HACK.any? { |char| char == Char.name } && !is_poaching?
   end
 
   def self.whisper_cmd(char, cmd, arg = "")
@@ -376,7 +384,7 @@ module AzBandit
   end
 
   def self.exit_azbandit()
-    if @MY_CHARS_HACK.any? { |char| char == Char.name } && GameObj.pcs.all? { |char| @MY_CHARS_HACK.include? char.noun }
+    if @MY_CHARS_HACK.any? { |char| char == Char.name } && @grouplist.all? { |char| @MY_CHARS_HACK.include? char }
       throw "Not done" unless bounty? =~ /^You succeeded in your task/
       @MY_CHARS_HACK.each { |char|
         if char != Char.name
