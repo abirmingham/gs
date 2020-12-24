@@ -1,0 +1,19 @@
+pause_script 'treim'
+start_room = Room.current.id
+Script.run("go2", "24895")
+sleep 3
+fput 'go vortex'
+dothistimeout 'go vortex', 3, /You make a running jump/
+
+result = dothistimeout 'raise pendant', 3, /Are you sure/
+throw 'Failed' if !result
+result = dothistimeout 'raise pendant', 3, /Your hand glows a shade of blue/
+throw 'Failed' if !result
+
+while Room.current.id != 24888
+    fput 'reim transport confirm'
+    sleep 0.5
+end
+
+unpause_script 'treim'
+Script.run("go2", start_room.to_s)
