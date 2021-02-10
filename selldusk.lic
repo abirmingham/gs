@@ -1,0 +1,44 @@
+LEADER = 'Azanoth'
+FOLLOWERS = ['Aranthius', 'Kasparaitis']
+INSIDE_DR = 26905
+TEAM_ARENA_ENTRANCE = 26387
+MAX_SELL_PRICE = 125000
+
+['foreach', 'sellunder', 'tdusk'].each { |script| raise "Requires #{script}.lic" unless Script.exists? script }
+
+Script.kill('tdusk') if Script.running? 'tdusk'
+
+if Char.name == LEADER
+    fput 'disband'
+    fput 'group open'
+end
+
+# Go to pawnshop
+fput 'stow all'
+Script.run("go2", "#{INSIDE_DR}")
+dothistimeout 'go wagon', 3, /Obvious paths/
+Script.run("go2", "pawnshop")
+
+# Sell stuff
+Script.run("foreach", "unmarked unregistered weapon in my #{Vars.lootsack} | get item | waitfor You remove | ;sellunder #{MAX_SELL_PRICE} | stow all")
+Script.run("foreach", "unmarked unregistered armor in my  #{Vars.lootsack} | get item | waitfor You remove | ;sellunder #{MAX_SELL_PRICE} | stow all")
+
+# Deposit in bank
+Script.run("bankdrop")
+wait_while { Script.running? 'go2' }
+
+# Run back to DR
+put 'quest transport duskruin'
+dothistimeout 'quest transport duskruin', 3, /Obvious (paths|exits)/
+Script.run("go2", "#{TEAM_ARENA_ENTRANCE}")
+
+# Reform group
+if Char.name.downcase == LEADER.downcase
+    FOLLOWERS.each { |f| fput "hold #{f}" }
+else
+    fput "join #{LEADER}"
+    Script.start 'tdusk' if Script.exists? 'tdusk'
+end
+
+put 'group'
+put 'encumbrance'
