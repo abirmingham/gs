@@ -58,14 +58,14 @@ module KasparBandits
       need_attack = ((checkpcs - @grouplist).count == 0) && targets.length > 0
 
       if need_attack and !running? "sloot"
-        # Spell[1030].cast()
         fput "stand" until standing?
-        fput "stance off" until checkstance == "offensive"
-        if Spell[9005].active? || targets.length < 2
-          fput "kill"
-        else
-          fput "mstrike"
-        end
+        Spell[1030].cast()
+        # fput "stance off" until checkstance == "offensive"
+        # if Spell[9005].active? || targets.length < 2
+        #   fput "kill"
+        # else
+        #   fput "mstrike"
+        # end
 
         rt = checkrt
         sleep(rt - 1) if rt > 2
@@ -75,11 +75,11 @@ module KasparBandits
         fput "stance def" until checkstance == "defensive"
       end
 
-      #   if checkcastrt == 0
-      #     fput "stance def" if checkstance != "defensive"
-      #   else
-      #     fput "stance def" if checkstance != "guarded"
-      #   end
+        if checkcastrt == 0
+          fput "stance def" if checkstance != "defensive"
+        else
+          fput "stance def" if checkstance != "guarded"
+        end
       sleep 0.25
     end
   end

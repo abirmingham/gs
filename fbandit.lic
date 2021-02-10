@@ -21,14 +21,19 @@ end
 scripts_to_kill.each { |s| Script.kill(s) }
 waitrt?
 fput "stance def" if stance != "defensive"
-
-if !group? and !rest.include? Room.current.id
+echo 'a' #x
+echo group? #x
+echo rest #x
+echo Room.current.id #x
+if !rest.include? Room.current.id
+  echo 'b' #x
   PEOPLE.each { |char|
     fput "whisper ooc #{char} do:start-script:fbandit" if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
   }
   fput "disband"
   put "group open"
 end
+echo 'c' #x
 
 Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confirm")
 npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
