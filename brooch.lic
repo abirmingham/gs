@@ -1,0 +1,17 @@
+# Brooch, based off longterm.lic
+# 
+# Version 0.1
+# Tags: LTE, XP, EXP, Longterm, long-term
+# Author: Azanoth
+
+loop {
+    wait_until { checkmind == 'must rest' || checkmind == 'saturated' }
+    waitfor /( searches )|(Obvious)/
+    sleep 8
+    waitrt?
+    waitcastrt?
+    fput "rub my q bro"
+    fput "anal my q bro"
+    
+    sleep 10
+}

@@ -1026,8 +1026,6 @@ end
 
 def loot(scriprummage,scrippouch,waggle_me,pause_me,group_size)
 	waitrt?
-	fput "store all" if Char.name !~ /Dayzed|Nodyre|Hammibal/
-	put 'stow all'
 	sleep 1
 	loop {
 		if (checkleft != "package" && checkright != "package")
@@ -1095,6 +1093,8 @@ def loot(scriprummage,scrippouch,waggle_me,pause_me,group_size)
 	end
 	start_script("waggle") if waggle_me
 	wait_while {running?("waggle")}	if waggle_me
+	Spell[509].cast('azanoth') if Char.name == 'Aranthius'
+	waitcastrt?
 
 	# Pause Script so you can socialize, clear mind, mule loot, etc.
 	# ;u duskruin
@@ -1191,7 +1191,9 @@ before_dying {
 
 fput "incant set cast 903" if Char.name =~ /Tysong|Sabotage/
 
+
 fput "store all" if Char.name !~ /Dayzed|Nodyre|Hammibal/
+put 'stow all'
 pause 1
 put "open my #{Vars.lootsack}" if UserVars.tdusk[:open_lootsack]
 fput "get my #{UserVars.tdusk[:token]} from my #{Vars.lootsack}"
@@ -1271,9 +1273,10 @@ loop {
 		end
 		Script.kill("#{Char.name}-duskattack") if Script.running?("#{Char.name}-duskattack")
 		put "STOP 1018" if Char.prof =~ /Bard/
-		if Char.name =~ /Nodyre/
-			put "store left"
-		end
+
+		wait_while { Spell[9607].active? }
+		dothistimeout 'store all', 5, /You (put|sling|stow)/
+
 		(avg_reg = avg_reg + kill_time) if !(Array[5,10,15,20,25].include? UserVars.tdusk[:wave_number])
 		(avg_champ = avg_champ + kill_time) if Array[5,10,15,20,25].include? UserVars.tdusk[:wave_number]
 		avg_reg = avg_reg / 20

@@ -1,0 +1,35 @@
+echo "Starting ewave"
+echo "TODO: add sym submission"
+echo "TODO: add sym mana"
+echo "TODO: cast sym cour/prot"
+target_set = {}
+['champion', 'marauder', 'beetle', 'tsark', 'slave', 'basilisk', 'servant', 'ranger', 'ogre', 'witch', 'dobrem', 'burgee', 'warcat', 'mammoth', 'seeker', 'wildling', 'shaman', 'ursian', 'lion', 'grahnk', 'tegu', 'yeti', "vor'taz", 'lizard', 'automaton', 'crab'].each do |noun|
+  target_set[noun] = true
+end
+
+# fput 'incant 410'
+
+attacked = false
+
+while GameObj.targets.length > 0
+  need_wave = GameObj.targets.any? do |npc|
+    target_set[npc.noun] && !npc.status && !npc.name.start_with?('animated ')
+  end
+  if need_wave
+    # Spell[410].cast()
+    if not attacked
+      fput "stand" until standing?
+      Spell[1030].cast()
+      attacked = true
+    end
+    GameObj.pcs.each do |s|
+        if s.status =~ /lying|prone/
+          fput "pull #{s.noun}"
+        end
+      end
+  end
+
+  sleep 0.1
+end
+
+put 'stance def'
