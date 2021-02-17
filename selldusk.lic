@@ -2,7 +2,7 @@ LEADER = 'Azanoth'
 FOLLOWERS = ['Aranthius', 'Kasparaitis']
 INSIDE_DR = 26905
 TEAM_ARENA_ENTRANCE = 26387
-MAX_SELL_PRICE = 125000
+MAX_SELL_PRICE = 1500000
 
 ['foreach', 'sellunder', 'tdusk'].each { |script| raise "Requires #{script}.lic" unless Script.exists? script }
 

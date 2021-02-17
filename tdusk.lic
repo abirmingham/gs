@@ -1027,12 +1027,19 @@ end
 def loot(scriprummage,scrippouch,waggle_me,pause_me,group_size)
 	waitrt?
 	fput "store all" if Char.name !~ /Dayzed|Nodyre|Hammibal/
+	put 'stow all'
 	sleep 1
 	loop {
-		fput "get package" if (checkleft != "package" && checkright != "package")
+		if (checkleft != "package" && checkright != "package")
+			put "get package"
+			put 'get other package'
+			put 'get third package'
+		end
 		sleep 1
 		break if (checkleft == "package" || checkright == "package")
 	} if (checkleft != "package" && checkright != "package")
+
+	fput 'stand'
 
 	if UserVars.tdusk[:lootpackage]
 		fput "open my package"
@@ -1050,15 +1057,16 @@ def loot(scriprummage,scrippouch,waggle_me,pause_me,group_size)
 		end
 		sleep 1
 		waitrt?
+		fput 'stand'
 
 		if checkright == "package" && (GameObj.right_hand.contents.empty? || GameObj.right_hand.contents.nil?)
 			sleep(0.5)
 			waitrt?
-			fput "drop my package"
+			dothistimeout "drop my package", 5, /You toss aside your|You drop/
 		elsif checkleft == "package" && (GameObj.left_hand.contents.empty? || GameObj.left_hand.contents.nil?)
 			sleep(0.5)
 			waitrt?
-			fput "drop my package"
+			dothistimeout "drop my package", 5, /You toss aside your|You drop/
 		else
 			respond "package not empty"
 			respond "package not empty"
@@ -1108,7 +1116,12 @@ def loot(scriprummage,scrippouch,waggle_me,pause_me,group_size)
 	sleep 2 if !checkgrouped
 	put "open my #{Vars.lootsack}" if UserVars.tdusk[:open_lootsack]
 	fput "get my #{UserVars.tdusk[:token]} from my #{Vars.lootsack}"
-	fput "go entrance" if !checkgrouped
+	if !checkgrouped
+		while Room.current.id != 24550
+			fput 'go entrance'
+			sleep 1
+		end
+	end
 	sleep(1) until Room.current.id == 24550
 end
 
