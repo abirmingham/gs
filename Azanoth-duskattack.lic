@@ -3,8 +3,8 @@ put 'stance off' if checkstance != 'offensive'
 while GameObj.targets.length > 0
   if Spell[9607].active?
     sleep 0.2
-  elsif Spell[598].active? and checkstamina >= 20
-    dothistimeout 'berserk', 5, /Everything around you turns red|You scream with a maniac/
+  # elsif Spell[598].active? and checkstamina >= 20
+  #   dothistimeout 'berserk', 5, /Everything around you turns red|You scream with a maniac/
   else
     put 'qstrike -1' if checkstamina > 150 and !Spell[506].active?
     dothistimeout 'ambush', 5, /^You swing|^You have no target/

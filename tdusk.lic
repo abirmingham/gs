@@ -1029,6 +1029,7 @@ def loot(scriprummage,scrippouch,waggle_me,pause_me,group_size)
 	sleep 1
 	loop {
 		if (checkleft != "package" && checkright != "package")
+			fput "store all"
 			put "get package"
 			put 'get other package'
 			put 'get third package'
@@ -1094,6 +1095,16 @@ def loot(scriprummage,scrippouch,waggle_me,pause_me,group_size)
 	start_script("waggle") if waggle_me
 	wait_while {running?("waggle")}	if waggle_me
 	Spell[509].cast('azanoth') if Char.name == 'Aranthius'
+	if Char.name == 'Azanoth' && !Spell[9504].active?
+		waitrt?
+		waitcastrt?
+		sleep 2
+		fput 'cman dervish'
+		waitrt?
+		sleep 1
+		fput 'armor support'
+	end
+
 	waitcastrt?
 
 	# Pause Script so you can socialize, clear mind, mule loot, etc.
