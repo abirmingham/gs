@@ -86,6 +86,12 @@
             Redo of duskruin_arena to use UserVars for settings so not lost between updates
 =end
 
+if Char.name == 'Azanoth'
+	fput "cman dervish"
+	fput "armor support"
+	waitrt?
+end
+
 if Script.running?("0net")
 	lnet_or_0net = "0net"
 else
