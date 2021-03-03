@@ -29,7 +29,7 @@ module AzBandit
   @DIFFERENT_LOCATION_TASK = "different location bounty"
   @FINISHED = "finished"
   @DENIED = "denied"
-  @MY_CHARS_HACK = ["Kasparaitis", "Azanoth", "Aranthius"]
+  @MY_CHARS_HACK = ["Abbyrose", "Azanoth", "Aranthius"]
 
   # dynamic variables
   @grouplist = []

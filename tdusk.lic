@@ -89,6 +89,7 @@
 if Char.name == 'Azanoth'
 	fput "cman dervish"
 	fput "armor support"
+	sleep 6
 	waitrt?
 end
 

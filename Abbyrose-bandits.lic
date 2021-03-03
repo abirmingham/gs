@@ -3,9 +3,9 @@ target_set = {}
   target_set[noun] = true
 end
 
-module AzAttack
-  @DOWNSTREAM_HOOK_NAME = "azattack_downstream_hook"
-  @FRIENDS = ["Aranthius", "Abbyrose"]
+module KasparBandits
+  @DOWNSTREAM_HOOK_NAME = "KasparBandits"
+  @FRIENDS = ["Aranthius", "Azanoth"]
   @grouplist = []
 
   def self.populate_group()
@@ -41,48 +41,48 @@ module AzAttack
     echo @grouplist
     
     echo "Starting"
-    fput "war shout"
+    fresh_room = true
     room_id = Room.current.id
 
     while true
-      # throttle char
       if checkbounty =~ /^You (have )?succeeded/
         sleep 2
       elsif room_id != Room.current.id
-        sleep 1
+        # sleep 1
         room_id = Room.current.id
       end
 
       targets = GameObj.npcs.select do |npc|
         target_set[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")
       end
-
       need_attack = ((checkpcs - @grouplist).count == 0) && targets.length > 0
 
       if need_attack and !running? "sloot"
         fput "stand" until standing?
-        fput "stance off" until checkstance == "offensive"
-        fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-        if Spell[9005].active? || targets.length < 2
-          if checkstamina >= 15
-            put "cman mblow ##{targets[0].id}"
-            put "cman mblow ##{targets[1].id}" if targets.length > 1
-          else
-            put "kill"
-          end
-        else
-          put "mstrike ##{targets[0].id}"
-          put "mstrike ##{targets[1].id}" if targets.length > 1
-        end
+        Spell[1030].cast()
+        # fput "stance off" until checkstance == "offensive"
+        # if Spell[9005].active? || targets.length < 2
+        #   fput "kill"
+        # else
+        #   fput "mstrike"
+        # end
+
         rt = checkrt
         sleep(rt - 1) if rt > 2
+
+        fresh_room = false
       elsif targets.length == 0
         fput "stance def" until checkstance == "defensive"
       end
 
+        if checkcastrt == 0
+          fput "stance def" if checkstance != "defensive"
+        else
+          fput "stance def" if checkstance != "guarded"
+        end
       sleep 0.25
     end
   end
 end
 
-AzAttack.main(target_set)
+KasparBandits.main(target_set)

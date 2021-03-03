@@ -5,7 +5,7 @@ end
 
 module Ewave
   @DOWNSTREAM_HOOK_NAME = "ewave_downstream_hook"
-  @FRIENDS = ['Azanoth', 'Kasparaitis']
+  @FRIENDS = ['Azanoth', 'Abbyrose']
   @grouplist = []
 
   def self.populate_group()
@@ -74,7 +74,7 @@ module Ewave
           fput 'stance def' if checkstance != 'defensive'
           put 'sym mana'
         #   if checkmana > 450
-        #     fput 'send 15 kasparaitis'
+        #     fput 'send 15 Abbyrose'
         #   end
           fresh_room = false
         end

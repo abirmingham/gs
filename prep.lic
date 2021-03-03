@@ -2,7 +2,7 @@ put 'stance def'
 put 'gird'
 Script.start('standgroup')
 
-if Char.name == 'Kasparaitis'
+if Char.name == 'Abbyrose'
   Script.start('isigns')
   Script.start('tonis')
 else
@@ -12,8 +12,9 @@ end
 if Char.name == 'Aranthius'
   Script.start('Aranthius-bandits')
   Script.start('rapid')
-elsif Char.name == 'Kasparaitis'
-  Script.start('Kasparaitis-bandits')
+  Spell[506].cast
+elsif Char.name == 'Abbyrose'
+  Script.start('Abbyrose-bandits')
 elsif Char.name == 'Azanoth'
   fput "inv enh on"
   fput "cman dervish"

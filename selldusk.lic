@@ -1,5 +1,5 @@
 LEADER = 'Azanoth'
-FOLLOWERS = ['Aranthius', 'Kasparaitis']
+FOLLOWERS = ['Aranthius', 'Abbyrose']
 INSIDE_DR = 26905
 TEAM_ARENA_ENTRANCE = 26387
 MAX_SELL_PRICE = 1500000
@@ -7,6 +7,16 @@ MAX_SELL_PRICE = 1500000
 ['foreach', 'sellunder', 'tdusk'].each { |script| raise "Requires #{script}.lic" unless Script.exists? script }
 
 Script.kill('tdusk') if Script.running? 'tdusk'
+
+def turn_off_enh()
+    result = ''
+    loop {
+        result = dothistimeout "inv enh off", 2, /You already are not accepting|You are no longer accepting the benefits/
+        return if result
+    }
+end
+
+turn_off_enh if Char.name == 'Azanoth'
 
 if Char.name == LEADER
     fput 'disband'

@@ -1,13 +1,13 @@
 Room[28814].title = ["[Kraken's Fall Bank]"]
 Room[28870].title = ["[Kraken's Fall Bank, Teller]"]
-PEOPLE = ['Kasparaitis', 'Azanoth', 'Aranthius']
+PEOPLE = ['Abbyrose', 'Azanoth', 'Aranthius']
 
 raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/
 
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28813, 29260]
-scripts_to_kill = ["tonis", "isigns", "symbolz", "ewave", "standgroup", "rapid", "1030", "Aranthius-bandits", "Kasparaitis-bandits", "Azanoth-bandits", "sloot", "looploot"]
+scripts_to_kill = ["tonis", "isigns", "symbolz", "ewave", "standgroup", "rapid", "1030", "Aranthius-bandits", "Abbyrose-bandits", "Azanoth-bandits", "sloot", "looploot"]
 leader = "Azanoth"
 
 def turn_off_enh()
@@ -87,7 +87,7 @@ if Char.name == 'Azanoth'
     fput 'armor support aranthius'
 elsif Char.name == 'Aranthius'
     Script.run("waggle", "azanoth")
-    Script.run("waggle", "kasparaitis")
+    Script.run("waggle", "Abbyrose")
     Spell[911].cast() if Spell[911].affordable?
 end
 
