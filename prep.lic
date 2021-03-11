@@ -12,11 +12,19 @@ end
 if Char.name == 'Aranthius'
   Script.start('Aranthius-bandits')
   Script.start('rapid')
-  Spell[506].cast
+  # Spell[506].cast
 elsif Char.name == 'Abbyrose'
   Script.start('Abbyrose-bandits')
 elsif Char.name == 'Azanoth'
   fput "inv enh on"
   fput "cman dervish"
   Script.start('Azanoth-bandits')
+  Script.start('Azanoth-506')
+  waitrt?
+  # if !Spell[506].active?
+  #   fput 'rub my anklet'
+  #   put 'rub my wristlet'
+  # end
+  sleep 1
+  waitcastrt?
 end

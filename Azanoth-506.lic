@@ -1,0 +1,8 @@
+loop {
+    if Spell[506].timeleft * 60 < 5
+        waitrt?
+        Spell[506].cast
+        waitcastrt?
+    end
+    sleep 0.5
+}

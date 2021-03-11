@@ -7,7 +7,10 @@ raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28813, 29260]
-scripts_to_kill = ["tonis", "isigns", "symbolz", "ewave", "standgroup", "rapid", "1030", "Aranthius-bandits", "Abbyrose-bandits", "Azanoth-bandits", "sloot", "looploot"]
+scripts_to_kill = [
+  "tonis", "isigns", "symbolz", "ewave", "standgroup",
+  "rapid", "1030", "Aranthius-bandits", "Abbyrose-bandits",
+  "Azanoth-bandits", "Azanoth-506", "sloot", "looploot"]
 leader = "Azanoth"
 
 def turn_off_enh()
@@ -57,14 +60,12 @@ Script.run("go2", "advguild")
 npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
 raise "Failed to find npc" if npc.nil?
 fput "ask ##{npc.id} about bounty"
-Script.run("swapbounty") if Char.name == leader
 
-if Char.name == 'Aranthius'
-    Script.run("go2", "gemshop")
-    fput "rem pack"
-    fput "sell pack"
-    fput "wear pack"
-end
+fput 'store all'
+Script.run("go2", "gemshop")
+fput "rem pack"
+fput "sell pack"
+fput "wear pack"
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 
@@ -83,8 +84,9 @@ if Char.name != leader
 end
 
 if Char.name == 'Azanoth'
-    fput 'armor support kaspar'
+    fput 'armor support Abbyrose'
     fput 'armor support aranthius'
+    Script.run('Azanoth-refill506')
 elsif Char.name == 'Aranthius'
     Script.run("waggle", "azanoth")
     Script.run("waggle", "Abbyrose")

@@ -63,17 +63,34 @@ module AzAttack
         fput "stand" until standing?
         fput "stance off" until checkstance == "offensive"
         fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-        if Spell[9005].active? || targets.length < 2
-          if checkstamina >= 15
-            put "cman mblow ##{targets[0].id}"
-            put "cman mblow ##{targets[1].id}" if targets.length > 1
-          else
-            put "kill"
-          end
+        # if !Spell[506].active?
+        #   fput 'rub my anklet'
+        #   put 'rub my wristlet'
+        # end
+        if Spell[506].active?
+          put 'qstrike -5 ambush'
         else
-          put "mstrike ##{targets[0].id}"
-          put "mstrike ##{targets[1].id}" if targets.length > 1
+          echo "NO 506!!!!!"
+          sleep 1
         end
+        # if Spell[506].active?
+        #   put 'qstrike -5 ambush'
+        # else
+        #   put 'ambush'
+        # end
+
+        # if Spell[9005].active? || targets.length < 2
+        #   if checkstamina >= 15
+        #     put "cman mblow ##{targets[0].id}"
+        #     put "cman mblow ##{targets[1].id}" if targets.length > 1
+        #   else
+        #     put "kill"
+        #   end
+        # else
+        #   put "mstrike ##{targets[0].id}"
+        #   put "mstrike ##{targets[1].id}" if targets.length > 1
+        # end
+
         rt = checkrt
         sleep(rt - 1) if rt > 2
       elsif targets.length == 0

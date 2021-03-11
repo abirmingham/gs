@@ -1,12 +1,33 @@
 waitrt?
 fput "store all"
+fput "stow all"
 fput "open my sack"
-fput "get my ether from my sack"
-4.times do
-    result = dothistimeout "raise my ether", 3, /Cast Roundtime|grows ice cold/
-    break if result =~ /grows ice cold/
+
+# fput "get my ether from my sack"
+# 4.times do
+#     result = dothistimeout "raise my ether", 3, /Cast Roundtime|grows ice cold/
+#     break if result =~ /grows ice cold/
+#     waitcastrt?
+# end
+# fput "put my ether in my sack"
+
+def take_a_beat()
+    sleep 1
     waitcastrt?
 end
-fput "put my ether in my sack"
+
+Script.run("foreach", "n=ether in my sack; get item from my sack; raise item; put item in my sack")
+take_a_beat
+
+Script.run("foreach", "name=green leaf symbol in my sack; get item from my sack; raise item; put item in my sack")
+take_a_beat
+
+Script.run("foreach", "name=heroic knight clasp in my sack; get item from my sack; raise item; put item in my sack")
+take_a_beat
+
+Script.run("foreach", "name=shiny gold coin pin in worn; rub item")
+take_a_beat
+
 fput "close my sack"
+fput "stow all"
 fput "gird"
