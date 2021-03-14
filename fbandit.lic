@@ -84,6 +84,7 @@ if Char.name != leader
 end
 
 if Char.name == 'Azanoth'
+    fput 'armor support'
     fput 'armor support Abbyrose'
     fput 'armor support aranthius'
     Script.run('Azanoth-refill506')
