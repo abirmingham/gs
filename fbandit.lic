@@ -11,7 +11,6 @@ scripts_to_kill = [
   "tonis", "isigns", "symbolz", "ewave", "standgroup",
   "rapid", "1030", "Aranthius-bandits", "Abbyrose-bandits",
   "Azanoth-bandits", "Azanoth-506", "sloot", "looploot"]
-leader = "Azanoth"
 
 def turn_off_enh()
     result = ''
@@ -23,7 +22,7 @@ end
 
 def join_healer()
   fput "join etherium" if GameObj.pcs.any? { |pc| pc.noun == 'Etherium' }
-  fput "join pinipin" if GameObj.pcs.any? { |pc| pc.noun == 'pinipin' }
+  fput "join pinipin" if GameObj.pcs.any? { |pc| pc.noun == 'Pinipin' }
 end
 
 scripts_to_kill.each { |s| Script.kill(s) }
@@ -47,7 +46,6 @@ Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confi
 npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
 raise "Failed to find npc" if npc.nil?
 fput "ask ##{npc.id} about bounty"
-put "salute"
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 if checkmind == "saturated"
@@ -81,7 +79,6 @@ wait_while { Script.running? "go2" }
 Script.run('waggle')
 join_healer if Spell[9003].active?
 Script.run("getbounty")
-
 join_healer
 
 if Char.name == 'Azanoth'

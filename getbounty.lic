@@ -28,9 +28,3 @@ end
 
 kill_script "swapbounty" if running? "swapbounty"
 Script.run("swapbounty")
-
-start_time = Time.now.to_f
-if Char.name != leader
-  wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } or start_time < Time.now.to_f - 10 }
-  fput "join #{leader}"
-end

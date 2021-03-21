@@ -1,0 +1,33 @@
+taskfinish = [420, 1957, 28978]
+taskfinish_match = /sentry|guard|sergeant/
+rest = [1844, 28813, 29260]
+bounty_regex = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+
+target_location = script.vars[1..-1].join(' ')
+
+throw 'no arg' if !script.vars[1]
+
+echo "Already done" if bounty? =~ bounty_regex && $1 == target_location
+
+until bounty? =~ bounty_regex && $1 == target_location do
+    echo target_location
+    echo bounty? =~ bounty_regex
+    echo $0
+    echo $1
+    Script.run("go2", "advguild")
+    npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
+    raise "Failed to find npc" if npc.nil?
+    fput "ask ##{npc.id} about rem"
+    fput "ask ##{npc.id} about rem"
+    if Spell[9003].active?
+        fput "ask ##{npc.id} about exped"
+    else
+        fput "ask ##{npc.id} about bounty"
+    end
+
+    Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confirm")
+    npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
+    fput "ask ##{npc.id} about bounty"
+end
+
+Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")

@@ -1,0 +1,39 @@
+NOUN = script.vars[1]
+SORRY_MSG = 'Sorry, you may only type ahead 1 command.'
+WHERE_MSG = 'Where are you trying to go?'
+CLOSED_MSG = 'The dimly lit tunnel appears to be closed.'
+
+starttime = Time.now #
+total_iterations = 0 #
+
+lasttime = nil
+loop {
+    put 'go tunnel'
+    put "buy #{NOUN}"
+    if lasttime
+        sleep_time = (Time.now - lasttime) / 2.0
+        # echo sleep_time
+        sleep sleep_time
+    end
+    lasttime = Time.now
+
+    put 'go tunnel'
+    put "buy #{NOUN}"
+
+    responses = 0
+    while line = get
+        if line =~ /^Obvious/
+            echo "Done!"
+            now = Time.now #
+            echo "Total Iterations: #{total_iterations}" #
+            echo "Total Time: #{now - starttime}" #
+            echo "Average #{(now - starttime) / total_iterations}" #
+            exit
+        end
+        if line == SORRY_MSG || line == WHERE_MSG || line == CLOSED_MSG
+            total_iterations += 1 #
+            responses += 1
+        end
+        break if responses >= 2
+    end
+}
