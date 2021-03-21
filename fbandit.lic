@@ -21,6 +21,11 @@ def turn_off_enh()
     }
 end
 
+def join_healer()
+  fput "join etherium" if GameObj.pcs.any? { |pc| pc.noun == 'Etherium' }
+  fput "join pinipin" if GameObj.pcs.any? { |pc| pc.noun == 'pinipin' }
+end
+
 scripts_to_kill.each { |s| Script.kill(s) }
 waitrt?
 fput "stance def" if stance != "defensive"
@@ -46,8 +51,7 @@ put "salute"
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 if checkmind == "saturated"
-  fput "join etherium" if GameObj.pcs.any? { |pc| pc.noun == 'Etherium' }
-  fput "join pinipin" if GameObj.pcs.any? { |pc| pc.noun == 'pinipin' }
+  join_healer
   echo "Mind is saturated - waiting before turning in bounty"
   # turn_off_enh() if Char.name == 'Azanoth'
   Script.run('waggle')
@@ -75,6 +79,7 @@ wait_while { Script.running? "go2" }
 
 # turn_off_enh() if Char.name == 'Azanoth'
 Script.run('waggle')
+join_healer if Spell[9003].active?
 Script.run("getbounty")
 
 if Char.name != leader
