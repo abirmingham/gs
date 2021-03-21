@@ -9,7 +9,7 @@ BANDIT_SCRIPT = 'Abbyrose-bandits'
 loop {
     unless checkdead
         stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /stun/i }
-        if (checkstunned || stunnedfriend) && checkmana > 100
+        if (checkstunned || stunnedfriend) && checkmana.to_i > 100
             pause_script BANDIT_SCRIPT
             waitcastrt?
             fput 'shout 1040'

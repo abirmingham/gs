@@ -1,0 +1,6 @@
+before_dying {
+    fput "set nomark on"
+}
+
+fput "set nomark off"
+sleep 60

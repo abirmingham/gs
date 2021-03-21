@@ -14,6 +14,7 @@ if Char.name == 'Aranthius'
   Script.start('rapid')
   # Spell[506].cast
 elsif Char.name == 'Abbyrose'
+  Script.start('Abbyrose-unstun') unless Script.running? 'Abbyrose-unstun'
   Script.start('Abbyrose-bandits')
 elsif Char.name == 'Azanoth'
   # fput "inv enh on"
