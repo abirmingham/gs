@@ -47,6 +47,7 @@ put "salute"
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 if checkmind == "saturated"
   fput "join etherium" if GameObj.pcs.any? { |pc| pc.noun == 'Etherium' }
+  fput "join pinipin" if GameObj.pcs.any? { |pc| pc.noun == 'pinipin' }
   echo "Mind is saturated - waiting before turning in bounty"
   # turn_off_enh() if Char.name == 'Azanoth'
   Script.run('waggle')
