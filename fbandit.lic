@@ -82,12 +82,7 @@ Script.run('waggle')
 join_healer if Spell[9003].active?
 Script.run("getbounty")
 
-if Char.name != leader
-  sleep 2
-  start_time = Time.now.to_f
-  wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } or start_time < Time.now.to_f - 60 }
-  fput "join #{leader}"
-end
+join_healer
 
 if Char.name == 'Azanoth'
     fput 'armor support'

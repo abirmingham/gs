@@ -1,0 +1,3 @@
+10.times {
+    _respond "<pushStream id=\"announcements\" ifClosedStyle=\"watching\"/>____________________________<popStream/>\n"
+}
