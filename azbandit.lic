@@ -39,6 +39,7 @@ module AzBandit
   @deniers = {}
   @last_progress_update = nil
   @step2_ways = {}
+  @start_time = Time.now.to_f
 
   def self.main()
     # Setup
@@ -394,6 +395,7 @@ module AzBandit
       }
       Script.start("fbandit")
     end
+    echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
     exit
   end
 
