@@ -1,7 +1,7 @@
 loop {
     if Spell[506].timeleft * 60 < 5
         waitrt?
-        Spell[506].cast
+        fput 'rub my relic'
         waitcastrt?
     end
     sleep 0.5

@@ -48,7 +48,7 @@ Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 if checkmind == "saturated"
   fput "join etherium" if GameObj.pcs.any? { |pc| pc.noun == 'Etherium' }
   echo "Mind is saturated - waiting before turning in bounty"
-  turn_off_enh() if Char.name == 'Azanoth'
+  # turn_off_enh() if Char.name == 'Azanoth'
   Script.run('waggle')
   while checkmind == "saturated"
     fput "exp" if Time.now.to_f.round(0) % 60 == 0
@@ -72,7 +72,7 @@ Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 Script.run("bankdrop")
 wait_while { Script.running? "go2" }
 
-turn_off_enh() if Char.name == 'Azanoth'
+# turn_off_enh() if Char.name == 'Azanoth'
 Script.run('waggle')
 Script.run("getbounty")
 
@@ -87,7 +87,7 @@ if Char.name == 'Azanoth'
     fput 'armor support'
     fput 'armor support Abbyrose'
     fput 'armor support aranthius'
-    Script.run('Azanoth-refill506')
+    # Script.run('Azanoth-refill506')
 elsif Char.name == 'Aranthius'
     Script.run("waggle", "azanoth")
     Script.run("waggle", "Abbyrose")

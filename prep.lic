@@ -16,7 +16,7 @@ if Char.name == 'Aranthius'
 elsif Char.name == 'Abbyrose'
   Script.start('Abbyrose-bandits')
 elsif Char.name == 'Azanoth'
-  fput "inv enh on"
+  # fput "inv enh on"
   fput "cman dervish"
   Script.start('Azanoth-bandits')
   Script.start('Azanoth-506')

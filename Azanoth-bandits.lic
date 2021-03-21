@@ -68,7 +68,7 @@ module AzAttack
         #   put 'rub my wristlet'
         # end
         if Spell[506].active?
-          put 'qstrike -5 ambush'
+          put 'ambush'
         else
           echo "NO 506!!!!!"
           sleep 1

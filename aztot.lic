@@ -37,7 +37,7 @@ before_dying {
 }
 # END
 
-fput 'inv enh on' if Char.name == 'Azanoth'
+# fput 'inv enh on' if Char.name == 'Azanoth'
 if Char.name == 'Aranthius' || Char.name == 'Azanoth'
     start_script 'symbolz'
     start_script 'volnrestore'

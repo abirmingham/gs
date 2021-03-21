@@ -1,3 +1,5 @@
+hide_me
+
 GROUP = {
     'Azanoth' => 1,
     'Aranthius' => 1
@@ -6,18 +8,15 @@ BANDIT_SCRIPT = 'Abbyrose-bandits'
 
 loop {
     unless checkdead
-        acting = false
         stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /stun/i }
-        if (checkstunned || stunnedfriend) && mana > 100
-            acting = true
+        if (checkstunned || stunnedfriend) && checkmana > 100
             pause_script BANDIT_SCRIPT
             waitcastrt?
             fput 'shout 1040'
             waitcastrt?
             put 'look'
         else
-            unpause_script BANDIT_SCRIPT if acting
-            acting = false
+            unpause_script BANDIT_SCRIPT if Script.paused? BANDIT_SCRIPT
         end
     end
     sleep 0.25

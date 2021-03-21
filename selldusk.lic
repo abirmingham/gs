@@ -16,7 +16,7 @@ def turn_off_enh()
     }
 end
 
-turn_off_enh if Char.name == 'Azanoth'
+# turn_off_enh if Char.name == 'Azanoth'
 
 if Char.name == LEADER
     fput 'disband'
