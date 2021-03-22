@@ -59,7 +59,7 @@ module KasparBandits
       if checkmana >= 60
         if targets.length > 1
           fput "incant 1030 open"
-        else
+        elsif targets.length > 0
           fput "incant 1030"
         end
       end
