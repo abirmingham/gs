@@ -55,7 +55,14 @@ module KasparBandits
         target_set[npc.noun] && npc.status != 'dead' && !npc.name.start_with?("animated ")
       }
 
-      Spell[1030].cast() if targets.length > 0 && checkmana >= 60
+      waitcastrt?
+      if checkmana >= 60
+        if targets.length > 1
+          fput "incant 1030 open"
+        else
+          fput "incant 1030"
+        end
+      end
 
       if checkcastrt == 0
         fput "stance def" if checkstance != "defensive"
