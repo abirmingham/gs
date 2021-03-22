@@ -1,7 +1,9 @@
+CONTAINER = "case"
+
 waitrt?
 fput "store all"
 fput "stow all"
-fput "open my sack"
+fput "open my #{CONTAINER}"
 
 # fput "get my ether from my sack"
 # 4.times do
@@ -16,18 +18,18 @@ def take_a_beat()
     waitcastrt?
 end
 
-Script.run("foreach", "n=ether in my sack; get item from my sack; raise item; put item in my sack")
+Script.run("foreach", "n=ether in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}")
 take_a_beat
 
-Script.run("foreach", "name=green leaf symbol in my sack; get item from my sack; raise item; put item in my sack")
+Script.run("foreach", "name=green leaf symbol in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}")
 take_a_beat
 
-Script.run("foreach", "name=heroic knight clasp in my sack; get item from my sack; raise item; put item in my sack")
+Script.run("foreach", "name=heroic knight clasp in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}")
 take_a_beat
 
 Script.run("foreach", "name=shiny gold coin pin in worn; rub item")
 take_a_beat
 
-fput "close my sack"
+fput "close my #{CONTAINER}"
 fput "stow all"
 fput "gird"
