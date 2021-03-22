@@ -3,9 +3,17 @@ taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28813, 29260]
 bounty_regex = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
 
+valid_targets = {
+    "Widowmaker's Road" => 1,
+    "Black Weald" => 1,
+    "Cliffwalk" => 1,
+    "Muddy Village" => 1
+}
+
 target_location = script.vars[1..-1].join(' ')
 
-throw 'no arg' if !script.vars[1]
+throw 'no arg' unless target_location
+throw 'invalid location' unless valid_targets[target_location]
 
 echo "Already done" if bounty? =~ bounty_regex && $1 == target_location
 
