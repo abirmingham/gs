@@ -1,39 +1,23 @@
-CHARS = ["Abbyrose", "Azanoth", "Aranthius"]
 bounty_pattern = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?.*\s(?:near|between|under|\.).* (\d+) (?:more )?of them/
 
-def populate_group()
-  grouplist = []
-  groupset = {}
-  fput "group"
+def read_lines_bounty_counts(bounty_pattern)
+  echo "Waiting on bounty counts"
   while line = get
-    if line =~ /(\w+) is (?:following you|the leader of your group|also a member of your group)/i && !$1.nil?
-      grouplist.push($1)
-      groupset[$1] = true
-    elsif line =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
-      return [grouplist, groupset]
+    if line =~ /(You .*whisper.*Status - .*to your group)|(player .*whispers to the group, "Status -)/
+      echo "Reading line: #{line}"
+      bounty_counts = {}
+      if line =~ /"Status - (.*)"/
+        $1.gsub('finished', '0').split(/\. ?/).each { |t|
+          tokens = t.split(' ')
+          bounty_counts[tokens[0]] = tokens[1].to_i
+        }
+        return bounty_counts
+      else
+        echo "ERROR: Failed to find counts: #{line}"
+        return nil
+      end
     end
   end
-end
-
-def find_bounty_counts(grouplist, bounty_pattern)
-  bounty_counts = {}
-  bounty_tuples = [
-    [Char.name, bounty?],
-    *grouplist.map { |n| [n, LNet.get_data(n, "bounty")] },
-  ]
-  bounty_tuples.each { |t|
-    if t[1] =~ /^You succeeded in your task/
-      bounty_counts[t[0]] = 0
-    elsif t[1] =~ bounty_pattern
-      bounty_counts[t[0]] = $1.to_i
-    else
-      echo t[0]
-      echo t[1]
-      echo "Unable to find bandit bounty on you or group! Exiting"
-      exit
-    end
-  }
-  return bounty_counts
 end
 
 # prep
@@ -49,16 +33,8 @@ else
   Script.start('symbolz')
 end
 
-
-grouplist, groupset = populate_group()
-
-while bounty_counts = find_bounty_counts(grouplist, bounty_pattern)
-  break if bounty_counts[Char.name] >= bounty_counts.values.max - 2
-  echo "Waiting for other character to get more credit"
-  sleep 3
-end
-
 # start attacking
+echo "Starting attack sequence"
 if Char.name == 'Aranthius'
   Script.start('rapid')  
 elsif Char.name == 'Azanoth'
@@ -67,6 +43,16 @@ elsif Char.name == 'Azanoth'
   fput "war shout"
   waitrt?
   Script.start('Azanoth-506')
+end
+
+while bounty_counts = read_lines_bounty_counts(bounty_pattern)
+  if bounty_counts.nil?
+    echo "ERROR: Bounty counts nil!!!"
+    break
+  end
+  other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name }
+  break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 2
+  echo "Waiting for other character to get more credit"
 end
 
 Script.start("#{Char.name}-bandits")

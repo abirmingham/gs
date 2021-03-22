@@ -419,7 +419,7 @@ module AzBandit
 
     if give_progress_update
       msg = status_by_char.map { |char, status| "#{char} #{status}" }.join(". ")
-      fput "whisper ooc group #{msg}"
+      fput "whisper ooc group Status - #{msg}"
       @last_progress_update = Time.now.to_f
     end
 

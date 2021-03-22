@@ -46,13 +46,14 @@ module AzAttack
     while true
       fput "stand" until standing?
       # throttle char
-      if checkbounty =~ /^You (have )?succeeded/
-        sleep 1 # revisit this?
-      end
-      if room_id != Room.current.id
-        sleep 1 # revisit this?
-        room_id = Room.current.id
-      end
+      sleep 2 if checkbounty =~ /^You (have )?succeeded/
+      #   sleep 2 # revisit this?
+      # end
+      # if room_id != Room.current.id
+      #   sleep 1 # revisit this?
+      #   room_id = Room.current.id
+      #   next
+      # end
       fput "stand" until standing?
 
       targets = GameObj.npcs.select do |npc|
@@ -65,22 +66,12 @@ module AzAttack
         fput "stand" until standing?
         fput "stance off" until checkstance == "offensive"
         fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-        # if !Spell[506].active?
-        #   fput 'rub my anklet'
-        #   put 'rub my wristlet'
-        # end
         if Spell[506].active?
           put 'ambush'
         else
           echo "NO 506!!!!!"
           sleep 1
         end
-        # if Spell[506].active?
-        #   put 'qstrike -5 ambush'
-        # else
-        #   put 'ambush'
-        # end
-
         # if Spell[9005].active? || targets.length < 2
         #   if checkstamina >= 15
         #     put "cman mblow ##{targets[0].id}"

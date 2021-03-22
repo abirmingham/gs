@@ -10,7 +10,9 @@ rest = [1844, 28813, 29260]
 scripts_to_kill = [
   "tonis", "isigns", "symbolz", "ewave", "standgroup",
   "rapid", "1030", "Aranthius-bandits", "Abbyrose-bandits",
-  "Azanoth-bandits", "Azanoth-506", "sloot", "looploot"]
+  "Azanoth-bandits", "Azanoth-506", "sloot", "looploot",
+  "prep"
+]
 
 def turn_off_enh()
     result = ''
