@@ -45,12 +45,9 @@ module AzBandit
     # Setup
     fput "flag GroupMovement on"
 
-    echo "a"
     @grouplist, @groupset = populate_group()
     echo "Group is #{@grouplist.length ? @grouplist.join(", ") : "empty"}"
-    echo "b"
     @bounty_text, @bounty_location = find_bounty_text()
-    echo "c"
     exit_azbandit() if all_done?()
     echo "Bounty location is #{@bounty_location}"
 
@@ -116,11 +113,8 @@ module AzBandit
       step2(prev_room_id)
       waitrt?
       stragglers.each { |char| fput "hold #{char}" }
-      echo "a"
       stragglers = identify_stragglers()
-      echo "b"
       return if stragglers.length == 0 # we got em
-      echo "c"
       sleep 3
     end
   end

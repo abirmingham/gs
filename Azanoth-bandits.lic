@@ -45,13 +45,15 @@ module AzAttack
     room_id = Room.current.id
 
     while true
+      fput "stand" until standing?
       # throttle char
       if checkbounty =~ /^You (have )?succeeded/
-        sleep 2
+        sleep 1 # revisit this?
       elsif room_id != Room.current.id
-        sleep 1
+        sleep 1 # revisit this?
         room_id = Room.current.id
       end
+      fput "stand" until standing?
 
       targets = GameObj.npcs.select do |npc|
         target_set[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")

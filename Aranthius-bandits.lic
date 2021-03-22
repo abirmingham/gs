@@ -39,48 +39,42 @@ module Ewave
     populate_group()
     before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
     echo @grouplist
-
     echo "Starting"
-    last_room = Room.current.id
-    fresh_room = true
 
     while true
-      if last_room != Room.current.id
-        populate_group()
-        fresh_room = true
-        last_room = Room.current.id
+      fput "stand" until standing?
+      waitcastrt?
+      if ((checkpcs - @grouplist).count > 0)
+        sleep 0.25
+        next
       end
-      find_target = proc { GameObj.npcs.any? { |npc|
+      sleep 1 if checkbounty =~ /^You (have )?succeeded/ # revisit this?
+      fput "stand" until standing?
+
+      any_ewave_target = GameObj.npcs.any? { |npc|
         target_set[npc.noun] && !npc.status && !npc.name.start_with?("animated ")
-      } }
+      }
 
-      sleep 1 if checkbounty =~ /^You (have )?succeeded/
-      need_wave = ((checkpcs - @grouplist).count == 0) && find_target.call()
-      if need_wave
-        # ewave
-        Spell[410].cast()
-        GameObj.pcs.each do |s|
-          if s.status =~ /lying|prone/
-            fput "pull #{s.noun}"
-          end
-        end
+      Spell[410].cast() if any_ewave_target && checkmana >= 20
+      waitcastrt?
 
-        # 518
-        if fresh_room
-          waitcastrt?
-          fput "stance off" if checkstance != "offensive"
-          fput "incant 518 air" if checkmana >= 18
-          waitcastrt?
-          fput 'stance def' if checkstance != 'defensive'
-          put 'sym mana'
-        #   if checkmana > 450
-        #     fput 'send 15 Abbyrose'
-        #   end
-          fresh_room = false
-        end
+      targets = GameObj.npcs.select { |npc|
+        target_set[npc.noun] && npc.status != 'dead' && !npc.name.start_with?("animated ")
+      }
+
+      if targets.length >= 2 && checkmana >= 40
+        put 'stance off'
+        fput "incant 518 air"
+      elsif targets.length >= 1 && checkmana >= 20
+        put 'stance off'
+        fput "incant 903"
       end
-    #   Script.run('sloot') if ((checkpcs - @grouplist).count == 0) && has_loot?
 
+      if checkcastrt == 0
+        fput "stance def" if checkstance != "defensive"
+      elsif checkstance != "guarded"
+        fput "stance def"
+      end
       sleep 0.25
     end
   end

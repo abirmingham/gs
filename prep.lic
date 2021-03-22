@@ -1,3 +1,42 @@
+CHARS = ["Abbyrose", "Azanoth", "Aranthius"]
+bounty_pattern = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?.*\s(?:near|between|under|\.).* (\d+) (?:more )?of them/
+
+def populate_group()
+  grouplist = []
+  groupset = {}
+  fput "group"
+  while line = get
+    if line =~ /(\w+) is (?:following you|the leader of your group|also a member of your group)/i && !$1.nil?
+      grouplist.push($1)
+      groupset[$1] = true
+    elsif line =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
+      return [grouplist, groupset]
+    end
+  end
+end
+
+def find_bounty_counts(grouplist, bounty_pattern)
+  bounty_counts = {}
+  bounty_tuples = [
+    [Char.name, bounty?],
+    *grouplist.map { |n| [n, LNet.get_data(n, "bounty")] },
+  ]
+  bounty_tuples.each { |t|
+    if t[1] =~ /^You succeeded in your task/
+      bounty_counts[t[0]] = 0
+    elsif t[1] =~ bounty_pattern
+      bounty_counts[t[0]] = $1.to_i
+    else
+      echo t[0]
+      echo t[1]
+      echo "Unable to find bandit bounty on you or group! Exiting"
+      exit
+    end
+  }
+  return bounty_counts
+end
+
+# prep
 put 'stance def'
 put 'gird'
 Script.start('standgroup')
@@ -5,26 +44,28 @@ Script.start('standgroup')
 if Char.name == 'Abbyrose'
   Script.start('isigns')
   Script.start('tonis')
+  Script.start('Abbyrose-unstun') unless Script.running? 'Abbyrose-unstun'
 else
   Script.start('symbolz')
 end
 
-if Char.name == 'Abbyrose'
-  Script.start('Abbyrose-unstun') unless Script.running? 'Abbyrose-unstun'
+
+grouplist, groupset = populate_group()
+
+while bounty_counts = find_bounty_counts(grouplist, bounty_pattern)
+  break if bounty_counts[Char.name] >= bounty_counts.values.max - 2
+  echo "Waiting for other character to get more credit"
+  sleep 3
 end
 
+# start attacking
 if Char.name == 'Aranthius'
-  Script.start('Aranthius-bandits')
-  Script.start('rapid')
-
-elsif Char.name == 'Abbyrose'
-  Script.start('Abbyrose-unstun') unless Script.running? 'Abbyrose-unstun'
-  Script.start('Abbyrose-bandits')
-
+  Script.start('rapid')  
 elsif Char.name == 'Azanoth'
   fput "cman dervish"
-  Script.start('Azanoth-bandits')
   Script.start('Azanoth-506')
 end
+
+Script.start("#{Char.name}-bandits")
 
 waitrt?

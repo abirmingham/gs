@@ -39,47 +39,28 @@ module KasparBandits
     populate_group()
     before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
     echo @grouplist
-    
     echo "Starting"
-    fresh_room = true
-    room_id = Room.current.id
 
     while true
-      if checkbounty =~ /^You (have )?succeeded/
-        sleep 2
-      elsif room_id != Room.current.id
-        # sleep 1
-        room_id = Room.current.id
+      fput "stand" until standing?
+      waitcastrt?
+      if ((checkpcs - @grouplist).count > 0)
+        sleep 0.25
+        next
       end
+      sleep 1 if checkbounty =~ /^You (have )?succeeded/ # revisit this?
+      fput "stand" until standing?
 
-      targets = GameObj.npcs.select do |npc|
-        target_set[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")
-      end
-      need_attack = ((checkpcs - @grouplist).count == 0) && targets.length > 0
+      targets = GameObj.npcs.select { |npc|
+        target_set[npc.noun] && npc.status != 'dead' && !npc.name.start_with?("animated ")
+      }
 
-      if need_attack and !running? "sloot"
-        fput "stand" until standing?
-        Spell[1030].cast()
-        # fput "stance off" until checkstance == "offensive"
-        # if Spell[9005].active? || targets.length < 2
-        #   fput "kill"
-        # else
-        #   fput "mstrike"
-        # end
-
-        rt = checkrt
-        sleep(rt - 1) if rt > 2
-
-        fresh_room = false
-      end
+      Spell[1030].cast() if targets.length > 0 && checkmana >= 60
 
       if checkcastrt == 0
         fput "stance def" if checkstance != "defensive"
-      else
-        if checkstance != "guarded"
-          fput "stance def" 
-          sleep 1
-        end
+      elsif checkstance != "guarded"
+        fput "stance def"
       end
       sleep 0.25
     end
