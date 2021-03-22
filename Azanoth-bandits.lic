@@ -41,7 +41,6 @@ module AzAttack
     echo @grouplist
     
     echo "Starting"
-    fput "war shout"
     room_id = Room.current.id
 
     while true

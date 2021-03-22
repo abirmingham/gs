@@ -63,6 +63,9 @@ if Char.name == 'Aranthius'
   Script.start('rapid')  
 elsif Char.name == 'Azanoth'
   fput "cman dervish"
+  waitrt?
+  fput "war shout"
+  waitrt?
   Script.start('Azanoth-506')
 end
 
