@@ -22,7 +22,7 @@ module AzBandit
   @ROOM_PAUSE_TIME = 0.1
   @PROGRESS_UPDATE_INTERVAL = 0.1
   @DEBUG = false
-  @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+  @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
   @BANDIT_SET = Set["thief", "rogue", "bandit", "mugger", "outlaw", "highwayman", "marauder", "brigand", "thug", "robber"]
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
   @NOT_ON_TASK = "not on task"

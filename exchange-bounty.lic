@@ -1,24 +1,31 @@
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28813, 29260]
-bounty_regex = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+bounty_regex = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
 
 valid_targets = {
-    "Widowmaker's Road" => 1,
-    "Black Weald" => 1,
-    "Cliffwalk" => 1,
-    "Muddy Village" => 1
+    "wr" => "Widowmaker's Road",
+    "bw" => "Black Weald",
+    "cw" => "Cliffwalk",
+    "mv" => "Muddy Village"
 }
 
-target_location = script.vars[1..-1].join(' ')
+targets = {}
 
-throw 'no arg' unless target_location
-throw 'invalid location' unless valid_targets[target_location]
+raise "No input" unless script.vars[1..-1].length > 0
 
-echo "Already done" if bounty? =~ bounty_regex && $1 == target_location
+script.vars[1..-1].each { |v|
+    raise "Invalid target: #{v}" unless valid_targets[v]
+    targets[valid_targets[v]] = true
+}
 
-until bounty? =~ bounty_regex && $1 == target_location do
-    echo target_location
+def acceptable_bounty?(targets, location)
+    !!targets[location]
+end
+
+raise "Already done" if bounty? =~ bounty_regex && acceptable_bounty?(targets, $1)
+
+until bounty? =~ bounty_regex && acceptable_bounty?(targets, $1) do
     echo bounty? =~ bounty_regex
     echo $0
     echo $1
