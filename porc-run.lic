@@ -1,0 +1,2 @@
+start_script 'porc'
+pause 5 # give it time to assume porc the first time
