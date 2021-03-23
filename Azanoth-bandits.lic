@@ -87,7 +87,7 @@ module AzAttack
         rt = checkrt
         sleep(rt - 1) if rt > 2
       elsif targets.length == 0
-        fput "stance def" until checkstance == "defensive"
+        fput "stance def" if checkstance != "defensive"
       end
 
       sleep 0.25
