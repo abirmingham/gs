@@ -7,6 +7,10 @@ GROUP = {
 BANDIT_SCRIPT = 'Abbyrose-bandits'
 
 loop {
+    while line = get?
+        put 'look' if line =~ /stunned!/
+    end
+        
     unless checkdead
         stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /stun/i }
         if (checkstunned || stunnedfriend) && checkmana.to_i > 100

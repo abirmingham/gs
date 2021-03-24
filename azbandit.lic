@@ -19,7 +19,8 @@ It will work better if followers allow the leader to see their bounty via lichne
 
 module AzBandit
   # static variables
-  @ROOM_PAUSE_TIME = 0.1
+  @ROOM_PAUSE_TIME = 0.01
+  @WAIT_BANDIT_HIDING_TIME = 2
   @PROGRESS_UPDATE_INTERVAL = 0.1
   @DEBUG = false
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
@@ -299,11 +300,11 @@ module AzBandit
       echo "Scanning #{line}" if @DEBUG
 
       if line.nil?
-        sleep 0.1
+        sleep @ROOM_PAUSE_TIME / 10
       elsif line =~ /^You hear a voice shout, "Die/ or line =~ /^Suddenly, a tiny shard of jet black crystal/ or line =~ /^A faint silvery light flickers from the shadows/ or line =~ /^A plain wooden arrow flies out of the shadows/
         start_time = Time.now.to_f
         echo "Waiting for targets to appear" if @DEBUG
-        wait_until { has_targets?() or start_time < Time.now.to_f - 2 }
+        wait_until { has_targets?() or start_time < Time.now.to_f - @WAIT_BANDIT_HIDING_TIME }
         echo "Done waiting" if @DEBUG
         return
       end
