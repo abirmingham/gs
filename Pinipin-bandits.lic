@@ -1,11 +1,11 @@
 target_set = {}
-'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'.split(' ').each do |noun|
+"rogue marauder thief mugger bandit brigand robber outlaw thug highwayman".split(" ").each do |noun|
   target_set[noun] = true
 end
 
-module AranthiusBandits
-  @DOWNSTREAM_HOOK_NAME = "AranthiusBandits"
-  @FRIENDS = ['Azanoth', 'Abbyrose', 'Pinipin']
+module PinipinBandits
+  @DOWNSTREAM_HOOK_NAME = "PinipinBandits"
+  @FRIENDS = ["Aranthius", "Azanoth", "Pinipin"]
   @grouplist = []
 
   def self.populate_group()
@@ -51,23 +51,15 @@ module AranthiusBandits
       sleep 1 if checkbounty =~ /^You (have )?succeeded/ # revisit this?
       fput "stand" until standing?
 
-      any_ewave_target = GameObj.npcs.any? { |npc|
-        target_set[npc.noun] && !npc.status && !npc.name.start_with?("animated ")
-      }
-
-      Spell[410].cast() if any_ewave_target && checkmana >= 20
-      waitcastrt?
-
       targets = GameObj.npcs.select { |npc|
         target_set[npc.noun] && npc.status != 'dead' && !npc.name.start_with?("animated ")
       }
 
-      if targets.length >= 2 && checkmana >= 40
-        put 'stance off'
-        fput "incant 518 air"
-      elsif targets.length >= 1 && checkmana >= 20
-        put 'stance off'
-        fput "incant 903"
+      waitcastrt?
+      if checkmana >= 60
+        if targets.length >= 1
+          fput "incant 1106"
+        end
       end
 
       if checkcastrt == 0
@@ -78,15 +70,6 @@ module AranthiusBandits
       sleep 0.25
     end
   end
-
-  def self.has_loot?()
-    return GameObj.npcs.any? { |n| n.status == "dead" } ||
-             GameObj.loot.any? { |n|
-               n.type == "skin" ||
-               n.type == "gem" ||
-               n.name =~ /coins/
-             }
-  end
 end
 
-AranthiusBandits.main(target_set)
+PinipinBandits.main(target_set)

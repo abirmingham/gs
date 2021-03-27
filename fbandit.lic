@@ -1,8 +1,8 @@
 Room[28814].title = ["[Kraken's Fall Bank]"]
 Room[28870].title = ["[Kraken's Fall Bank, Teller]"]
-PEOPLE = ['Abbyrose', 'Azanoth', 'Aranthius']
+PEOPLE = ['Abbyrose', 'Azanoth', 'Aranthius', 'Pinipin']
 
-raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/
+raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Pinipin'
 
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
@@ -23,31 +23,31 @@ def turn_off_enh()
 end
 
 def join_healer()
-  fput "join etherium" if GameObj.pcs.any? { |pc| pc.noun == 'Etherium' }
-  fput "join pinipin" if GameObj.pcs.any? { |pc| pc.noun == 'Pinipin' }
+  sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == 'Pinipin' }
+  fput "join Pinipin"
 end
 
 scripts_to_kill.each { |s| Script.kill(s) }
 waitrt?
 fput "stance def" if stance != "defensive"
-echo 'a' #x
-echo group? #x
-echo rest #x
-echo Room.current.id #x
+
 if !rest.include? Room.current.id
-  echo 'b' #x
+  # If I'm not at rest, trigger fbandit on friends
+  # (if I am at rest, they probably already did it and
+  #  this is being triggered manually)
   PEOPLE.each { |char|
     fput "whisper ooc #{char} do:start-script:fbandit" if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
   }
   fput "disband"
   put "group open"
 end
-echo 'c' #x
 
-Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confirm")
-npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
-raise "Failed to find npc" if npc.nil?
-fput "ask ##{npc.id} about bounty"
+if bounty? =~ /^You (have )?succeeded/
+  Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confirm")
+  npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
+  raise "Failed to find npc" if npc.nil?
+  fput "ask ##{npc.id} about bounty"
+end
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
 if checkmind == "saturated"
@@ -61,19 +61,23 @@ if checkmind == "saturated"
   end
   wait_while { checkmind == "saturated" }
 end
-Script.run("go2", "advguild")
-npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
-raise "Failed to find npc" if npc.nil?
-fput "ask ##{npc.id} about bounty"
 
-fput 'store all'
-Script.run("go2", "gemshop")
-fput "rem pack"
-fput "sell pack"
-fput "wear pack"
+if bounty? =~ /^You (have )?succeeded/
+  Script.run("go2", "advguild")
+  npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
+  raise "Failed to find npc" if npc.nil?
+  fput "ask ##{npc.id} about bounty"
+end
+
+if Char.name != 'Pinipin'
+  fput 'store all'
+  Script.run("go2", "gemshop")
+  fput "rem pack"
+  fput "sell pack"
+  fput "wear pack"
+end
 
 Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
-
 Script.run("bankdrop")
 wait_while { Script.running? "go2" }
 
@@ -86,11 +90,11 @@ join_healer
 if Char.name == 'Azanoth'
     fput 'armor support'
     fput 'armor support Abbyrose'
-    fput 'armor support aranthius'
-    # Script.run('Azanoth-refill506')
+    fput 'armor support Aranthius'
 elsif Char.name == 'Aranthius'
-    Script.run("waggle", "azanoth")
+    Script.run("waggle", "Azanoth")
     Script.run("waggle", "Abbyrose")
+    Script.run("waggle", "Pinipin")
     Spell[911].cast() if Spell[911].affordable?
 end
 

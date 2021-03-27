@@ -30,7 +30,7 @@ module AzBandit
   @DIFFERENT_LOCATION_TASK = "different location bounty"
   @FINISHED = "finished"
   @DENIED = "denied"
-  @MY_CHARS_HACK = ["Abbyrose", "Azanoth", "Aranthius"]
+  @MY_CHARS_HACK = ["Abbyrose", "Azanoth", "Aranthius", 'Pinipin']
 
   # dynamic variables
   @grouplist = []
@@ -380,10 +380,12 @@ module AzBandit
   end
 
   def self.exit_azbandit()
-    if @MY_CHARS_HACK.any? { |char| char == Char.name } && @grouplist.all? { |char| @MY_CHARS_HACK.include? char }
+    pcs = GameObj.pcs.collect { |pc| pc.noun }
+    if @MY_CHARS_HACK.any? { |char| char == Char.name } && @grouplist.all? { |char| pcs.include? char }
+      # I'm in MY_CHARS_HACK and my entire group is here
       throw "Not done" unless bounty? =~ /^You succeeded in your task/
       @MY_CHARS_HACK.each { |char|
-        if char != Char.name
+        if char != Char.name && char != 'Pinipin' && pcs.include?(char)
           result = whisper_cmd(char, "verify-done")
           throw "Failed to verify" unless result
         end

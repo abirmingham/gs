@@ -25,11 +25,17 @@ put 'stance def'
 put 'gird'
 Script.start('standgroup')
 
-if Char.name == 'Abbyrose'
+if Char.name == 'Pinipin'
+  Script.start('isigns')
+  Spell[211].cast()
+  Spell[215].cast()
+elsif Char.name == 'Abbyrose'
   Script.start('isigns')
   Script.start('tonis')
   Script.start('Abbyrose-unstun') unless Script.running? 'Abbyrose-unstun'
-else
+elsif Char.name == 'Aranthius'
+  Script.start('symbolz')
+elsif Char.name == 'Azanoth'
   Script.start('symbolz')
 end
 
@@ -50,7 +56,7 @@ while bounty_counts = read_lines_bounty_counts(bounty_pattern)
     echo "ERROR: Bounty counts nil!!!"
     break
   end
-  other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name }
+  other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name || k == 'Pinipin' }
   break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 2
   echo "Waiting for other character to get more credit"
 end

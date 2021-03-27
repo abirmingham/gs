@@ -1,5 +1,3 @@
-leader = "Azanoth"
-
 if bounty? != "You are not currently assigned a task."
   echo "Already have bounty"
   exit

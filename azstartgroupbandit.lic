@@ -1,4 +1,4 @@
-GROUP = ["Azanoth", "Abbyrose", "Aranthius"]
+GROUP = ["Azanoth", "Abbyrose", "Aranthius", 'Pinipin']
 
 def whisper_cmd(char, cmd, arg = "")
   fput "whisper ooc #{char} do:#{cmd}:#{arg}"

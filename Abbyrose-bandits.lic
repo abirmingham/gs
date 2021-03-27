@@ -3,9 +3,9 @@ target_set = {}
   target_set[noun] = true
 end
 
-module KasparBandits
-  @DOWNSTREAM_HOOK_NAME = "KasparBandits"
-  @FRIENDS = ["Aranthius", "Azanoth"]
+module AbbyroseBandits
+  @DOWNSTREAM_HOOK_NAME = "AbbyroseBandits"
+  @FRIENDS = ["Aranthius", "Azanoth", "Pinipin"]
   @grouplist = []
 
   def self.populate_group()
@@ -74,4 +74,4 @@ module KasparBandits
   end
 end
 
-KasparBandits.main(target_set)
+AbbyroseBandits.main(target_set)
