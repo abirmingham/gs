@@ -90,7 +90,6 @@ module AzBandit
         prev_room = Room.current.id
         prev_room_poaching = is_poaching?()
         step_to_next_room(next_room)
-        retrieve_stragglers(prev_room)
       end
       echo "rooms_list #{rooms_list}" if @DEBUG
       rooms_list = rooms_list.reject { |id| id == Room.current.id }
@@ -101,29 +100,6 @@ module AzBandit
         exit_azbandit() if all_done?()
       end
     }
-  end
-
-  def self.retrieve_stragglers(prev_room_id)
-    stragglers = identify_stragglers()
-    while stragglers.length > 0
-      put "look"
-      sleep 0.5 # try again in a second - this thing is fiddly
-      put "look"
-      sleep 0.5
-      echo "whisper ooc group GameObj.pcs thinks we left behind #{stragglers.join(" and ")}"
-      step2(prev_room_id)
-      waitrt?
-      stragglers.each { |char| fput "hold #{char}" }
-      stragglers = identify_stragglers()
-      return if stragglers.length == 0 # we got em
-      sleep 3
-    end
-  end
-
-  def self.identify_stragglers()
-    pc_set = {}
-    GameObj.pcs.each { |pc| pc_set[pc.noun] = true }
-    return @grouplist.select { |name| !pc_set[name] }
   end
 
   def self.move_to_bounty_area(first_room_id)
@@ -249,13 +225,6 @@ module AzBandit
   def self.step_to_next_room(room_id)
     return if should_wait_for_actions?()
 
-    # Pull group members to feet
-    GameObj.pcs.each { |pc|
-      if @groupset[pc.noun] and pc.status =~ /kneeling|sitting|lying down|prone/
-        put "pull #{pc.noun}"
-      end
-    }
-
     # Step towards next room
     start_room_id = Room.current.id
     while Room.current.id == start_room_id
@@ -265,27 +234,43 @@ module AzBandit
         end
       }
       step2(room_id)
-      sleep 0.01
-      return if should_wait_for_actions?()
+      sleep 0.1
+    end
+
+    # Wait until we've received all of the room text
+    buffer = []
+    followers_line = nil
+    while true
+      while line = get?
+        if @grouplist.length > 0 && line =~ /followed\./
+          followers_line = line
+          break
+        elsif @grouplist.length == 0 && (line =~ /^Obvious paths: / || line =~ /^Obvious exits: /)
+          break
+        end
+      end
+      next if line.nil?
+      until (line = get?).nil?
+        buffer.push(line) # drain get? buffer into local buffer
+      end
+      break
+    end
+    throw 'Failed to find followers' if @grouplist.length > 0 && followers_line.nil?
+
+    # retrieve stragglers
+    if @grouplist.length > 0
+      followers = {}
+      followers_line.split(/,\s+|\s+and\s+| followed\..*/).each { |pc|
+        followers[pc] = true
+      }
+      if followers.keys.length == 0
+        throw 'Failed to find followers from followers_line'
+      end
+      stragglers = @grouplist.reject { |pc| followers[pc] }
+      retrieve_stragglers(start_room_id) if stragglers.length > 0
     end
 
     return if is_poaching?()
-
-    prebuffer = []
-    until (line = get?).nil?
-      prebuffer.push(line) # drain get? buffer into local buffer
-    end
-
-    # remove entries in local buffer up until most recent room entry
-    buffer = []
-    i = prebuffer.length - 1
-    while i >= 0
-      line = prebuffer[i]
-      break if line =~ /^Obvious paths: / or line =~ /^Obvious exits: /
-      buffer.push line
-      i -= 1
-    end
-    buffer = buffer.reverse
 
     # Wait @ROOM_PAUSE_TIME to see if bandits are hiding
     start_time = Time.now.to_f
@@ -346,6 +331,30 @@ module AzBandit
     else
       throw "error in the map database"
     end
+  end
+
+  def self.retrieve_stragglers(prev_room_id)
+    echo "Retrieving stragglers"
+    stragglers = identify_stragglers()
+    while stragglers.length > 0
+      put "look"
+      sleep 0.5 # try again in a second - this thing is fiddly
+      put "look"
+      sleep 0.5
+      echo "whisper ooc group GameObj.pcs thinks we left behind #{stragglers.join(" and ")}"
+      step2(prev_room_id)
+      waitrt?
+      stragglers.each { |char| fput "hold #{char}" }
+      stragglers = identify_stragglers()
+      return if stragglers.length == 0 # we got em
+      sleep 3
+    end
+  end
+
+  def self.identify_stragglers()
+    pc_set = {}
+    GameObj.pcs.each { |pc| pc_set[pc.noun] = true }
+    return @grouplist.select { |name| !pc_set[name] }
   end
 
   def self.wait_for_battle()
@@ -409,6 +418,7 @@ module AzBandit
       end
 
       status_by_char[name] = status
+      next if name == 'Pinipin'
       counts.push(
         [@DENIED, @NOT_ON_TASK, @DIFFERENT_LOCATION_TASK, @FINISHED].include?(status) ?
           0 : status

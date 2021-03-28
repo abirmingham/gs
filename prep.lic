@@ -29,10 +29,11 @@ if Char.name == 'Pinipin'
   Script.start('isigns')
   Spell[211].cast()
   Spell[215].cast()
+  Script.start('Pinipin-surge')
 elsif Char.name == 'Abbyrose'
   Script.start('isigns')
   Script.start('tonis')
-  Script.start('Abbyrose-unstun') unless Script.running? 'Abbyrose-unstun'
+  Script.start('Abbyrose-unstun')
 elsif Char.name == 'Aranthius'
   Script.start('symbolz')
 elsif Char.name == 'Azanoth'
@@ -57,7 +58,7 @@ while bounty_counts = read_lines_bounty_counts(bounty_pattern)
     break
   end
   other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name || k == 'Pinipin' }
-  break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 2
+  break if bounty_counts[Char.name] >= other_bounty_counts.values.max + (Char.name == 'Pinipin' ? 2 : -2)
   echo "Waiting for other character to get more credit"
 end
 

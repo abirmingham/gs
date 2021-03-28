@@ -5,7 +5,7 @@ end
 
 module AzAttack
   @DOWNSTREAM_HOOK_NAME = "azattack_downstream_hook"
-  @FRIENDS = ["Aranthius", "Abbyrose"]
+  @FRIENDS = ["Aranthius", "Abbyrose", "Pinipin"]
   @grouplist = []
 
   def self.populate_group()

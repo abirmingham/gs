@@ -2,19 +2,23 @@ hide_me
 
 GROUP = {
     'Azanoth' => 1,
-    'Aranthius' => 1
+    'Aranthius' => 1,
     'Pinipin' => 1
 }
 BANDIT_SCRIPT = 'Abbyrose-bandits'
 
 loop {
+    trapped = false
     while line = get?
+        if line =~ /^Suddenly/ && line !~ /^Suddenly, a tiny shard/
+            trapped = true
+        end
         put 'look' if line =~ /stunned!/
     end
         
     unless checkdead
         stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /stun/i }
-        if (checkstunned || stunnedfriend) && checkmana.to_i > 100
+        if (checkstunned || stunnedfriend || trapped) && checkmana.to_i > 100
             pause_script BANDIT_SCRIPT
             waitcastrt?
             fput 'shout 1040'
