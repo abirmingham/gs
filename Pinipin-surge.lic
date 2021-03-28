@@ -1,0 +1,34 @@
+hide_me
+
+GROUP = {
+    'Azanoth' => 1,
+    'Aranthius' => 1,
+    'Pinipin' => 1
+}
+BANDIT_SCRIPT = 'Pinipin-bandits'
+
+loop {
+    trapped = false
+    while line = get?
+        if line =~ /^Suddenly/ && line !~ /^Suddenly, a tiny shard/
+            trapped = true
+        end
+        put 'look' if line =~ /stunned!/
+    end
+        
+    unless checkdead
+        stunnedfriend = GameObj.pcs.find { |x|
+            echo [x.noun, x.status] if trapped # debug
+            GROUP[x.noun] && x.status
+        }
+        # stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /lying|stun/i }
+        if (stunnedfriend || trapped) && checkmana.to_i > 80
+            pause_script BANDIT_SCRIPT
+            Spell[1107].cast(stunnedfriend)
+            put 'look'
+        else
+            unpause_script BANDIT_SCRIPT if Script.paused? BANDIT_SCRIPT
+        end
+    end
+    sleep 0.25
+}

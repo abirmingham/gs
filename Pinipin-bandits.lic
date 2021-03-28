@@ -52,7 +52,7 @@ module PinipinBandits
       end
       if last_room_id != Room.current.id
         last_room_id = Room.current.id
-        sleep 0.5
+        sleep 0.1
       end
       sleep 3 if checkbounty =~ /^You (have )?succeeded/
       fput "stand" until standing?

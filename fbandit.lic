@@ -21,6 +21,7 @@ def turn_off_enh()
 end
 
 def join_healer()
+  return if Char.name == 'Pinipin'
   sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == 'Pinipin' }
   fput "join Pinipin"
 end
@@ -48,7 +49,8 @@ if bounty? =~ /^You (have )?succeeded/
   fput "ask ##{npc.id} about bounty"
 end
 
-Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
+rest_room = Room.current.find_nearest(rest)
+Script.run("go2", rest_room.to_s + " --disable-confirm")
 if checkmind == "saturated"
   join_healer
   echo "Mind is saturated - waiting before turning in bounty"
@@ -76,16 +78,15 @@ if Char.name != 'Pinipin'
   fput "wear pack"
 end
 
-Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
-Script.run("bankdrop")
-wait_while { Script.running? "go2" }
+# bank
+Script.run "go2", "bank --disable-confirm"
+fput "deposit all"
+fput "check balance"
 
-# turn_off_enh() if Char.name == 'Azanoth'
+# rest
+Script.run("go2", rest_room.to_s + " --disable-confirm")
 join_healer
 Script.run('waggle')
-join_healer if Spell[9003].active?
-Script.run("getbounty")
-join_healer
 
 if Char.name == 'Azanoth'
     fput 'armor support'
@@ -98,6 +99,16 @@ elsif Char.name == 'Aranthius'
     Spell[911].cast() if Spell[911].affordable?
 end
 
+join_healer if Spell[9003].active?
+if Char.name == 'Pinipin'
+  # always turn in - need to reset count so that spawns
+  # keep coming and so that she has a chance to ever finish
+  # (which won't happen if her number is low)
+  Script.run("swapbounty")
+end
+Script.run("getbounty")
+join_healer
+
 sleep 5
-Script.run("go2", Room.current.find_nearest(rest).to_s + " --disable-confirm")
+Script.run("go2", rest_room.to_s + " --disable-confirm")
 do_client ';magic'
