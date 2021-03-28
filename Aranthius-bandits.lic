@@ -48,7 +48,6 @@ module AranthiusBandits
         sleep 0.25
         next
       end
-      sleep 1 if checkbounty =~ /^You (have )?succeeded/ # revisit this?
       fput "stand" until standing?
 
       any_ewave_target = GameObj.npcs.any? { |npc|
@@ -57,6 +56,7 @@ module AranthiusBandits
 
       Spell[410].cast() if any_ewave_target && checkmana >= 20
       waitcastrt?
+      sleep 1 if checkbounty =~ /^You (have )?succeeded/
 
       targets = GameObj.npcs.select { |npc|
         target_set[npc.noun] && npc.status != 'dead' && !npc.name.start_with?("animated ")

@@ -48,7 +48,7 @@ module AbbyroseBandits
         sleep 0.25
         next
       end
-      sleep 1 if checkbounty =~ /^You (have )?succeeded/ # revisit this?
+      sleep 3 if checkbounty =~ /^You (have )?succeeded/
       fput "stand" until standing?
 
       targets = GameObj.npcs.select { |npc|
@@ -58,7 +58,8 @@ module AbbyroseBandits
       waitcastrt?
       if checkmana >= 60
         if targets.length > 1
-          fput "incant 1030 open"
+          fput "incant 1030"
+          # fput "incant 1030 open"
         elsif targets.length > 0
           fput "incant 1030"
         end
