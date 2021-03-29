@@ -287,6 +287,7 @@ module AzBandit
       if line.nil?
         sleep @ROOM_PAUSE_TIME / 10
       elsif line =~ /^You hear a voice shout, "Die/ or line =~ /^Suddenly, a tiny shard of jet black crystal/ or line =~ /^A faint silvery light flickers from the shadows/ or line =~ /^A plain wooden arrow flies out of the shadows/
+        Spell[410].cast() if Char.prof == "Wizard" && Spell[410].known?
         start_time = Time.now.to_f
         echo "Waiting for targets to appear" if @DEBUG
         wait_until { has_targets?() or start_time < Time.now.to_f - @WAIT_BANDIT_HIDING_TIME }
@@ -402,6 +403,7 @@ module AzBandit
       Script.start("fbandit")
     end
     echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
+    fput "whisper ooc group #{(Time.now.to_f - @start_time).to_i}"
     exit
   end
 

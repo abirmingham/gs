@@ -4,7 +4,6 @@ def read_lines_bounty_counts(bounty_pattern)
   echo "Waiting on bounty counts"
   while line = get
     if line =~ /(You .*whisper.*Status - .*to your group)|(player .*whispers to the group, "Status -)/
-      echo "Reading line: #{line}"
       bounty_counts = {}
       if line =~ /"Status - (.*)"/
         $1.gsub('finished', '0').split(/\. ?/).each { |t|
@@ -59,7 +58,7 @@ while bounty_counts = read_lines_bounty_counts(bounty_pattern)
     break
   end
   other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name || k == 'Pinipin' }
-  break if bounty_counts[Char.name] >= other_bounty_counts.values.max + (Char.name == 'Pinipin' ? 1 : -2)
+  break if bounty_counts[Char.name] >= other_bounty_counts.values.max + (Char.name == 'Pinipin' ? 0 : -2)
   echo "Waiting for other character to get more credit"
 end
 

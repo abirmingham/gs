@@ -107,8 +107,7 @@ if Char.name == 'Pinipin'
   Script.run("swapbounty")
 end
 Script.run("getbounty")
+Script.run("go2", rest_room.to_s + " --disable-confirm") unless Room.current.id == rest_room
 join_healer
 
-sleep 5
-Script.run("go2", rest_room.to_s + " --disable-confirm")
 do_client ';magic'

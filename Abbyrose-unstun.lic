@@ -10,8 +10,9 @@ BANDIT_SCRIPT = 'Abbyrose-bandits'
 loop {
     trapped = false
     while line = get?
-        if line =~ /^Suddenly/ && line !~ /^Suddenly, a tiny shard/
+        if line =~ /^Suddenly, a carefully concealed net/ || line =~ /^Suddenly, you hear a soft/ || line =~ /a well concealed shallow pit of spikes!/
             trapped = true
+            put 'look'
         end
         put 'look' if line =~ /stunned!/
     end
