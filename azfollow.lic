@@ -30,7 +30,7 @@ def run_cmd(leader, cmd, arg)
     return
   elsif cmd == "verify-done"
     result = bounty? =~ /^You succeeded in your task/ ? "DONE" : "FAIL"
-    fput "whisper ooc #{leader} #{result}"
+    dothistimeout "whisper ooc #{leader} #{result}", 30, /You quietly whisper to /
     return
   elsif cmd == "wait_groupbounty_cooldown_unless" && arg.length > 0
     wait_while { Spell[9056].active? } unless bounty? =~ bounty_re && $1 == arg
@@ -65,8 +65,7 @@ def fix_vocal_cords()
   fput "stow left" if !(checkleft && checkright).nil?
   dothisloop "get my aloeas stem", 3, /You carefully remove some|You remove/
   dothisloop "eat my aloeas stem", 3, /You take a bite of/
-  dothisloop "put my stem in my kit", 3, /I could not find what|You carefully add/
-  dothisloop "put my stem in my pack", 3, /I could not find what|You put some/ if checkright == "stem" or checkleft == "stem"
+  dothisloop "stow my stem", 3, /I could not find what|You put some/ if checkright == "stem" or checkleft == "stem"
   wait_while_indisposed()
   fput "gird"
   sleep 10
@@ -76,8 +75,8 @@ end
 loop {
   while line = get?
     # (OOC) Azanoth's player whispers, "Do:exchange-unless:Muddy Village."
-    if line =~ /slices deep into your vocal cords!$/
-      fix_vocal_cords()
+    if line =~ /slices deep into your vocal cords!$/ && Char.name == 'Pinipin'
+      fix_vocal_cords() # I'm not sure if we need this for other chars now that we have an empath
     elsif line =~ /^\(OOC\) (#{LEADERS})'s player whispers, "Do:(.*?)\.?"/
       tokens = $2.split ":"
       run_cmd $1, tokens[0].downcase, tokens[1]
