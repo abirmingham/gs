@@ -27,8 +27,8 @@ take_a_beat
 Script.run("foreach", "name=heroic knight clasp in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}")
 take_a_beat
 
-Script.run("foreach", "name=shiny gold coin pin in worn; rub item")
-take_a_beat
+# Script.run("foreach", "name=shiny gold coin pin in worn; rub item")
+# take_a_beat
 
 fput "close my #{CONTAINER}"
 fput "stow all"

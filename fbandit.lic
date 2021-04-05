@@ -1,5 +1,3 @@
-Room[28814].title = ["[Kraken's Fall Bank]"]
-Room[28870].title = ["[Kraken's Fall Bank, Teller]"]
 PEOPLE = ['Abbyrose', 'Azanoth', 'Aranthius', 'Pinipin']
 
 raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Pinipin'
@@ -107,7 +105,7 @@ if Char.name == 'Pinipin'
   Script.run("swapbounty")
 end
 Script.run("getbounty")
-Script.run("go2", rest_room.to_s + " --disable-confirm") unless Room.current.id == rest_room
+Script.run("go2", rest_room.to_s + " --disable-confirm")
 join_healer
 
 do_client ';magic'

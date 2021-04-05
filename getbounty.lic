@@ -1,3 +1,5 @@
+rest = [1844, 28813, 29260]
+
 if bounty? != "You are not currently assigned a task."
   echo "Already have bounty"
   exit
@@ -26,3 +28,6 @@ end
 
 kill_script "swapbounty" if running? "swapbounty"
 Script.run("swapbounty")
+
+rest_room = Room.current.find_nearest(rest)
+Script.run("go2", rest_room.to_s + " --disable-confirm")
