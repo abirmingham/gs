@@ -41,7 +41,8 @@ if !rest.include? Room.current.id
 end
 
 if bounty? =~ /^You (have )?succeeded/
-  Script.run("go2", Room.current.find_nearest(taskfinish).to_s + " --disable-confirm")
+  target_room = Room.current.find_nearest(taskfinish)
+  Script.run("go2", target_room.to_s + " --disable-confirm") until Room.current.id == target_room
   npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
   raise "Failed to find npc" if npc.nil?
   fput "ask ##{npc.id} about bounty"
@@ -105,7 +106,7 @@ if Char.name == 'Pinipin'
   Script.run("swapbounty")
 end
 Script.run("getbounty")
-Script.run("go2", rest_room.to_s + " --disable-confirm")
+Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
 join_healer
 
 do_client ';magic'

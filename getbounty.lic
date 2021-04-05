@@ -30,4 +30,4 @@ kill_script "swapbounty" if running? "swapbounty"
 Script.run("swapbounty")
 
 rest_room = Room.current.find_nearest(rest)
-Script.run("go2", rest_room.to_s + " --disable-confirm")
+Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
