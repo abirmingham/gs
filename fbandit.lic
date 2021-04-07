@@ -103,7 +103,7 @@ if Char.name == 'Pinipin'
   # always turn in - need to reset count so that spawns
   # keep coming and so that she has a chance to ever finish
   # (which won't happen if her number is low)
-  Script.run("swapbounty")
+  Script.run("azswapbounty")
 end
 Script.run("getbounty")
 Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room

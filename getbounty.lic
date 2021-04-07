@@ -26,8 +26,8 @@ if Spell[9003].active? and bounty? == "You are not currently assigned a task."
   end
 end
 
-kill_script "swapbounty" if running? "swapbounty"
-Script.run("swapbounty")
+kill_script "azswapbounty" if running? "azswapbounty"
+Script.run("azswapbounty")
 
 rest_room = Room.current.find_nearest(rest)
 Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
