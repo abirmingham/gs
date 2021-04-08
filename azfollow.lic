@@ -1,5 +1,5 @@
 hide_me
-LEADERS = /Azanoth|Abbyrose|Aranthius|Pinipin/
+LEADERS = /Azanoth|Abbyrose|Aranthius|Gossan/
 
 def run_cmd(leader, cmd, arg)
   echo "run_cmd(#{cmd}, #{arg})"
@@ -75,7 +75,7 @@ end
 loop {
   while line = get?
     # (OOC) Azanoth's player whispers, "Do:exchange-unless:Muddy Village."
-    if line =~ /slices deep into your vocal cords!$/ && Char.name == 'Pinipin'
+    if line =~ /slices deep into your vocal cords!$/ && Char.name == 'Gossan'
       fix_vocal_cords() # I'm not sure if we need this for other chars now that we have an empath
     elsif line =~ /^\(OOC\) (#{LEADERS})'s player whispers, "Do:(.*?)\.?"/
       tokens = $2.split ":"

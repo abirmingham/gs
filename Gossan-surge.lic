@@ -1,9 +1,9 @@
 GROUP = {
     'Azanoth' => 1,
     'Aranthius' => 1,
-    'Pinipin' => 1
+    'Gossan' => 1
 }
-BANDIT_SCRIPT = 'Pinipin-bandits'
+BANDIT_SCRIPT = 'Gossan-bandits'
 
 loop {
     trapped_person = nil

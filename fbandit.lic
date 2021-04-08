@@ -1,6 +1,6 @@
-PEOPLE = ['Abbyrose', 'Azanoth', 'Aranthius', 'Pinipin']
+PEOPLE = ['Abbyrose', 'Azanoth', 'Aranthius', 'Gossan']
 
-raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Pinipin'
+raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Gossan'
 
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
@@ -19,9 +19,9 @@ def turn_off_enh()
 end
 
 def join_healer()
-  return if Char.name == 'Pinipin'
-  sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == 'Pinipin' }
-  fput "join Pinipin"
+  return if Char.name == 'Gossan'
+  sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == 'Gossan' }
+  fput "join Gossan"
 end
 
 Script.list.each { |s| Script.kill(s.name) if s.name.start_with? "#{Char.name}-" }
@@ -69,7 +69,7 @@ if bounty? =~ /^You (have )?succeeded/
   fput "ask ##{npc.id} about bounty"
 end
 
-if Char.name != 'Pinipin'
+if Char.name != 'Gossan'
   fput 'store all'
   Script.run("go2", "gemshop")
   fput "rem pack"
@@ -94,12 +94,12 @@ if Char.name == 'Azanoth'
 elsif Char.name == 'Aranthius'
     Script.run("waggle", "Azanoth")
     Script.run("waggle", "Abbyrose")
-    Script.run("waggle", "Pinipin")
+    Script.run("waggle", "Gossan")
     Spell[911].cast() if Spell[911].affordable?
 end
 
 join_healer if Spell[9003].active?
-if Char.name == 'Pinipin'
+if Char.name == 'Gossan'
   # always turn in - need to reset count so that spawns
   # keep coming and so that she has a chance to ever finish
   # (which won't happen if her number is low)

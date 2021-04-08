@@ -3,7 +3,7 @@ hide_me
 GROUP = {
     'Azanoth' => 1,
     'Aranthius' => 1,
-    'Pinipin' => 1
+    'Gossan' => 1
 }
 BANDIT_SCRIPT = 'Abbyrose-bandits'
 

@@ -29,7 +29,7 @@ module AzBandit
   @DIFFERENT_LOCATION_TASK = "different location bounty"
   @FINISHED = "finished"
   @DENIED = "denied"
-  @MY_CHARS_HACK = ["Abbyrose", "Azanoth", "Aranthius", 'Pinipin']
+  @MY_CHARS_HACK = ["Abbyrose", "Azanoth", "Aranthius", 'Gossan']
 
   # dynamic variables
   @grouplist = []
@@ -396,7 +396,7 @@ module AzBandit
       # I'm in MY_CHARS_HACK and my entire group is here
       throw "Not done" unless bounty? =~ /^You succeeded in your task/
       @MY_CHARS_HACK.each { |char|
-        if char != Char.name && char != 'Pinipin' && pcs.include?(char)
+        if char != Char.name && char != 'Gossan' && pcs.include?(char)
           result = whisper_cmd(char, "verify-done")
           throw "Failed to verify" unless result
         end
@@ -421,7 +421,7 @@ module AzBandit
       end
 
       status_by_char[name] = status
-      next if name == 'Pinipin'
+      next if name == 'Gossan'
       counts.push(
         [@DENIED, @NOT_ON_TASK, @DIFFERENT_LOCATION_TASK, @FINISHED].include?(status) ?
           0 : status

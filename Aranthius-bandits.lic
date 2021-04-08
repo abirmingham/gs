@@ -5,7 +5,7 @@ end
 
 module AranthiusBandits
   @DOWNSTREAM_HOOK_NAME = "AranthiusBandits"
-  @FRIENDS = ['Azanoth', 'Abbyrose', 'Pinipin']
+  @FRIENDS = ['Azanoth', 'Abbyrose', 'Gossan']
   @grouplist = []
 
   def self.populate_group()
