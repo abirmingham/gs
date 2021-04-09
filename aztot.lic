@@ -104,9 +104,9 @@ loop {
         # at entrance
 
         # BEGIN hacky char specific stuff
-        if GameObj.pcs.any? { |pc| pc.noun == 'Abbyrose' }
+        if GameObj.pcs.any? { |pc| pc.noun == 'Idios' }
             if Char.name == 'Azanoth' && (!Spell[1035].active? || (Spell[1035].active? && Spell[1035].timeleft.to_f * 60 < 20))
-                fput 'join abbyrose'
+                fput 'join Idios'
                 fput 'whisper ooc group 1035 please'
                 sleep 1
             end

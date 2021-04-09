@@ -1,4 +1,4 @@
-PEOPLE = ['Abbyrose', 'Azanoth', 'Aranthius', 'Gossan']
+PEOPLE = ['Idios', 'Azanoth', 'Aranthius', 'Gossan']
 
 raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Gossan'
 
@@ -89,11 +89,11 @@ Script.run('waggle')
 
 if Char.name == 'Azanoth'
     fput 'armor support'
-    fput 'armor support Abbyrose'
+    fput 'armor support Idios'
     fput 'armor support Aranthius'
 elsif Char.name == 'Aranthius'
     Script.run("waggle", "Azanoth")
-    Script.run("waggle", "Abbyrose")
+    Script.run("waggle", "Idios")
     Script.run("waggle", "Gossan")
     Spell[911].cast() if Spell[911].affordable?
 end

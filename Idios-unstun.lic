@@ -5,7 +5,7 @@ GROUP = {
     'Aranthius' => 1,
     'Gossan' => 1
 }
-BANDIT_SCRIPT = 'Abbyrose-bandits'
+BANDIT_SCRIPT = 'Idios-bandits'
 
 loop {
     trapped = false

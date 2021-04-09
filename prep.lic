@@ -30,10 +30,10 @@ if Char.name == 'Gossan'
   Spell[215].cast()
   Script.start('Gossan-surge')
   Script.start('shattered_empath')
-elsif Char.name == 'Abbyrose'
+elsif Char.name == 'Idios'
   Script.start('isigns')
   Script.start('tonis')
-  Script.start('Abbyrose-unstun')
+  Script.start('Idios-unstun')
 elsif Char.name == 'Aranthius'
   Script.start('symbolz')
 elsif Char.name == 'Azanoth'

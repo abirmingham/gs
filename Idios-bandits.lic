@@ -3,8 +3,8 @@ target_set = {}
   target_set[noun] = true
 end
 
-module AbbyroseBandits
-  @DOWNSTREAM_HOOK_NAME = "AbbyroseBandits"
+module IdiosBandits
+  @DOWNSTREAM_HOOK_NAME = "IdiosBandits"
   @FRIENDS = ["Aranthius", "Azanoth", "Gossan"]
   @grouplist = []
 
@@ -75,4 +75,4 @@ module AbbyroseBandits
   end
 end
 
-AbbyroseBandits.main(target_set)
+IdiosBandits.main(target_set)

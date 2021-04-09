@@ -7,7 +7,7 @@ loop {
         put 'incant 506'
     end
     if last_send < Time.now.to_i - 90
-        fput 'send 90 abbyrose' if GameObj.pcs.any? { |pc| pc.noun == 'Abbyrose' }
+        fput 'send 90 Idios' if GameObj.pcs.any? { |pc| pc.noun == 'Idios' }
         last_send = Time.now.to_i
     end
     sleep 0.1

@@ -1,5 +1,5 @@
 LEADER = 'Azanoth'
-FOLLOWERS = ['Aranthius', 'Abbyrose']
+FOLLOWERS = ['Aranthius', 'Idios']
 INSIDE_DR = 26905
 TEAM_ARENA_ENTRANCE = 26387
 MAX_SELL_PRICE = 1500000
