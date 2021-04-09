@@ -31,8 +31,8 @@ if Char.name == 'Gossan'
   Script.start('Gossan-surge')
   Script.start('shattered_empath')
 elsif Char.name == 'Idios'
-  Script.start('isigns')
-  Script.start('tonis')
+  Script.start('symbolz')
+  # Script.start('tonis') # enough mana? =/
   Script.start('Idios-unstun')
 elsif Char.name == 'Aranthius'
   Script.start('symbolz')

@@ -70,6 +70,8 @@ module IdiosBandits
       elsif checkstance != "guarded"
         fput "stance def"
       end
+        fput 'sym mana' if checkmana < 100 && !Spell[9048].active?
+      end
       sleep 0.25
     end
   end
