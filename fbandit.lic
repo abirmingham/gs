@@ -69,7 +69,7 @@ if bounty? =~ /^You (have )?succeeded/
   fput "ask ##{npc.id} about bounty"
 end
 
-if Char.name != 'Gossan'
+if Char.name == 'Aranthius'
   fput 'store all'
   Script.run("go2", "gemshop")
   fput "rem pack"
@@ -84,7 +84,6 @@ fput "check balance"
 
 # rest
 Script.run("go2", rest_room.to_s + " --disable-confirm")
-join_healer
 Script.run('waggle')
 
 if Char.name == 'Azanoth'
@@ -105,6 +104,7 @@ if Char.name == 'Gossan'
   # (which won't happen if her number is low)
   Script.run("azswapbounty")
 end
+Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
 Script.run("getbounty")
 Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
 join_healer

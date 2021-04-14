@@ -46,7 +46,7 @@ module AzAttack
     while true
       fput "stand" until standing?
       # throttle char
-      sleep 2 if checkbounty =~ /^You (have )?succeeded/
+      # sleep 2 if checkbounty =~ /^You (have )?succeeded/
       #   sleep 2 # revisit this?
       # end
       # if room_id != Room.current.id
