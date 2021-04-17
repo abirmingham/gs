@@ -30,6 +30,9 @@ if Char.name == 'Gossan'
   Spell[215].cast()
   Script.start('Gossan-surge')
   Script.start('shattered_empath')
+elsif Char.name == 'Helsfeld'
+  Script.start('isigils')
+  Script.start('Helsfeld-surge')
 elsif Char.name == 'Idios'
   Script.start('symbolz')
   # Script.start('tonis') # enough mana? =/
@@ -52,13 +55,21 @@ elsif Char.name == 'Azanoth'
   Script.start('Azanoth-506')
 end
 
+original_other_bounty_counts = nil
 while bounty_counts = read_lines_bounty_counts(bounty_pattern)
   if bounty_counts.nil?
     echo "ERROR: Bounty counts nil!!!"
     break
   end
-  other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name || k == 'Gossan' }
-  break if bounty_counts[Char.name] >= other_bounty_counts.values.max + (Char.name == 'Gossan' ? 0 : -2)
+  other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name || k == 'Gossan' || k == 'Helsfeld' }
+  if original_other_bounty_counts.nil?
+    original_other_bounty_counts = other_bounty_counts
+  end
+  if Char.name == 'Gossan' || Char.name == 'Helsfeld'
+    break if bounty_counts[Char.name] >= other_bounty_counts.values.max && other_bounty_counts.all? { |k, v| v < original_other_bounty_counts[k] }
+  else
+    break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 3
+  end
   echo "Waiting for other character to get more credit"
 end
 

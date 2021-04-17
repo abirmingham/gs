@@ -1,7 +1,7 @@
 args = script.vars[1..-1]
 GROUP = args.length > 0 ?
   [Char.name, *args.collect { |name| name.capitalize() }].uniq :
-  ["Azanoth", "Idios", "Aranthius", 'Gossan']
+  ["Azanoth", "Idios", "Aranthius", 'Gossan', 'Helsfeld']
 
 echo GROUP
 

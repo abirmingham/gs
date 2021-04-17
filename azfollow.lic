@@ -1,5 +1,5 @@
 hide_me
-LEADERS = /Azanoth|Idios|Aranthius|Gossan/
+LEADERS = /Azanoth|Idios|Aranthius|Gossan|Helsfeld/
 
 def run_cmd(leader, cmd, arg)
   echo "run_cmd(#{cmd}, #{arg})"

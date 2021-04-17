@@ -1,7 +1,8 @@
 GROUP = {
     'Azanoth' => 1,
     'Aranthius' => 1,
-    'Gossan' => 1
+    'Gossan' => 1,
+    'Helsfeld' => 1
 }
 BANDIT_SCRIPT = 'Gossan-bandits'
 

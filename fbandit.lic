@@ -1,13 +1,13 @@
-PEOPLE = ['Idios', 'Azanoth', 'Aranthius', 'Gossan']
+PEOPLE = ['Idios', 'Azanoth', 'Aranthius', 'Gossan', 'Helsfeld']
 
-raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Gossan'
+raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Gossan'  && Char.name != 'Helsfeld'
 
 taskfinish = [420, 1957, 28978]
 taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28813, 29260]
 scripts_to_kill = [
-  "tonis", "isigns", "symbolz", "standgroup",
-  "rapid", "sloot", "prep"
+  "tonis", "isigns", "symbolz", "isigils",
+  "standgroup", "rapid", "sloot", "prep"
 ]
 
 def turn_off_enh()
@@ -62,11 +62,25 @@ if checkmind == "saturated"
   wait_while { checkmind == "saturated" }
 end
 
+def get_exp()
+  put 'exp'
+  while line = get
+    if line =~ /Total Exp: ([\d,]*)/
+      return $1.gsub(',', '').to_i 
+    end
+  end
+end
+
 if bounty? =~ /^You (have )?succeeded/
   Script.run("go2", "advguild")
   npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
   raise "Failed to find npc" if npc.nil?
-  fput "ask ##{npc.id} about bounty"
+  put 'experience'
+  before_exp = get_exp()
+  dothistimeout "ask ##{npc.id} about bounty", 5, /You have earned/
+  after_exp = get_exp()
+  echo [before_exp, after_exp]
+  echo "Experience gained: #{after_exp - before_exp}"
 end
 
 if Char.name == 'Aranthius'
@@ -94,11 +108,12 @@ elsif Char.name == 'Aranthius'
     Script.run("waggle", "Azanoth")
     Script.run("waggle", "Idios")
     Script.run("waggle", "Gossan")
+    Script.run("waggle", "Helsfeld")
     Spell[911].cast() if Spell[911].affordable?
 end
 
 join_healer if Spell[9003].active?
-if Char.name == 'Gossan'
+if Char.name == 'Gossan' || Char.name == 'Helsfeld'
   # always turn in - need to reset count so that spawns
   # keep coming and so that she has a chance to ever finish
   # (which won't happen if her number is low)
