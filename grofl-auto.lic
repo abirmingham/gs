@@ -48,6 +48,7 @@ rofl_script.each { |script|
 
 SPIRIT = [27009, 27010, 27011, 27012]
 PLANAR = [27005, 27006, 27007, 27008]
+CHAOS = [26986, 26988, 26987, 26985]
 
 target = SPIRIT
 
