@@ -6,8 +6,13 @@
 
 loop {
     wait_until { checkmind == 'must rest' || checkmind == 'saturated' }
-    waitfor /( searches )|(Obvious)/
-    sleep 8
+    if Char.name == 'Azanoth'
+        10.times do
+            waitfor " searches an ethereal "
+        end
+    else
+        sleep 3
+    end
     waitrt?
     waitcastrt?
     fput "rub my q bro"

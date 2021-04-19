@@ -54,7 +54,7 @@ module RofL
   module Util
     def self.fast_multifput(*cmds)
       cmds.flatten.compact.each_with_index { |cmd, i|
-        if (i % 2 == 0)
+        if (i % 3 == 0)
           fput cmd
         else
           put cmd
