@@ -31,6 +31,9 @@
     trapdoor     get through a trapdoor by moving a boulder
     wicker       there's a tube in there that you can play
     wizard       I put on my robe and wizard hat
+    aldoran      use the healing stones to fix the sick person
+    gnomes       pick out the apotl or apotla for the bloodline
+    elves        place the correct stone in house shield
 
   Thanks:
     * Fyffil for the solutions to the Planar puzzles
@@ -51,18 +54,6 @@
 =end
 
 module RofL
-  module Util
-    def self.fast_multifput(*cmds)
-      cmds.flatten.compact.each_with_index { |cmd, i|
-        if (i % 3 == 0)
-          fput cmd
-        else
-          put cmd
-        end
-      }
-    end
-  end
-
   class Statue
     KNOWN_POSITIONS = [
       "left-rear corner",  "left-rear",  "centered behind",   "right-rear",  "right-rear corner",
@@ -255,7 +246,7 @@ module RofL
         echo
       else
         if solution = determine_solution(altar_text, bowl_text)
-          Util.fast_multifput *solution
+          multifput *solution
           fput "bow altar"
         else
           echo
@@ -521,6 +512,17 @@ module RofL
       "T   E   K   S   L   E   O   N"     => "skeleton",
       "A   I   L   N   V   E   L   N"     => "velnalin",
       "T   O   N   S   C   U   C   R   T" => "construct",
+      "R   A   C   E   T   U   N" => "centaur",
+      "S   O   U   L   M   I" => "moulis",
+      "K   L   A   N   I   M   Y" => "myklian",
+      "M   O   N   K   A   I   R" => "Kiramon",
+      "M   O   O   N   O   N   N   I" => "nonomino",
+      "L   I   M   E   R   N   G" => "gremlin",
+      "T   A   E   I   S   R   I   C" => "csetairi",
+      "H   A   I   T   R   W" => "wraith",
+      "M   A   H   T   N   O   P" => "phantom",
+      "S   P   Y   O   C   C   L" => "cyclops",
+      "B   O   R   C   A" => "cobra",
     }
 
     WALL_REGEX = /the letters are:\s+((?:[A-Z]\s*{2,}){2,})$/
@@ -776,7 +778,7 @@ module RofL
 
   module Levers
     def self.solve_puzzle
-      Util.fast_multifput "push white lev", "pull black lev", "push green lev", "pull blue lev", "push red lev"
+      multifput "push white lev", "pull black lev", "push green lev", "pull blue lev", "push red lev"
     end
 
     def self.requirements
@@ -792,7 +794,7 @@ module RofL
 
   module IronDoor
     def self.solve_puzzle
-      Util.fast_multifput "kick boulder", "get key", "unlock door", "swap", "unlock door"
+      multifput "kick boulder", "get key", "unlock door"
     end
 
     def self.requirements
@@ -805,7 +807,7 @@ module RofL
 
   module BoxSphere
     def self.solve_puzzle
-      Util.fast_multifput "push box", "roll sphere"
+      multifput "push box", "roll sphere"
     end
 
     def self.requirements
@@ -820,7 +822,13 @@ module RofL
 
   module TrapdoorBoulder
     def self.solve_puzzle
-      Util.fast_multifput "push bould", "jump trap", "jump trap", "jump trap"
+      dothistimeout "push boulder", 3, /With a heave-ho, you manage to push the boulder onto the trapdoor\.  A loud and unsettling \*\*CREAK\*\* echoes from the wooden planks\./
+      loop {
+        result = dothistimeout "jump trapdoor", 0.5, /As the wooden trapdoor breaks apart and the boulder drops into darkness, you manage to scramble to the edge of the crevice safely\.|That was fun\./
+        if result =~ /As the wooden trapdoor breaks apart and the boulder drops into darkness, you manage to scramble to the edge of the crevice safely\.|That was fun\./
+          break
+        end
+      }
     end
 
     def self.requirements
@@ -833,7 +841,7 @@ module RofL
 
   module BookcaseAndRug
     def self.solve_puzzle
-      Util.fast_multifput "l in book", "lean journal", "pull rug", "pull trap"
+      multifput "l in book", "lean journal", "pull rug", "pull trap"
     end
 
     def self.requirements
@@ -846,7 +854,7 @@ module RofL
 
   module TallBookcase
     def self.solve_puzzle
-      Util.fast_multifput "jump", "push button", "l behind book", "pull lever"
+      multifput "jump", "push button", "l behind book", "pull lever"
     end
 
     def self.requirements
@@ -859,8 +867,14 @@ module RofL
   module LavaRiver
     def self.solve_puzzle
       fput "get hatchet"
-      fput "cut tree" until get? =~ /There is already a sufficient/
-      Util.fast_multifput "push tree", "go tree"
+      loop {
+        result = dothistimeout "cut tree", 3, /You raise a steel hatchet high over your head and with a mighty swing, you strike an ironwood tree\!|There is already a sufficient notch in the tree\./
+        sleep 0.2
+        if result =~ /There is already a sufficient notch in the tree\./
+          break
+        end
+      }
+      multifput "push tree", "go tree"
     end
 
     def self.requirements
@@ -874,7 +888,7 @@ module RofL
 
   module WizardMannequin
     def self.solve_puzzle
-      Util.fast_multifput "get robe", "put robe on man", "get hat", "put hat on man"
+      multifput "get robe", "put robe on man", "get hat", "put hat on man"
     end
 
     def self.requirements
@@ -888,7 +902,7 @@ module RofL
 
   module WickerBox
     def self.solve_puzzle
-      Util.fast_multifput "open box", "l in box", "get tube", "drop tube", "get sheet", \
+      multifput "open box", "l in box", "get tube", "drop tube", "get sheet", \
         "shake sheet", "put sheet on box", "get tube", "play tube"
     end
 
@@ -899,9 +913,203 @@ module RofL
     end
   end
 
+  module AldoranStones
+    def self.solve_puzzle
+      result = dothistimeout "look", 3, /sickly looking woman\.|sickly looking man\./
+      if result =~ /sickly looking woman\./
+        heal_target = "woman"
+      elsif result =~ /sickly looking man\./
+        heal_target = "man"
+      end
+
+      fput "look in basket"
+      result = dothistimeout "inspect #{heal_target}", 10, /head\.|neck\.|face\.|broken hand\.|broken arm\.|broken leg\.|back\.|chest\.|abdomen\.|major convulsions\.|severe blood loss\.|over\-indulgence of alcohol\.|debilitating disease\.|exposure to poison\./
+      if result =~ /head\.|neck\.|face\./
+        multifput "get spinel from basket", "wave spinel at #{heal_target}"
+      elsif result =~ /broken hand\.|broken arm\.|broken leg\./
+        multifput "get sard from basket", "wave sard at #{heal_target}"
+      elsif result =~ /back\.|chest\.|abdomen\./
+        multifput "get sunstone from basket", "wave sunstone at #{heal_target}"
+      elsif result =~ /major convulsions\./
+        multifput "get tourmaline from basket", "wave tourmaline at #{heal_target}"
+      elsif result =~ /severe blood loss\./
+        multifput "get quartz from basket", "wave quartz at #{heal_target}"
+      elsif result =~ /over\-indulgence of alcohol\./
+        multifput "get amethyst from basket", "wave amethyst at #{heal_target}"
+      elsif result =~ /debilitating disease\./
+        multifput "get alabaster from basket", "wave alabaster at #{heal_target}"
+      elsif result =~ /exposure to poison\./
+        multifput "get turquoise from basket", "wave turquoise at #{heal_target}"
+      else
+        echo "Could not find appropriate injury"
+        exit
+      end
+    end
+
+    def self.requirements
+      [
+        "woven basket",
+      ]
+    end
+  end
+
+  module GnomeBloodlines
+    def self.solve_puzzle
+      translation = {
+        "Rosengift" => "multi-feathered",
+        "Angstholm" => "owl-feathered",
+        "Basingstoke" => "peacock",
+        "Wendwillow" => "feather",
+        "Felcour" => "vulture"
+      }
+      fput "look mannequin"
+      while line = get
+        if line =~ /You see (?:a|an) (\w+) forest gnome mannequin\./
+          multifput "get #{translation[$1]} apotl", "put apotl on mannequin"
+          break
+        end
+      end
+    end
+
+    def self.requirements
+      [
+        "black vulture feather apotla",
+        "tawny owl-feathered apotl",
+        "multi-feathered apotla",
+        "albatross feather apotl",
+        "peacock feather apotl",
+      ]
+    end
+  end
+
+  module ElvenHouses
+    def self.solve_puzzle
+      fput "look in basket"
+      ordered_shields = [ "first", "second", "third", "fourth" ]
+      ordered_shields.each { |shield_num|
+        sleep 0.2
+        result = dothistimeout "look #{shield_num} shield", 5, /Encircled by silver, an onyx rose is set upon a field of jade\.|Encircled by silver, a silver harp is set upon a field of dark amethyst\.|Encircled by silver, a golden wyvern leaf is set upon a field of crimson\.|Encircled by silver, an aquamarine wavecrest is set upon a field of white\.|Encircled by gold, a peacock is set upon a field of deep sapphire blue\.|Encircled by gold, a broad green oak leaf is set upon a field of umber\.|Encircled by gold, a scarlet pentacle is set upon a field of grey\./
+        if result =~ /Encircled by silver, an onyx rose is set upon a field of jade./
+          multifput "get black cabochon", "put my cabochon in #{shield_num} shield"
+        elsif result =~ /Encircled by silver, a silver harp is set upon a field of dark amethyst\./
+          multifput "get purple cabochon", "put my cabochon in #{shield_num} shield"
+        elsif result =~ /Encircled by silver, a golden wyvern leaf is set upon a field of crimson\./
+          multifput "get red cabochon", "put my cabochon in #{shield_num} shield"
+        elsif result =~ /Encircled by silver, an aquamarine wavecrest is set upon a field of white\./
+          multifput "get green cabochon", "put my cabochon in #{shield_num} shield"
+        elsif result =~ /Encircled by gold, a peacock is set upon a field of deep sapphire blue\./
+          multifput "get white cabochon", "put my cabochon in #{shield_num} shield"
+        elsif result =~ /Encircled by gold, a broad green oak leaf is set upon a field of umber\./
+          multifput "get yellow cabochon", "put my cabochon in #{shield_num} shield"
+        elsif result =~ /Encircled by gold, a scarlet pentacle is set upon a field of grey\./
+          multifput "get orange cabochon", "put my cabochon in #{shield_num} shield"
+        end
+      }
+    end
+
+    def self.requirements
+      [
+        "wicker basket",
+        "shield",
+      ]
+    end
+  end
+
+  
+  module Shops
+    def self.solve_puzzle
+      put 'point shop'
+      fput 'point other shop'
+      put 'point third shop'
+      put 'point fourth shop'
+      fput 'look'
+    end
+
+    def self.requirements
+      [
+        "small window"
+        # there are also shops but they change =/
+      ]
+    end
+  end
+
+  module Cutouts
+    def self.solve_puzzle
+      creature_map = {
+        "warrior shade" => "ta'vaalor",
+        "ash hag" => "teras",
+        "dybbuk" => "solhaven",
+        "bat" => "zul",
+        "black urgh" => "ta'vaalor",
+        "krolvin pirate" => "river",
+        "krolvin corsair" => "river",
+        "great stag" => "ta'illistim",
+        "skayl" => "teras",
+        "wolfshade" => "ta'vaalor",
+        "forest trali" => "ta'illistim",
+        "lava golem" => "teras",
+        "brown spinner" => "river",
+        "mezic" => "solhaven",
+        "monkey" => "icemule",
+        "spectre" => "river",
+        "red tsark" => "teras",
+        "ridge orc" => "zul",
+        "striped relnak" => "ta'vaalor",
+        "luminous spectre" => "river",
+        "maw spore" => "ta'illistim",
+        "fire ogre" => "teras",
+        "mongrel hobgoblin" => "landing",
+        "niirsha" => "ta'vaalor",
+        "carceris" => "landing",
+        "farlook" => "ta'illistim",
+        "three-toed tegu" => "ta'illistim",
+        "dobrem" => "solhaven",
+        "krynch" => "zul",
+        "wood wight" => "solhaven",
+        "albino scorpion" => "zul",
+        "seraceris" => "icemule",
+        "pyrothag" => "teras",
+        "spectral miner" => "landing",
+        "caribou" => "icemule",
+        "cave bear" => "river",
+        "grizzly bear" => "icemule",
+        "blood eagle" => "river",
+        "stone gargoyle" => "landing",
+        "grutik savage" => "zul",
+        "white vysan" => "icemule",
+        "giant veaba" => "zul",
+        "waern" => "solhaven",
+        "hobgoblin" => "landing",
+        "ilvarie pixie" => "ta'vaalor",
+        "greater kappa" => "landing",
+        "monastic lich" => "landing",
+        "pale crab" => "solhaven",
+        "grifflet" => "ta'illistim",
+        "seeker" => "icemule",
+      }
+      fput "stow all"
+      fput "look in bag"
+      4.times do
+        fput "get cutout from bag"
+        fput "dip cutout in glue"
+        cutout = GameObj.right_hand.name.downcase.sub " cutout", ""
+        echo cutout
+        target = creature_map[cutout]
+        echo target
+        fput "put cutout on #{target} map"
+      end
+    end
+
+    def self.requirements
+      [
+        "paper bag",
+        "bowl of glue",
+      ]
+    end
+  end
+
   module ColorSpheres
     def self.solve_puzzle
-      fput "push button"
       translation = {
         "crimson" => "red",
         "ivory" => "white",
@@ -910,6 +1118,8 @@ module RofL
         "viridian" => "green"
       }
       ordered_spheres = []
+
+      fput "push button"
       while line = get
         if line =~ /An? (\w+) glow fills the area/
           ordered_spheres.push(translation[$1])
@@ -917,9 +1127,7 @@ module RofL
         break if ordered_spheres.length == 4
       end
 
-      echo 'a wtf'
       ordered_spheres.each { |color| fput "touch #{color} sphere" }
-      echo 'b'
     end
 
     def self.requirements
@@ -930,6 +1138,61 @@ module RofL
         "green sphere",
         "blue sphere",
         "red sphere",
+      ]
+    end
+  end
+
+  module Sheet
+    def self.solve_puzzle
+      fput "pull sheet"
+      hide_map = {
+        "lesser orc" => "hide",
+        "agresh bear" => "claw",
+        "troll chieftain" => "fang",
+        "werebear" => "paw",
+        "bear" => "claw",
+        "cyclops" => "eye",
+        "thrak" => "hide",
+        "coyote" => "tail",
+        "warthog" => "snout",
+        "vesperti" => "claw",
+        "warthog" => "snout",
+        "forest trali" => "hide",
+        "martial eagle" => "talon",
+        "red bear" => "paw",
+        "puma" => "hide",
+        "cougar" => "tail",
+        "mountain snowcat" => "pelt",
+        "manticore" => "tail",
+        "spotted leaper" => "pelt",
+        "thunder troll" => "scalp",
+        "shadow steed" => "tail",
+        "plains lion" => "skin",
+        "black leopard" => "paw",
+        "spectre" => "skin",
+        "lava troll" => "eye",
+        "treekin druid" => "beard",
+        "grey orc" => "beard",
+        "mist wraith" => "eye",
+        "centaur ranger" => "hide",
+        # ^ this is likely incomplete
+      }
+      GameObj.loot.each { |obj|
+        if obj.name =~ /statue$/
+          hide = hide_map[obj.name.downcase.sub " statue", ""]
+          echo obj.name.downcase.sub " statue", ""
+          echo hide
+          put 'look'
+          sleep 1
+          fput "get #{hide}"
+          fput "put #{hide} on ##{obj.id}"
+        end
+      }
+    end
+
+    def self.requirements
+      [
+        "white silk sheet covering a large display"
       ]
     end
   end
@@ -964,6 +1227,13 @@ module RofL
     Puzzle.new("lavariver", LavaRiver, "the floor is lava"),
     Puzzle.new("wizard", WizardMannequin, "I put on my robe and wizard hat"),
     Puzzle.new("wicker", WickerBox, "there's a tube in there that you can play"),
+    Puzzle.new("aldoran", AldoranStones, "use the healing stones to fix the sick person"),
+    Puzzle.new("gnomes", GnomeBloodlines, "pick out the apotl or apotla for the bloodline"),
+    Puzzle.new("elves", ElvenHouses, "place the correct stone in house shield"),
+    Puzzle.new("shops", Shops, "point to the correct shop"),
+    Puzzle.new("cutouts", Cutouts, "put creature cutouts on the correct maps"),
+    Puzzle.new("sheet", Sheet, "put skins on the correct statues"),
+
   ]
 
   def self.determine_puzzle
@@ -1028,9 +1298,11 @@ if defined?(Lich)
 
       empty_hands
       puzzle.solve_puzzle
-      fill_hands
-
       clear
+
+      # Assume puzzle has been solved and are now answering a question
+      matchtimeout 2, /I believe this is yours|Impressed by your vast knowledge|You feel tingly all over, as if you learned something from this encounter\.|A calming warmth fills your body\.  You feel wiser\.|A cool chill runs down your spine, and you feel somewhat smarter\.|You shiver slightly, and you feel a bit enlightened\./
+      # fill_hands
       fput "look"
     end
   when /^stat/
@@ -1071,6 +1343,18 @@ if defined?(Lich)
     RofL::WizardMannequin.solve_puzzle
   when /^wicker/
     RofL::WickerBox.solve_puzzle
+  when /^aldoran/
+    RofL::AldoranStones.solve_puzzle
+  when /^gnomes/
+    RofL::GnomeBloodlines.solve_puzzle
+  when /^elves/
+    RofL::ElvenHouses.solve_puzzle
+  when /^shops/
+    RofL::Shops.solve_puzzle
+  when /^cutouts/
+    RofL::Cutouts.solve_puzzle
+  when /^sheet/
+    RofL::Sheet.solve_puzzle
   else
     respond
     respond "  [#{script.name}] didn't recognize \"#{script.vars[1]}\" as a valid puzzle"
