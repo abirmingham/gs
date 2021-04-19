@@ -1,3 +1,6 @@
+echo "WARNING: Assumes lootsack is set and that stow location is same as lootsack"
+sleep 1
+
 lootsack = GameObj.inv.find { |obj| obj.noun == Lich.lootsack }
 
 # TODO filter to note types rather than hard-coding
