@@ -51,7 +51,7 @@ if rubs > 0
     if rubs_available == 0
         echo "No operation - no rubs available. To turn brooch, pass with no rubs argument"
         exit
-    elsif rubs_available > rubs
+    elsif rubs > rubs_available
         rubs = rubs_available
     end
 end
