@@ -4,6 +4,11 @@
 # Tags: LTE, XP, EXP, Longterm, long-term
 # Author: Azanoth
 
+if Char.name == 'Azanoth'
+    Script.run "turnbrooch", "red 2"
+    Script.run "turnbrooch", "blue"
+end
+
 loop {
     wait_until { checkmind == 'must rest' || checkmind == 'saturated' }
     if Char.name == 'Azanoth'
