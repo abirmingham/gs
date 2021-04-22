@@ -24,6 +24,14 @@ put 'stance def'
 put 'gird'
 Script.start('standgroup')
 
+# brooch stuff
+if Char.name == 'Idios' || Char.name == 'Aranthius' || Char.name == 'Gossan'
+  if percentmind >= 62
+    Script.run "turnbrooch", "red 2"
+    Script.run "turnbrooch", "blue 1"
+  end
+end
+
 if Char.name == 'Gossan'
   Script.start('isigns')
   Spell[211].cast()
@@ -65,7 +73,9 @@ while bounty_counts = read_lines_bounty_counts(bounty_pattern)
   if original_other_bounty_counts.nil?
     original_other_bounty_counts = other_bounty_counts
   end
-  if Char.name == 'Gossan' || Char.name == 'Helsfeld'
+  if Char.name == 'Gossan'
+    break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 1
+  elsif Char.name == 'Helsfeld'
     break if bounty_counts[Char.name] >= other_bounty_counts.values.max && other_bounty_counts.all? { |k, v| v < original_other_bounty_counts[k] }
   else
     break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 3

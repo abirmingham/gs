@@ -68,12 +68,12 @@ module AranthiusBandits
       elsif targets.length >= 1 && checkmana >= 20
         put 'stance off'
         fput "incant 903"
-      end
-
-      if checkcastrt == 0
-        fput "stance def" if checkstance != "defensive"
-      elsif checkstance != "guarded"
-        fput "stance def"
+      else
+        if checkcastrt == 0
+          fput "stance def" if checkstance != "defensive"
+        elsif checkstance != "guarded"
+          fput "stance def"
+        end
       end
       sleep 0.25
     end

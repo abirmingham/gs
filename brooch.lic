@@ -7,9 +7,10 @@
 loop {
     wait_until { checkmind == 'must rest' || checkmind == 'saturated' }
     if Char.name == 'Azanoth'
-        10.times do
-            waitfor " searches an ethereal "
-        end
+        # 7.times do
+        #     waitfor " searches an ethereal "
+        # end
+        sleep 1
     else
         sleep 3
     end

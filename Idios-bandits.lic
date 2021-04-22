@@ -64,13 +64,14 @@ module IdiosBandits
           fput "incant 1030"
         end
       end
-
-      if checkcastrt == 0
-        fput "stance def" if checkstance != "defensive"
-      elsif checkstance != "guarded"
-        fput "stance def"
-      end
+      if targets.length == 0
+        if checkcastrt == 0
+          fput "stance def" if checkstance != "defensive"
+        elsif checkstance != "guarded"
+          fput "stance def"
+        end
         fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
+      end
       sleep 0.25
     end
   end

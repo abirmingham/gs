@@ -33,10 +33,16 @@ def run_cmd(leader, cmd, arg)
     dothistimeout "whisper ooc #{leader} #{result}", 30, /You quietly whisper to /
     return
   elsif cmd == "wait_groupbounty_cooldown_unless" && arg.length > 0
+    if Spell[9056].active?
+      echo "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
+    end
     wait_while { Spell[9056].active? } unless bounty? =~ bounty_re && $1 == arg
     fput "whisper ooc #{leader} DONE"
     return
   elsif cmd == "wait_while_active" && arg.length > 0
+    if Spell[arg].active?
+      echo "Waiting #{Spell[arg].timeleft} minutes (ie #{Spell[arg].timeleft * 60} seconds)"
+    end
     wait_while { Spell[arg].active? }
     fput "whisper ooc #{leader} DONE"
     return

@@ -868,6 +868,10 @@ module RofL
     def self.solve_puzzle
       fput "get hatchet"
       loop {
+        put 'cut tree'
+        fput 'cut tree'
+        put 'cut tree'
+        put 'cut tree'
         result = dothistimeout "cut tree", 3, /You raise a steel hatchet high over your head and with a mighty swing, you strike an ironwood tree\!|There is already a sufficient notch in the tree\./
         sleep 0.2
         if result =~ /There is already a sufficient notch in the tree\./
