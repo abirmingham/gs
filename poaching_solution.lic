@@ -1,0 +1,58 @@
+  @@room_info ||= OpenStruct.new(:count => 0)
+
+  @@mu = Mutex.new
+  @@room_info_cv = ConditionVariable.new
+  @@room_info_snap = @@room_info.clone
+
+  def self.room_info
+    @@mu.synchronize {
+      @@room_info_snap.clone
+    }
+  end
+
+  def self.wait_for_room_change
+    @@mu.synchronize {
+      start = @@room_info_snap.count
+      timeout = SimpleTimer.new 3
+      while start == @@room_info_snap.count
+        remaining_time = timeout.remaining_time
+        break if remaining_time <= 0
+        @@room_info_cv.wait(@@mu, remaining_time)
+      end
+      if start == @@room_info_snap.count
+        nil
+      else
+        @@room_info_snap.clone
+      end
+    }
+  end
+
+  def self.room_owned?(group = [])
+    @@mu.synchronize {
+      ri = @@room_info_snap
+      ri.other_pcs.find_all { |pc| !group.include?(pc.noun) }.empty? && !ri.hiders
+    }
+  end
+
+  DownstreamHook.add("Status.Room", proc { |server_string|
+    if server_string =~ /popStream.*id='room'/
+      @@room_info.count += 1
+      @@room_info.hiders = false
+      @@room_info.other_pcs = []
+      @@room_info.followers = []
+    elsif @@room_info_snap.count != @@room_info.count
+      if server_string =~ /obvious signs of someone hiding/
+        @@room_info.hiders = true
+      elsif server_string =~ /^(?:Also here:|Also in the room:)(?<pc_str>.*)$/
+        @@room_info.other_pcs = Util.get_gameobjs($~['pc_str'])
+      elsif server_string =~ /(?<followers>.*) followed\./
+        @@room_info.followers = Util.get_gameobjs($~['followers'])
+      elsif server_string =~ /<prompt/
+        @@mu.synchronize {
+          @@room_info_snap = @@room_info.clone
+          @@room_info_cv.broadcast
+        }
+      end
+    end
+    server_string
+  })

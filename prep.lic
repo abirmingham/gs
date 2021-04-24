@@ -56,6 +56,7 @@ echo "Starting attack sequence"
 if Char.name == 'Aranthius'
   Script.start('rapid')  
 elsif Char.name == 'Azanoth'
+  fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
   fput "cman dervish"
   waitrt?
   fput "war shout"
@@ -85,4 +86,4 @@ end
 
 Script.start("#{Char.name}-bandits")
 
-waitrt?
+waitrt? # I can't remember wtf this is for

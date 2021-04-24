@@ -1,98 +1,82 @@
-target_set = {}
-"rogue marauder thief mugger bandit brigand robber outlaw thug highwayman".split(" ").each do |noun|
-  target_set[noun] = true
-end
+module BanditAttack
+  def self.main()
+    status_tags
 
-module AzAttack
-  @DOWNSTREAM_HOOK_NAME = "azattack_downstream_hook"
-  @FRIENDS = ["Aranthius", "Idios", "Gossan", "Helsfeld"]
-  @grouplist = []
+    # state
+    poaching = false
 
-  def self.populate_group()
-    @grouplist.clear()
-    @FRIENDS.each { |f| @grouplist.push(f) }
-    complete = false
-
-    checkgroupline = proc { |line|
-      line =~ /exist="\-[0-9]+" noun=".*">(.*)<\/a> is (?:following you|the leader of your group|also a member of your group)/i
-      @grouplist.push($1) if $1 && !@grouplist.include?($1)
-    }
-
-    action = proc { |server_string|
-      if checkgroupline.call(server_string)
-        nil
-      elsif server_string =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
-        complete = true
-        nil
-      else
-        server_string
-      end
-    }
-    DownstreamHook.add(@DOWNSTREAM_HOOK_NAME, action)
-    $_SERVER_.puts "group"
-    waitfor "group status is currently", "to set your group status", "You are not currently in a group"
-    wait_until { complete }
-    DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME)
-  end
-
-  def self.main(target_set)
-    populate_group()
-    before_dying { DownstreamHook.remove(@DOWNSTREAM_HOOK_NAME) }
-    echo @grouplist
-    
-    echo "Starting"
-    room_id = Room.current.id
-
+    # main loop
     while true
       fput "stand" until standing?
-      # throttle char
-      # sleep 2 if checkbounty =~ /^You (have )?succeeded/
-      #   sleep 2 # revisit this?
-      # end
-      # if room_id != Room.current.id
-      #   sleep 1 # revisit this?
-      #   room_id = Room.current.id
-      #   next
-      # end
-      fput "stand" until standing?
 
+      # identify targets
       targets = GameObj.npcs.select do |npc|
-        target_set[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")
+        $AZ_BANDIT_TARGET_SET[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")
       end
 
-      need_attack = ((checkpcs - @grouplist).count == 0) && targets.length > 0
+      # check to see if we've moved
+      buffer = []
+      while line = get?
+        buffer.push(line)
+      end
+      
+      for i in 1..buffer.length do
+        line = buffer[buffer.length - i]
 
-      if need_attack and !running? "sloot"
-        fput "stand" until standing?
-        fput "stance off" until checkstance == "offensive"
-        fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-        if Spell[506].active?
-          put 'ambush'
-        else
-          echo "NO 506!!!!!"
-          sleep 1
+        if line.start_with?('Obvious paths:') || line.start_with?('Obvious exits:')
+          # previous line should be "Also here:" (unless we're leading)
+          line = buffer[buffer.length - i - 1]
+          if line && line.start_with?('Also here: ') && line =~ /^Also here: (.*)/
+            # Check to see if we'd be poaching
+            poaching = false
+            others = $1.split(', ').each { |pc|
+              pc_clean = pc.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
+              poaching = true if !$AZ_CHARS_SET[pc_clean]
+            }
+            # poaching = false if poaching && GameObj.pcs.all? { |pc| $AZ_CHARS_SET[pc.noun] }
+          elsif line && !group?
+            # I must be leading
+          else
+            echo "WTF"
+            echo "#{buffer.length} - #{i} - 1"
+            echo buffer
+            echo '-----------'
+            poaching = true
+          end
+          break
         end
-        # if Spell[9005].active? || targets.length < 2
-        #   if checkstamina >= 15
-        #     put "cman mblow ##{targets[0].id}"
-        #     put "cman mblow ##{targets[1].id}" if targets.length > 1
-        #   else
-        #     put "kill"
-        #   end
-        # else
-        #   put "mstrike ##{targets[0].id}"
-        #   put "mstrike ##{targets[1].id}" if targets.length > 1
-        # end
-
-        rt = checkrt
-        sleep(rt - 1) if rt > 2
-      elsif targets.length == 0
-        fput "stance def" if checkstance != "defensive"
       end
 
-      sleep 0.25
+      if poaching || targets.nil? || targets.length == 0
+        if checkcastrt == 0
+          fput "stance def" if checkstance != "defensive"
+        elsif checkstance != "guarded"
+          fput "stance def"
+        end
+      elsif running? 'sloot'
+        wait_while { running? 'sloot' }
+      else
+        attack(targets)
+      end
+
+      rt = checkrt
+      if rt > 2
+        sleep(rt - 1)
+      else
+        sleep 0.25
+      end
     end
+    # end main loop
+  end
+
+  def self.attack(targets)
+    fput "stance off" until checkstance == "offensive"
+    if !Spell[506].active?
+      echo "NO 506!!!!!"
+      sleep 1
+    end
+    put 'ambush'
   end
 end
 
-AzAttack.main(target_set)
+BanditAttack.main()

@@ -198,7 +198,7 @@ module AzBandit
     echo "has_loot?" if @DEBUG
     return GameObj.npcs.any? { |n| n.status == "dead" } ||
              GameObj.loot.any? { |n|
-               n.type == "skin" ||
+              #  n.type == "skin" ||
                n.type == "gem" ||
                n.name =~ /coins/
              }
@@ -237,23 +237,43 @@ module AzBandit
     end
 
     # Wait until we've received all of the room text
+    # [azbandit: <pushStream id="speech"/><preset id="whisper">(OOC) You whisper,</preset> "Status - Aranthius 17. Azanoth 20. Helsfeld 19. Idios 15. Gossan 20." to your group.]
+    # [azbandit: <popStream/>]
+    # [azbandit: <preset id="whisper">(OOC) You whisper,</preset> "Status - Aranthius 17. Azanoth 20. Helsfeld 19. Idios 15. Gossan 20." to your group.]
+    # [azbandit: <prompt time="1619300220">&gt;</prompt>]
+    # [azbandit: <dialogData id='combat'><dropDownBox id='dDBTarget' value="none" cmd="target %dDBTarget%" tooltip='Select Target' content_text="none" content_value="target help" anchor_left='cmdTarget' anchor_right='cmdAttack' height='20' width='80'  top='70' left='0' align='n'/></dialogData>]
+    # [azbandit: <streamWindow id='main' title='Story' subtitle=" - Widowmaker's Road, Animal Track" location='center' target='drop'/><streamWindow id='room' title='Room' subtitle=" - Widowmaker's Road, Animal Track" location='center' target='drop' ifClosed='' resident='true'/><clearStream id='room'/><pushStream id='room'/><compDef id='room desc'>Cutting a winding route through the overgrown grass, the trail is thin and riddled with bright white pebbles.  Stumps of felled trees pop up throughout the area, their smooth faces grey with age.  To the south, a <a exist="-482026" noun="track">thin animal track</a> straightens as it rejoins the main road.</compDef><compDef id='room objs'></compDef>]
+    # [azbandit: <compDef id='room players'></compDef>]
+    # [azbandit: <compDef id='room exits'>Obvious paths: <d>northwest</d></compDef>]
+    # [azbandit: <compDef id='sprite'></compDef><popStream id='room'/>]
+    # [azbandit: <component id='room players'>Also here: High Lord <a exist="-10971883" noun="Azanoth">Azanoth</a>, <a exist="-10729734" noun="Helsfeld">Helsfeld</a>, <a exist="-11161977" noun="Idios">Idios</a>, <a exist="-11170346" noun="Gossan">Gossan</a></component>]
+    # [azbandit: <resource picture="0"/><nav/><style id="roomName" />[Widowmaker's Road, Animal Track]]
+    # [azbandit: <style id=""/><style id="roomDesc"/>Cutting a winding route through the overgrown grass, the trail is thin and riddled with bright white pebbles.  Stumps of felled trees pop up throughout the area, their smooth faces grey with age.  To the south, a <a exist="-482026" noun="track">thin animal track</a> straightens as it rejoins the main road.<style id=""/>]
+    # [azbandit: Obvious paths: <a exist="-11066180" coord="2524,1864" noun="northwest">northwest</a>]
+    # [azbandit: <compass><dir value="nw"/></compass><a exist="-10971883" noun="Azanoth">Azanoth</a>, <a exist="-10729734" noun="Helsfeld">Helsfeld</a>, <a exist="-11161977" noun="Idios">Idios</a> and <a exist="-11170346" noun="Gossan">Gossan</a> followed.]
+    # [azbandit: -- received room text (line = get)]
+    # [azbandit: <prompt time="1619300220">&gt;</prompt>]
+    # [azbandit: -- received remaining text (line = get?)]
+    # [azbandit: Retrieving stragglers]
+    # [azbandit]>go track
+    # status_tags
     buffer = []
     followers_line = nil
-    while true
-      while line = get?
-        if @grouplist.length > 0 && line =~ /followed\./
-          followers_line = line
-          break
-        elsif @grouplist.length == 0 && (line =~ /^Obvious paths: / || line =~ /^Obvious exits: /)
-          break
-        end
+    while line = get
+      echo line
+      if @grouplist.length > 0 && line =~ /followed\./
+        followers_line = line
+        break
+      elsif @grouplist.length == 0 && (line =~ /^Obvious paths: / || line =~ /^Obvious exits: /)
+        break
       end
-      next if line.nil?
-      until (line = get?).nil?
-        buffer.push(line) # drain get? buffer into local buffer
-      end
-      break
     end
+    echo '-- received room text (line = get)'
+    while line = get?
+      echo line
+      buffer.push(line) # drain get? buffer into local buffer
+    end
+    echo '-- received remaining text (line = get?)'
     throw 'Failed to find followers' if @grouplist.length > 0 && followers_line.nil?
 
     # retrieve stragglers
@@ -363,13 +383,25 @@ module AzBandit
       echo "waiting for battle" if @DEBUG
       if has_loot?()
         if should_loot?()
+          waitrt?
+          lootable = GameObj.npcs.reject { |npc| npc.status != 'dead' }
+          lootable.each_with_index { |npc, i|
+            # loot as fast as possible before running sloot
+            # because sloot is kind of slow
+            if i % 3 < 2 && i != lootable.length - 1
+              put "search ##{npc.id}"
+            else
+              fput "search ##{npc.id}"
+            end
+          }
+          sleep 0.25
           Script.run("sloot")
         else
           echo "Waiting for loot to be picked up" if i % 10 == 9
           sleep 0.1
         end
       elsif has_targets?()
-        echo "Waiting for loot to be picked up" if i % 10 == 9
+        echo "Waiting for targets to be killed" if i % 10 == 9
         sleep 0.1
       else
         return
@@ -379,7 +411,7 @@ module AzBandit
   end
 
   def self.should_loot?()
-    return @MY_CHARS_HACK.any? { |char| char == Char.name } && !is_poaching?
+    return @MY_CHARS_HACK.any? { |char| char == Char.name }
   end
 
   def self.whisper_cmd(char, cmd, arg = "")

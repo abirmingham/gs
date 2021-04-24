@@ -72,6 +72,8 @@ def get_exp()
 end
 
 if bounty? =~ /^You (have )?succeeded/
+  fput "leave"
+  put "group open"
   Script.run("go2", "advguild")
   npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
   raise "Failed to find npc" if npc.nil?

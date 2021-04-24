@@ -1,5 +1,11 @@
 hide_me
-LEADERS = /Azanoth|Idios|Aranthius|Gossan|Helsfeld/
+$AZ_CHARS = ['Azanoth', 'Aranthius', 'Idios', 'Gossan', 'Helsfeld']
+$AZ_CHARS_REGEX = /#{$AZ_CHARS.join('|')}/
+$AZ_CHARS_SET = $AZ_CHARS.collect { |char| [char, true] }.to_h
+$AZ_BANDIT_TARGET_SET = {}
+"rogue marauder thief mugger bandit brigand robber outlaw thug highwayman".split(" ").each do |noun|
+  $AZ_BANDIT_TARGET_SET[noun] = true
+end
 
 def run_cmd(leader, cmd, arg)
   echo "run_cmd(#{cmd}, #{arg})"
@@ -34,14 +40,16 @@ def run_cmd(leader, cmd, arg)
     return
   elsif cmd == "wait_groupbounty_cooldown_unless" && arg.length > 0
     if Spell[9056].active?
-      echo "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
+      msg = "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
+      fput "whisper ooc #{leader} #{msg}"
     end
     wait_while { Spell[9056].active? } unless bounty? =~ bounty_re && $1 == arg
     fput "whisper ooc #{leader} DONE"
     return
   elsif cmd == "wait_while_active" && arg.length > 0
     if Spell[arg].active?
-      echo "Waiting #{Spell[arg].timeleft} minutes (ie #{Spell[arg].timeleft * 60} seconds)"
+      msg = "Waiting #{Spell[arg].timeleft} minutes (ie #{Spell[arg].timeleft * 60} seconds)"
+      fput "whisper ooc #{leader} #{msg}"
     end
     wait_while { Spell[arg].active? }
     fput "whisper ooc #{leader} DONE"
@@ -83,7 +91,7 @@ loop {
     # (OOC) Azanoth's player whispers, "Do:exchange-unless:Muddy Village."
     if line =~ /slices deep into your vocal cords!$/ && Char.name == 'Gossan'
       fix_vocal_cords() # I'm not sure if we need this for other chars now that we have an empath
-    elsif line =~ /^\(OOC\) (#{LEADERS})'s player whispers, "Do:(.*?)\.?"/
+    elsif line =~ /^\(OOC\) (#{$AZ_CHARS_REGEX})'s player whispers, "Do:(.*?)\.?"/
       tokens = $2.split ":"
       run_cmd $1, tokens[0].downcase, tokens[1]
     end
