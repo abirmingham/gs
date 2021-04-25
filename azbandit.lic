@@ -260,7 +260,7 @@ module AzBandit
     buffer = []
     followers_line = nil
     while line = get
-      echo line
+      # echo line
       if @grouplist.length > 0 && line =~ /followed\./
         followers_line = line
         break
@@ -268,12 +268,12 @@ module AzBandit
         break
       end
     end
-    echo '-- received room text (line = get)'
+    # echo '-- received room text (line = get)'
     while line = get?
-      echo line
+      # echo line
       buffer.push(line) # drain get? buffer into local buffer
     end
-    echo '-- received remaining text (line = get?)'
+    # echo '-- received remaining text (line = get?)'
     throw 'Failed to find followers' if @grouplist.length > 0 && followers_line.nil?
 
     # retrieve stragglers
