@@ -21,13 +21,9 @@ loop {
     unless checkdead
         stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /stun/i }
         if (checkstunned || stunnedfriend || trapped) && checkmana.to_i > 100
-            pause_script BANDIT_SCRIPT
-            waitcastrt?
             fput 'shout 1040'
             waitcastrt?
             put 'look'
-        else
-            unpause_script BANDIT_SCRIPT if Script.paused? BANDIT_SCRIPT
         end
     end
     sleep 0.25

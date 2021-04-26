@@ -47,13 +47,13 @@ $AZ_BANDIT_ATTACK = Proc.new { |attack_routine|
         line = buffer[buffer.length - i - 1]
         if line && line.start_with?('Also here: ') && line =~ /^Also here: (.*)/
           # Check to see if we'd be poaching
-          poaching = false
-          others = $1.split(', ').each { |pc|
-            pc_clean = pc.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
-            poaching = true if !$AZ_CHARS_SET[pc_clean]
+          pcs = $1.split(', ').collect { |x|
+            x.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
           }
+          echo pcs
+          poaching = pcs.any? { |x| !$AZ_CHARS_SET[x] }
         elsif line && !group?
-          # I must be leading
+          # I must be leading and not poaching
           poaching = false
         else
           # Er... there should be SOME line, like a room description

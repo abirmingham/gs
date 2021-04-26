@@ -19,11 +19,9 @@ loop {
         stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /lying|stunned/ }
 
         if (stunnedfriend || trapped_person) && checkmana.to_i > 80
-            pause_script BANDIT_SCRIPT
             Spell[1107].cast(trapped_person || stunnedfriend)
+            waitcastrt?
             put 'look'
-        else
-            unpause_script BANDIT_SCRIPT if Script.paused? BANDIT_SCRIPT
         end
     end
     sleep 0.25

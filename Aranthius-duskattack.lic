@@ -37,7 +37,7 @@ while GameObj.targets.length > 0
 end
 
 if checkmana > 300
-  fput 'send 30 kaspar'
+  fput 'send 30 Idios'
 end
 if checkmana < 400
   fput 'sym mana'

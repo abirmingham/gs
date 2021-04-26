@@ -112,7 +112,7 @@ loop {
             end
             if Char.name === 'Aranthius'
                 if checkmana > 450
-                    fput 'send 25 kaspar'
+                    fput 'send 25 Idios'
                     fput 'sym mana'
                 end
                 fput 'mana pulse' if checkmana < 375
