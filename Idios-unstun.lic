@@ -1,13 +1,3 @@
-hide_me
-
-GROUP = {
-    'Azanoth' => 1,
-    'Aranthius' => 1,
-    'Gossan' => 1,
-    'Helsfeld' => 1
-}
-BANDIT_SCRIPT = 'Idios-bandits'
-
 loop {
     trapped = false
     while line = get?
@@ -19,7 +9,7 @@ loop {
     end
         
     unless checkdead
-        stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /stun/i }
+        stunnedfriend = GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /stun/i }
         if (checkstunned || stunnedfriend || trapped) && checkmana.to_i > 100
             fput 'shout 1040'
             waitcastrt?

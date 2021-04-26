@@ -1,11 +1,3 @@
-GROUP = {
-    'Azanoth' => 1,
-    'Aranthius' => 1,
-    'Gossan' => 1,
-    'Helsfeld' => 1
-}
-BANDIT_SCRIPT = 'Gossan-bandits'
-
 loop {
     trapped_person = nil
     while line = get?
@@ -16,7 +8,7 @@ loop {
     end
         
     unless checkdead || checkstunned
-        stunnedfriend = GameObj.pcs.find { |x| GROUP[x.noun] && x.status =~ /lying|stunned/ }
+        stunnedfriend = GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stunned/ }
 
         if (stunnedfriend || trapped_person) && checkmana.to_i > 80
             Spell[1107].cast(trapped_person || stunnedfriend)
