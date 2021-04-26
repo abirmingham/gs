@@ -1,0 +1,20 @@
+loop {
+    trapped_person = nil
+    while line = get?
+        if line =~ /^Suddenly.*carefully concealed metal jaws slam shut on (\w+)'s/
+            trapped_person = $1
+        end
+        put 'look' if line =~ /stunned!/
+    end
+        
+    unless checkdead || checkstunned
+        stunnedfriend = GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stunned/ }
+
+        if (stunnedfriend || trapped_person) && checkmana.to_i > 80
+            Spell[1107].cast(trapped_person || stunnedfriend)
+            waitcastrt?
+            put 'look'
+        end
+    end
+    sleep 0.25
+}
