@@ -1,3 +1,7 @@
+BANDIT_SCRIPT = "#{Char.name}-bandits"
+
+killed_script = false
+
 loop {
     trapped_person = nil
     while line = get?
@@ -11,9 +15,19 @@ loop {
         stunnedfriend = GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stunned/ }
 
         if (stunnedfriend || trapped_person) && checkmana.to_i > 80
+            if running? BANDIT_SCRIPT
+                # kill instead of pause - don't want to restart it and have it poach
+                kill_script BANDIT_SCRIPT
+                killed_script = true
+            end
             Spell[1107].cast(trapped_person || stunnedfriend)
             waitcastrt?
             put 'look'
+        else
+            if killed_script
+                start_script BANDIT_SCRIPT if !running? BANDIT_SCRIPT
+                killed_script = false
+            end
         end
     end
     sleep 0.25

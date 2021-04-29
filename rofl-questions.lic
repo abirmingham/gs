@@ -1043,6 +1043,8 @@ while line = get
     fput "answer Belle"
    elsif line =~ /What does the name "Cysaegir" mean/
     fput 'answer sanctuary'
+   elsif line=~ /Which lesser spirit favors arthropods?/
+    fput 'answer Arachne'
   #elsif line =~ //
   #  fput ""
   end

@@ -15,6 +15,12 @@ end
 
 throw "No bounty" unless bounty?
 
+if bounty? !~ /^You have been tasked/
+  echo "Waiting for bounty"
+  wait_while { bounty? !~ /^You have been tasked/ || running?('go2') }
+  sleep 10
+end
+
 # Identify bounty location
 bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
 bounty_location = nil
@@ -27,6 +33,13 @@ throw "Failed to find bounty location" unless bounty_location
 # Wait for share-ready
 GROUP.each { |char|
   whisper_cmd char, "wait_groupbounty_cooldown_unless", bounty_location if Char.name != char
+}
+
+GROUP.each { |char|
+  if Char.name != char
+    whisper_cmd char, "stop-script", "fbandit"
+    fput "hold #{char}"
+  end
 }
 
 # Form group

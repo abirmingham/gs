@@ -79,7 +79,7 @@ while bounty_counts = read_lines_bounty_counts(bounty_pattern)
   elsif Char.name == 'Helsfeld'
     break if bounty_counts[Char.name] >= other_bounty_counts.values.max && other_bounty_counts.all? { |k, v| v < original_other_bounty_counts[k] }
   else
-    break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 3
+    break if bounty_counts[Char.name] >= (other_bounty_counts.values.max || 0) - 3
   end
   echo "Waiting for other character to get more credit"
 end

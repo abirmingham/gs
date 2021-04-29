@@ -50,7 +50,7 @@ $AZ_BANDIT_ATTACK = Proc.new { |attack_routine|
           pcs = $1.split(', ').collect { |x|
             x.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
           }
-          echo pcs
+          # echo "INFO: azfollow.lic: #{pcs}" if !group?
           poaching = pcs.any? { |x| !$AZ_CHARS_SET[x] }
         elsif line && !group?
           # I must be leading and not poaching
@@ -129,16 +129,21 @@ def run_cmd(leader, cmd, arg)
     fput "whisper ooc #{leader} DONE"
     Script.start(arg)
     return
+  elsif cmd == "stop-script" && arg.length > 0
+    fput "whisper ooc #{leader} DONE"
+    Script.kill(arg) if running? arg
+    return
   elsif cmd == "verify-done"
     result = bounty? =~ /^You succeeded in your task/ ? "DONE" : "FAIL"
     dothistimeout "whisper ooc #{leader} #{result}", 30, /You quietly whisper to /
     return
   elsif cmd == "wait_groupbounty_cooldown_unless" && arg.length > 0
-    if Spell[9056].active?
+    has_bounty = bounty? =~ bounty_re && $1 == arg
+    if Spell[9056].active? && !has_bounty
       msg = "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
       fput "whisper ooc #{leader} #{msg}"
     end
-    wait_while { Spell[9056].active? } unless bounty? =~ bounty_re && $1 == arg
+    wait_while { Spell[9056].active? } unless has_bounty
     fput "whisper ooc #{leader} DONE"
     return
   elsif cmd == "wait_while_active" && arg.length > 0
