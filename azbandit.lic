@@ -586,7 +586,7 @@ module AzBandit
         # echo "fast - #{name} #{status}"
       else
         status = get_target_bounty_count(name)
-        echo "slow - #{name} #{status}"
+        throw "slow - #{name} #{status}"
       end
 
       if status == @DENIED
