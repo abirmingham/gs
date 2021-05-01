@@ -19,7 +19,6 @@ $AZ_BANDIT_ATTACK =
     # state
     poaching = false
     carried_line = nil
-    last_bounty_text = ''
 
     # main loop
     i = -1
@@ -49,18 +48,6 @@ $AZ_BANDIT_ATTACK =
            )
         # we don't want to consider this line in the next loop
         carried_line = nil
-      end
-
-      bounty_text = bounty?
-      if last_bounty_text != bounty_text
-        new_count = 100
-        if bounty_text =~ $AZ_BOUNTY_PATTERN_FINISHED
-          new_count = 0
-        elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
-          new_count = $1.to_i
-        end
-        $AZANOTH_SHARED_OBJECT['bandits'].set_count(Char.name, new_count)
-        last_bounty_text = bounty_text
       end
 
       for i in 1..buffer.length

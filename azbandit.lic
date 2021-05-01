@@ -580,7 +580,7 @@ module AzBandit
       end
 
       # bandits from GameObj.targets
-      game_obj_bandits = game_obj_bandits
+      local_game_obj_bandits = game_obj_bandits()
 
       # timeout?
       if (
@@ -601,7 +601,7 @@ module AzBandit
            )
           true
         else
-          game_obj_bandits.length > 0
+          local_game_obj_bandits.length > 0
         end
       return if !any_bandits
 
@@ -615,7 +615,7 @@ module AzBandit
       can_cast =
         checkrt == 0 && checkcastrt == 0 && checkmana >= @DISABLER_MIN_MANA
       bandits_need_disabling =
-        dialog_data_bandits.nil? || dialog_data_bandits > 0 || game_obj_bandits
+        dialog_data_bandits.nil? || dialog_data_bandits > 0 || local_game_obj_bandits
           .any? { |x| x.status.nil? }
 
       cast_disabler =
@@ -644,7 +644,7 @@ module AzBandit
         waitrt?
 
         # search bodies
-        bodies = game_obj_bandits.reject { |npc| npc.status != 'dead' }
+        bodies = local_game_obj_bandits.reject { |npc| npc.status != 'dead' }
         bodies.each_with_index { |bandit| fput "loot ##{bandit.id}" }
 
         # sleep 0.1 # yield
@@ -676,7 +676,7 @@ module AzBandit
       # if we're here, it means bandits are still alive
       if i % 10 == 9
         echo 'Waiting for targets to be killed'
-        echo "game_obj_bandits: #{game_obj_bandits.collect { |x| x.noun }}"
+        echo "game_obj_bandits: #{local_game_obj_bandits.collect { |x| x.noun }}"
         echo "dialog_data_bandits: #{dialog_data_bandits}"
       end
     end

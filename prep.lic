@@ -92,4 +92,20 @@ end
 
 Script.start("#{Char.name}-bandits")
 
-waitrt? # I can't remember wtf this is for
+
+last_bounty_text = ''
+
+loop {
+  bounty_text = bounty?
+  if last_bounty_text != bounty_text
+    new_count = 100
+    if bounty_text =~ $AZ_BOUNTY_PATTERN_FINISHED
+      new_count = 0
+    elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
+      new_count = $1.to_i
+    end
+    $AZANOTH_SHARED_OBJECT['bandits'].set_count(Char.name, new_count)
+    last_bounty_text = bounty_text
+  end
+  sleep 0.5
+}
