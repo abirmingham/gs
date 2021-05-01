@@ -18,41 +18,37 @@
 loot_sack = UserVars.lootsack
 unless loot_sack
   puts "#{monsterbold_start} ******WARNING UserVars.lootsack NOT DEFINED ****** #{monsterbold_end}"
-  echo " "
-  echo "Please set your loot sack with a",
-       "command like:",
-       "    ;vars set lootsack=backpack",
-       "",
+  echo ' '
+  echo 'Please set your loot sack with a',
+       'command like:',
+       '    ;vars set lootsack=backpack',
+       '',
        "Use only the noun (no \"my\" or adjectives).",
-       "",
-       "This will only work with containers you are",
-       "wearing or holding."
+       '',
+       'This will only work with containers you are',
+       'wearing or holding.'
 
   exit
 end
 
-rofl_script = Array["rofl-puzzles", "rofl-questions"]
+rofl_script = Array['rofl-puzzles', 'rofl-questions']
 
-before_dying {
-  rofl_script.each { |script|
-    if Script.exists?(script)
-      Script.kill(script) if Script.running?(script)
-    end
-  }
-}
-rofl_script.each { |script|
-  if Script.exists?(script)
-    Script.kill(script) if Script.running?(script)
+before_dying do
+  rofl_script.each do |script|
+    Script.kill(script) if Script.running?(script) if Script.exists?(script)
   end
-}
+end
+rofl_script.each do |script|
+  Script.kill(script) if Script.running?(script) if Script.exists?(script)
+end
 
-SPIRITUAL = [27009, 27010, 27011, 27012]
-PLANAR = [27005, 27006, 27007, 27008]
-CHAOS = [26986, 26988, 26987, 26985]
+SPIRITUAL = [27_009, 27_010, 27_011, 27_012]
+PLANAR = [27_005, 27_006, 27_007, 27_008]
+CHAOS = [26_986, 26_988, 26_987, 26_985]
 
 target = PLANAR
 
-rofl_script.each { |script|
+rofl_script.each do |script|
   if Script.exists?(script)
     Script.kill(script) if Script.running?(script)
     Script.start(script) if !Script.running?(script)
@@ -60,18 +56,23 @@ rofl_script.each { |script|
     echo "Precondition Required: You need to ;repo download #{script}"
     exit
   end
-}
+end
 
-Script.run("go2", target[0].to_s) unless target.any? { |id| Room.current.id == id }
+unless target.any? { |id| Room.current.id == id }
+  Script.run('go2', target[0].to_s)
+end
 
-loop {
+loop do
   if target.any? { |id| Room.current.id == id }
-    put "stow all"
-    dothistimeout "get my card", 5, /You remove a|You reach into the depths/
-    put "go ring" if checkmind == 'saturated'
-    put "go ring" if checkmind == 'saturated'
-    put "go ring"
-    result = dothistimeout "go ring", 2, /Bright light bursts across|You are carrying too many/
+    put 'stow all'
+    dothistimeout 'get my card', 5, /You remove a|You reach into the depths/
+    put 'go ring' if checkmind == 'saturated'
+    put 'go ring' if checkmind == 'saturated'
+    put 'go ring'
+    result =
+      dothistimeout 'go ring',
+                    2,
+                    /Bright light bursts across|You are carrying too many/
 
     if result =~ /You are carrying too many/
       if Script.exists? 'grofl-cleanup'
@@ -99,4 +100,4 @@ loop {
   #   echo "Done Resting"
   #   Script.run("go2", target[0].to_s) unless target.any? { |id| Room.current.id == id }
   # end
-}
+end

@@ -1,11 +1,13 @@
-$AZ_BANDIT_ATTACK.call(Proc.new { |targets|
-  start_room = Room.current.id
-  fput "stance off" until checkstance == "offensive"
-  if start_room == Room.current.id
-    if !Spell[506].active?
-      echo "NO 506!!!!!"
-      sleep 1
+$AZ_BANDIT_ATTACK.call(
+  Proc.new do |targets|
+    start_room = Room.current.id
+    fput 'stance off' until checkstance == 'offensive'
+    if start_room == Room.current.id
+      if !Spell[506].active?
+        echo 'NO 506!!!!!'
+        sleep 1
+      end
+      put 'ambush'
     end
-    put 'ambush'
   end
-})
+)

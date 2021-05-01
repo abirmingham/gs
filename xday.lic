@@ -1,8 +1,8 @@
-CONTAINER = "case"
+CONTAINER = 'case'
 
 waitrt?
-fput "store all"
-fput "stow all"
+fput 'store all'
+fput 'stow all'
 fput "open my #{CONTAINER}"
 
 # fput "get my ether from my sack"
@@ -14,22 +14,31 @@ fput "open my #{CONTAINER}"
 # fput "put my ether in my sack"
 
 def take_a_beat()
-    sleep 1
-    waitcastrt?
+  sleep 1
+  waitcastrt?
 end
 
-Script.run("foreach", "n=ether in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}")
+Script.run(
+  'foreach',
+  "n=ether in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}"
+)
 take_a_beat
 
-Script.run("foreach", "name=green leaf symbol in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}")
+Script.run(
+  'foreach',
+  "name=green leaf symbol in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}"
+)
 take_a_beat
 
-Script.run("foreach", "name=heroic knight clasp in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}")
+Script.run(
+  'foreach',
+  "name=heroic knight clasp in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}"
+)
 take_a_beat
 
 # Script.run("foreach", "name=shiny gold coin pin in worn; rub item")
 # take_a_beat
 
 fput "close my #{CONTAINER}"
-fput "stow all"
-fput "gird"
+fput 'stow all'
+fput 'gird'

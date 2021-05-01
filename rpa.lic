@@ -1,14 +1,15 @@
-if checkmind() != 'saturated'
-    echo 'Mind too full'
-    fput 'get my yellow orb'
-    fput 'rub my orb'
-    fput 'rub my orb'
-    # fput 'inven enhancive off'
-    fput 'info'
+if checkmind != 'saturated'
+  echo 'Mind too full'
+  fput 'get my yellow orb'
+  fput 'rub my orb'
+  fput 'rub my orb'
+
+  # fput 'inven enhancive off'
+  fput 'info'
 end
 
-15.times {
-    put 'info'
-    put 'sit'
-    sleep 60
-}
+15.times do
+  put 'info'
+  put 'sit'
+  sleep 60
+end

@@ -10,12 +10,8 @@
 =end
 
 tonis = Spell[1035]
-unless tonis.known?
-  raise Exception.new "you don't know #{tonis}"
-end
+raise Exception.new "you don't know #{tonis}" unless tonis.known?
 loop do
-  if !tonis.active? && checkmana > 75
-    tonis.cast
-  end
+  tonis.cast if !tonis.active? && checkmana > 75
   sleep 0.5
 end

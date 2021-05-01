@@ -1,11 +1,36 @@
-echo "Starting ewave"
-echo "TODO: add sym submission"
-echo "TODO: add sym mana"
-echo "TODO: cast sym cour/prot"
+echo 'Starting ewave'
+echo 'TODO: add sym submission'
+echo 'TODO: add sym mana'
+echo 'TODO: cast sym cour/prot'
 target_set = {}
-['champion', 'marauder', 'beetle', 'tsark', 'slave', 'basilisk', 'servant', 'ranger', 'ogre', 'witch', 'dobrem', 'burgee', 'warcat', 'mammoth', 'seeker', 'wildling', 'shaman', 'ursian', 'lion', 'grahnk', 'tegu', 'yeti', "vor'taz", 'lizard', 'automaton', 'crab'].each do |noun|
-  target_set[noun] = true
-end
+%w[
+  champion
+  marauder
+  beetle
+  tsark
+  slave
+  basilisk
+  servant
+  ranger
+  ogre
+  witch
+  dobrem
+  burgee
+  warcat
+  mammoth
+  seeker
+  wildling
+  shaman
+  ursian
+  lion
+  grahnk
+  tegu
+  yeti
+  vor'taz
+  lizard
+  automaton
+  crab
+].each { |noun| target_set[noun] = true }
 
 # fput 'incant 410'
 
@@ -28,12 +53,10 @@ while GameObj.targets.length > 0
   #       end
   #     end
   # end
-  fput "stand" until standing?
-  fput "incant 1030 open" if checkmana >= 40
+  fput 'stand' until standing?
+  fput 'incant 1030 open' if checkmana >= 40
   put 'stance def' if checkstance != 'defensive'
-  GameObj.pcs.each do |s|
-    fput "pull #{s.noun}" if s.status =~ /lying|prone/
-  end
+  GameObj.pcs.each { |s| fput "pull #{s.noun}" if s.status =~ /lying|prone/ }
   sleep 0.1
 end
 

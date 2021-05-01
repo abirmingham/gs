@@ -3,37 +3,44 @@ near_end = false
 at_end = true
 
 def berserk(local_in_arena)
-	return if checkstamina < 30 or Room.current.id == 23798 or !local_in_arena or Spell[9607].active?
-	dothistimeout 'berserk', 12, /Everything around you turns red|You scream with a maniac/
+  if checkstamina < 30 or Room.current.id == 23_798 or !local_in_arena or
+       Spell[9607].active?
+    return
+  end
+  dothistimeout 'berserk',
+                12,
+                /Everything around you turns red|You scream with a maniac/
 end
 
-loop {
-    line = get
-    if line =~ /^An announcer shouts, "You three are no strangers to the arena!/
-	put 'sym cour' if Spell[9805].secsleft < 440
-	put 'sym prot' if Spell[9806].secsleft < 440
-	in_arena = true
-        near_end = false
-        at_end = false
-	berserk(in_arena)
-    elsif line =~ /^You suddenly feel less light-footed/
-	berserk(in_arena)
-    elsif line =~ /^Finding no target for your rage/ and Spell[598].active? 
-	berserk(in_arena)
-    elsif line =~ /^An announcer shouts, "Round 11, send in/ and Spell[9607].active? and !Spell[598].active?
-	sleep 3
-	dothistimeout 'stop', 12, /^The redness fades from the world/
-    elsif line =~ /^An announcer shouts, "Round 24, send in/
-        near_end = true
-        echo "near_end = true!"
-    elsif line =~ /^An announcer shouts, "Round 25, send in/
-        at_end = true
-    elsif line =~ /^An announcer boasts, "The combatants are triumphant/
-	in_arena = false
-        near_end = false
-    end
+loop do
+  line = get
+  if line =~ /^An announcer shouts, "You three are no strangers to the arena!/
+    put 'sym cour' if Spell[9805].secsleft < 440
+    put 'sym prot' if Spell[9806].secsleft < 440
+    in_arena = true
+    near_end = false
+    at_end = false
+    berserk(in_arena)
+  elsif line =~ /^You suddenly feel less light-footed/
+    berserk(in_arena)
+  elsif line =~ /^Finding no target for your rage/ and Spell[598].active?
+    berserk(in_arena)
+  elsif line =~ /^An announcer shouts, "Round 11, send in/ and
+        Spell[9607].active? and !Spell[598].active?
+    sleep 3
+    dothistimeout 'stop', 12, /^The redness fades from the world/
+  elsif line =~ /^An announcer shouts, "Round 24, send in/
+    near_end = true
+    echo 'near_end = true!'
+  elsif line =~ /^An announcer shouts, "Round 25, send in/
+    at_end = true
+  elsif line =~ /^An announcer boasts, "The combatants are triumphant/
+    in_arena = false
+    near_end = false
+  end
 
-    if near_end and !Spell[506].active? and (!at_end or GameObj.targets.length > 0)
-        berserk(in_arena)
-    end
-}
+  if near_end and !Spell[506].active? and
+       (!at_end or GameObj.targets.length > 0)
+    berserk(in_arena)
+  end
+end

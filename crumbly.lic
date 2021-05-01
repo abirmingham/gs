@@ -58,57 +58,64 @@ $warn_crumble = false
 $secs_per_inv_check = 1800
 $no_inv_check = UserVars.no_crumbly_inv_check == 'true'
 
-hook_proc = proc { |server_string|
-	if server_string =~ /its enhancive magic will be depleted soon/i
-		$warn_crumble = true
-	elsif server_string =~ /hidden item on your person is reaching its end soon/i
-		$warn_crumble = true 
-	end
-    server_string
-}
-
-Thread.new {
-    num_secs = 0
-    while (running?($this_script_name))
-		if $warn_crumble
-			300.times do
-				_respond "#{monsterbold_start}******* ONE OF YOUR ENHANCIVES IS ABOUT TO RUN OUT OF CHARGES!!! *******#{monsterbold_end}"
-				_respond "#{monsterbold_start}******* (Kill this script with ;kill crumbly and check your stuff!) *******#{monsterbold_end}"
-				sleep 1
-			end
-			_respond "#{monsterbold_start}******* QUITTING GAME AS A FAILSAFE MECHANISM!!! *******#{monsterbold_end}"
-			fput "quit"
-		end
-		
-		if !$no_inv_check && (num_secs >= $secs_per_inv_check)
-			num_secs = 0
-			echo "Checking inventory for expiring enhancives... (TIMESTAMP ##{n}: #{Time.now})"
-			checked = false
-			while !checked
-				result = dothistimeout( "inv enh", 3, /will be depleted soon|unknown hidden item|seconds/i )
-				if result =~ /will be depleted soon|unknown hidden item/i
-					echo "An item is about to run out, triggering the crumbly warning..."
-					$warn_crumble = true
-					checked = true
-				elsif result =~ /seconds/i
-					waitrt?
-				else
-					checked = true
-				end
-			end
-		end
-		
-        sleep 1
-		num_secs = num_secs + 1
+hook_proc =
+  proc do |server_string|
+    if server_string =~ /its enhancive magic will be depleted soon/i
+      $warn_crumble = true
+    elsif server_string =~
+          /hidden item on your person is reaching its end soon/i
+      $warn_crumble = true
     end
-};
+    server_string
+  end
+
+Thread.new do
+  num_secs = 0
+  while (running?($this_script_name))
+    if $warn_crumble
+      300.times do
+        _respond "#{monsterbold_start}******* ONE OF YOUR ENHANCIVES IS ABOUT TO RUN OUT OF CHARGES!!! *******#{monsterbold_end}"
+        _respond "#{monsterbold_start}******* (Kill this script with ;kill crumbly and check your stuff!) *******#{monsterbold_end}"
+        sleep 1
+      end
+      _respond "#{monsterbold_start}******* QUITTING GAME AS A FAILSAFE MECHANISM!!! *******#{monsterbold_end}"
+      fput 'quit'
+    end
+
+    if !$no_inv_check && (num_secs >= $secs_per_inv_check)
+      num_secs = 0
+      echo "Checking inventory for expiring enhancives... (TIMESTAMP ##{n}: #{Time.now})"
+      checked = false
+      while !checked
+        result =
+          dothistimeout(
+            'inv enh',
+            3,
+            /will be depleted soon|unknown hidden item|seconds/i
+          )
+        if result =~ /will be depleted soon|unknown hidden item/i
+          echo 'An item is about to run out, triggering the crumbly warning...'
+          $warn_crumble = true
+          checked = true
+        elsif result =~ /seconds/i
+          waitrt?
+        else
+          checked = true
+        end
+      end
+    end
+
+    sleep 1
+    num_secs = num_secs + 1
+  end
+end
 
 begin
-	 if $no_inv_check
-		echo "Warning: crumbly periodic inventory enhancive check is DISABLED due to variable."
-	 end
-     DownstreamHook.add('crumbly', hook_proc)
-     loop { sleep 1 }
+  if $no_inv_check
+    echo 'Warning: crumbly periodic inventory enhancive check is DISABLED due to variable.'
+  end
+  DownstreamHook.add('crumbly', hook_proc)
+  loop { sleep 1 }
 ensure
-     DownstreamHook.remove('crumbly')
+  DownstreamHook.remove('crumbly')
 end

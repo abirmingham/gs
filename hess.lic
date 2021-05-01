@@ -6,19 +6,19 @@ CLOSED_MSG = 'The dimly lit tunnel appears to be closed.'
 starttime = Time.now #
 total_iterations = 0 #
 
-loop {
-    put 'go tunnel'
-    put "buy #{NOUN}"
-    while line = get
-        if line =~ /Obvious /
-            echo 'Done!'
-            now = Time.now #
-            echo "Total Iterations: #{total_iterations}" #
-            echo "Total Time: #{now - starttime}" #
-            echo "Average #{(now - starttime) / total_iterations}" #
-            exit
-        end
-        break if line == SORRY_MSG || line == WHERE_MSG || line == CLOSED_MSG
+loop do
+  put 'go tunnel'
+  put "buy #{NOUN}"
+  while line = get
+    if line =~ /Obvious /
+      echo 'Done!'
+      now = Time.now #
+      echo "Total Iterations: #{total_iterations}" #
+      echo "Total Time: #{now - starttime}" #
+      echo "Average #{(now - starttime) / total_iterations}" #
+      exit
     end
-    total_iterations += 1 #
-}
+    break if line == SORRY_MSG || line == WHERE_MSG || line == CLOSED_MSG
+  end
+  total_iterations += 1 #
+end

@@ -1,20 +1,21 @@
 if (!Spell[650].active? && !checkmana(50))
-  echo "Not enough mana"
+  echo 'Not enough mana'
   exit
 end
 
 firstassume = false
 
 if (!Spell[650].active?)
-  Spell[650].cast()
+  Spell[650].cast
   firstassume = true
   pause 2
 end
 
 while Spell[650].active?
-  if (checkmana(25) || firstassume == false) && !Spell[9026].active? && !Spell[9028].active? && !Spell[9018].active? && !Spell[9029].active?
+  if (checkmana(25) || firstassume == false) && !Spell[9026].active? &&
+       !Spell[9028].active? && !Spell[9018].active? && !Spell[9029].active?
     firstassume = true
-    fput "assume porcupine"
+    fput 'assume porcupine'
     pause 1
   end
   pause 1

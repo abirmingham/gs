@@ -1,3 +1,3 @@
-$AZ_BANDIT_ATTACK.call(Proc.new { |targets|
-  fput "incant 1106" if checkmana >= 30
-})
+$AZ_BANDIT_ATTACK.call(
+  Proc.new { |targets| fput 'incant 1106' if checkmana >= 30 }
+)

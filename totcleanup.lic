@@ -1,9 +1,36 @@
-TOT_OUTSIDE_ENTRANCE = 26460
-OUTSIDE_TROVE = 26421
-WARDEN_TRACK = [26424, 26425, 26427, 26429, 26431, 26433, 26437, 26440, 26442, 26447, 26454, 26455, 26460, 26462, 26493, 26499, 26501, 26509, 26512, 26516, 26519, 26523, 26527, 26535, 26537, 26541]
+TOT_OUTSIDE_ENTRANCE = 26_460
+OUTSIDE_TROVE = 26_421
+WARDEN_TRACK = [
+  26_424,
+  26_425,
+  26_427,
+  26_429,
+  26_431,
+  26_433,
+  26_437,
+  26_440,
+  26_442,
+  26_447,
+  26_454,
+  26_455,
+  26_460,
+  26_462,
+  26_493,
+  26_499,
+  26_501,
+  26_509,
+  26_512,
+  26_516,
+  26_519,
+  26_523,
+  26_527,
+  26_535,
+  26_537,
+  26_541
+]
 
 def gatekeeper_in_room?()
-    return GameObj.npcs.any? { |npc| npc.name == 'blue-tinged pale female ghost' }
+  return GameObj.npcs.any? { |npc| npc.name == 'blue-tinged pale female ghost' }
 end
 
 fput 'stow all'
@@ -11,29 +38,32 @@ fput 'get my bag'
 Script.run('foreach', 'n=candy in my pack; get item; put item in my bag')
 fput 'stow all'
 
-if Room.current.id.nil? && gatekeeper_in_room?()
-    fput 'go trail'
-end
+fput 'go trail' if Room.current.id.nil? && gatekeeper_in_room?
 Script.run('go2', TOT_OUTSIDE_ENTRANCE.to_s)
 
 Script.run('go2', OUTSIDE_TROVE.to_s)
 fput 'go schoon'
 fput 'go shelter'
-Script.run('foreach', 'n=token in my pack; get item; give item to attendant; give item to attendant')
+Script.run(
+  'foreach',
+  'n=token in my pack; get item; give item to attendant; give item to attendant'
+)
 sleep 1
 fput 'out'
 fput 'out'
 sleep 0.5
 
-
 rooms_list = WARDEN_TRACK
 until GameObj.npcs.any? { |npc| npc.name == 'scruffy-faced half-elven warden' }
-    next_room = Room.current.find_nearest(rooms_list)
-    Script.run('go2', next_room.to_s())
-    rooms_list = rooms_list.select { |id| id != Room.current.id }
+  next_room = Room.current.find_nearest(rooms_list)
+  Script.run('go2', next_room.to_s)
+  rooms_list = rooms_list.select { |id| id != Room.current.id }
 end
 
-Script.run('foreach', 'n=species in my pack; get item; give item to warden; give item to warden; redeem seashells')
+Script.run(
+  'foreach',
+  'n=species in my pack; get item; give item to warden; give item to warden; redeem seashells'
+)
 fput 'stow all'
 
 Script.run('go2', TOT_OUTSIDE_ENTRANCE.to_s)

@@ -7,33 +7,34 @@ starttime = Time.now #
 total_iterations = 0 #
 
 lasttime = nil
-loop {
-    put 'go tunnel'
-    put "buy #{NOUN}"
-    if lasttime
-        sleep_time = (Time.now - lasttime) / 2.0
-        # echo sleep_time
-        sleep sleep_time
-    end
-    lasttime = Time.now
+loop do
+  put 'go tunnel'
+  put "buy #{NOUN}"
+  if lasttime
+    sleep_time = (Time.now - lasttime) / 2.0
 
-    put 'go tunnel'
-    put "buy #{NOUN}"
+    # echo sleep_time
+    sleep sleep_time
+  end
+  lasttime = Time.now
 
-    responses = 0
-    while line = get
-        if line =~ /^Obvious/
-            echo "Done!"
-            now = Time.now #
-            echo "Total Iterations: #{total_iterations}" #
-            echo "Total Time: #{now - starttime}" #
-            echo "Average #{(now - starttime) / total_iterations}" #
-            exit
-        end
-        if line == SORRY_MSG || line == WHERE_MSG || line == CLOSED_MSG
-            total_iterations += 1 #
-            responses += 1
-        end
-        break if responses >= 2
+  put 'go tunnel'
+  put "buy #{NOUN}"
+
+  responses = 0
+  while line = get
+    if line =~ /^Obvious/
+      echo 'Done!'
+      now = Time.now #
+      echo "Total Iterations: #{total_iterations}" #
+      echo "Total Time: #{now - starttime}" #
+      echo "Average #{(now - starttime) / total_iterations}" #
+      exit
     end
-}
+    if line == SORRY_MSG || line == WHERE_MSG || line == CLOSED_MSG
+      total_iterations += 1 #
+      responses += 1
+    end
+    break if responses >= 2
+  end
+end

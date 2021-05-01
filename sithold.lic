@@ -1,2 +1,2 @@
 fput 'sit'
-fput "hold #{script.vars[1].downcase}" unless group?()
+fput "hold #{script.vars[1].downcase}" unless group?

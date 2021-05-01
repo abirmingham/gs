@@ -1,8 +1,8 @@
-loop {
-    line = get
-    if line =~ /^An announcer shouts, "Round 12, send in more!"/
-        sleep 5
-        Spell[506].cast()
-        break
-    end
-}
+loop do
+  line = get
+  if line =~ /^An announcer shouts, "Round 12, send in more!"/
+    sleep 5
+    Spell[506].cast
+    break
+  end
+end

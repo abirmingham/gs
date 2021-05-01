@@ -1,33 +1,45 @@
-rest = [1844, 28813, 29260]
+rest = [1844, 28_813, 29_260]
 
-if bounty? != "You are not currently assigned a task."
-  echo "Already have bounty"
+if bounty? != 'You are not currently assigned a task.'
+  echo 'Already have bounty'
   exit
 end
 
 def message(text)
-  string = ""
-  if $fake_stormfront then string.concat("\034GSL\r\n ") else string.concat("<pushBold\/>") end
+  string = ''
+  if $fake_stormfront
+    string.concat("\034GSL\r\n ")
+  else
+    string.concat("<pushBold\/>")
+  end
   if (text.index('\n'))
     text.split('\n').each { |line| string.concat("| #{line}") }
   else
-    string.concat("| " + text)
+    string.concat('| ' + text)
   end
-  if $fake_stormfront then string.concat("\034GSM\r\n ") else string.concat("<popBold\/>") end
+  if $fake_stormfront
+    string.concat("\034GSM\r\n ")
+  else
+    string.concat("<popBold\/>")
+  end
   _respond string
 end
 
-if Spell[9003].active? and bounty? == "You are not currently assigned a task."
-  echo "Waiting to be ready to get bounty."
+if Spell[9003].active? and bounty? == 'You are not currently assigned a task.'
+  echo 'Waiting to be ready to get bounty.'
   while Spell[9003].active
     message "Next Bounty: #{Spell[9003].timeleft.round(2)} minutes"
-    message "Next Group Bounty: #{Spell[9056].timeleft.round(2)} minutes" if Spell[9056].active?
-    sleep [Spell[9003].timeleft * 60, 30].min()
+    if Spell[9056].active?
+      message "Next Group Bounty: #{Spell[9056].timeleft.round(2)} minutes"
+    end
+    sleep [Spell[9003].timeleft * 60, 30].min
   end
 end
 
-kill_script "azswapbounty" if running? "azswapbounty"
-Script.run("azswapbounty")
+kill_script 'azswapbounty' if running? 'azswapbounty'
+Script.run('azswapbounty')
 
 rest_room = Room.current.find_nearest(rest)
-Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
+until Room.current.id == rest_room
+  Script.run('go2', rest_room.to_s + ' --disable-confirm')
+end

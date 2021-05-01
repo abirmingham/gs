@@ -1,53 +1,64 @@
 LEADER = 'Azanoth'
-FOLLOWERS = ['Aranthius', 'Idios']
-INSIDE_DR = 26905
-TEAM_ARENA_ENTRANCE = 26387
-MAX_SELL_PRICE = 1500000
+FOLLOWERS = %w[Aranthius Idios]
+INSIDE_DR = 26_905
+TEAM_ARENA_ENTRANCE = 26_387
+MAX_SELL_PRICE = 1_500_000
 
-['foreach', 'sellunder', 'tdusk'].each { |script| raise "Requires #{script}.lic" unless Script.exists? script }
+%w[foreach sellunder tdusk].each do |script|
+  raise "Requires #{script}.lic" unless Script.exists? script
+end
 
 Script.kill('tdusk') if Script.running? 'tdusk'
 
 def turn_off_enh()
-    result = ''
-    loop {
-        result = dothistimeout "inv enh off", 2, /You already are not accepting|You are no longer accepting the benefits/
-        return if result
-    }
+  result = ''
+  loop do
+    result =
+      dothistimeout 'inv enh off',
+                    2,
+                    /You already are not accepting|You are no longer accepting the benefits/
+    return if result
+  end
 end
 
 # turn_off_enh if Char.name == 'Azanoth'
 
 if Char.name == LEADER
-    fput 'disband'
-    fput 'group open'
+  fput 'disband'
+  fput 'group open'
 end
 
 # Go to pawnshop
 fput 'stow all'
-Script.run("go2", "#{INSIDE_DR}")
+Script.run('go2', "#{INSIDE_DR}")
 dothistimeout 'go wagon', 3, /Obvious paths/
-Script.run("go2", "pawnshop")
+Script.run('go2', 'pawnshop')
 
 # Sell stuff
-Script.run("foreach", "unmarked unregistered weapon in my #{Vars.lootsack} | get item | waitfor You remove | ;sellunder #{MAX_SELL_PRICE} | stow all")
-Script.run("foreach", "unmarked unregistered armor in my  #{Vars.lootsack} | get item | waitfor You remove | ;sellunder #{MAX_SELL_PRICE} | stow all")
+Script.run(
+  'foreach',
+  "unmarked unregistered weapon in my #{Vars.lootsack} | get item | waitfor You remove | ;sellunder #{MAX_SELL_PRICE} | stow all"
+)
+Script.run(
+  'foreach',
+  "unmarked unregistered armor in my  #{Vars.lootsack} | get item | waitfor You remove | ;sellunder #{MAX_SELL_PRICE} | stow all"
+)
 
 # Deposit in bank
-Script.run("bankdrop")
+Script.run('bankdrop')
 wait_while { Script.running? 'go2' }
 
 # Run back to DR
 put 'quest transport duskruin'
 dothistimeout 'quest transport duskruin', 3, /Obvious (paths|exits)/
-Script.run("go2", "#{TEAM_ARENA_ENTRANCE}")
+Script.run('go2', "#{TEAM_ARENA_ENTRANCE}")
 
 # Reform group
 if Char.name.downcase == LEADER.downcase
-    FOLLOWERS.each { |f| fput "hold #{f}" }
+  FOLLOWERS.each { |f| fput "hold #{f}" }
 else
-    fput "join #{LEADER}"
-    Script.start 'tdusk' if Script.exists? 'tdusk'
+  fput "join #{LEADER}"
+  Script.start 'tdusk' if Script.exists? 'tdusk'
 end
 
 put 'group'

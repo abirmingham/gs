@@ -17,70 +17,68 @@
 
 loot_sack = UserVars.lootsack
 unless loot_sack
-	puts "#{monsterbold_start} ******WARNING UserVars.lootsack NOT DEFINED ****** #{monsterbold_end}"
-	echo " "
-    echo    "Please set your loot sack with a",
-            "command like:",
-            "    ;vars set lootsack=backpack",
-            "",
-            "Use only the noun (no \"my\" or adjectives).",
-            "",
-            "This will only work with containers you are",
-            "wearing or holding."
+  puts "#{monsterbold_start} ******WARNING UserVars.lootsack NOT DEFINED ****** #{monsterbold_end}"
+  echo ' '
+  echo 'Please set your loot sack with a',
+       'command like:',
+       '    ;vars set lootsack=backpack',
+       '',
+       "Use only the noun (no \"my\" or adjectives).",
+       '',
+       'This will only work with containers you are',
+       'wearing or holding.'
 
-    exit
+  exit
 end
 
-unless Script.exists? "rofl-questions"
-    echo "You need ;rofl-questions for this script to work."
-    do_client(";repository download rofl-questions.lic")
-	wait_while { running?('repository') }
+unless Script.exists? 'rofl-questions'
+  echo 'You need ;rofl-questions for this script to work.'
+  do_client(';repository download rofl-questions.lic')
+  wait_while { running?('repository') }
 end
 
-unless Script.exists? "rofl-puzzles"
-    echo "You need ;rofl-puzzles for this script to work."
-    do_client(";repository download rofl-puzzles.lic")
-	wait_while { running?('repository') }
+unless Script.exists? 'rofl-puzzles'
+  echo 'You need ;rofl-puzzles for this script to work.'
+  do_client(';repository download rofl-puzzles.lic')
+  wait_while { running?('repository') }
 end
 
-unless Script.exists? "rofl-trivia"
-    echo "You need ;rofl-trivia for this script to work."
-    do_client(";repository download rofl-trivia.lic")
-	wait_while { running?('repository') }
+unless Script.exists? 'rofl-trivia'
+  echo 'You need ;rofl-trivia for this script to work.'
+  do_client(';repository download rofl-trivia.lic')
+  wait_while { running?('repository') }
 end
 
-rofl_script =  Array["rofl-puzzles", "rofl-questions", "rofl-trivia"]
+rofl_script = Array['rofl-puzzles', 'rofl-questions', 'rofl-trivia']
 
-rofl_script.each { |script|
-	if Script.exists?(script)
-		Script.start(script) if !Script.running?(script)
-	else
-		echo "You should strongly consider downloading ;repo download #{script}"
-	end
-}
-
-before_dying{
-	rofl_script.each { |script|
-	if Script.exists?(script)
-		Script.kill(script) if Script.running?(script)
-	end
-	}
-	}
-
-Script.run("go2", "27009")
-fput "look"
-
-loop{
-while line = get
-if line =~ /Liabo, Sea of Transcendence/
-fput "get my card"
-put "put my note in my #{UserVars.lootsack}"
-put "put my orb in my #{UserVars.lootsack}"
-put "anal my brooch"
-sleep 1
-fput "go ring"
-put "go ring"
-put "go ring"
+rofl_script.each do |script|
+  if Script.exists?(script)
+    Script.start(script) if !Script.running?(script)
+  else
+    echo "You should strongly consider downloading ;repo download #{script}"
+  end
 end
+
+before_dying do
+  rofl_script.each do |script|
+    Script.kill(script) if Script.running?(script) if Script.exists?(script)
+  end
 end
-}
+
+Script.run('go2', '27009')
+fput 'look'
+
+loop do
+  while line = get
+    if line =~ /Liabo, Sea of Transcendence/
+      fput 'get my card'
+      put "put my note in my #{UserVars.lootsack}"
+      put "put my orb in my #{UserVars.lootsack}"
+      put 'anal my brooch'
+      sleep 1
+      fput 'go ring'
+      put 'go ring'
+      put 'go ring'
+    end
+  end
+end

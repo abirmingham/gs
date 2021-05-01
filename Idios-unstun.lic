@@ -2,34 +2,37 @@ BANDIT_SCRIPT = "#{Char.name}-bandits"
 
 killed_script = false
 
-loop {
-    trapped = false
-    while line = get?
-        if line =~ /^Suddenly, a carefully concealed net/ || line =~ /^Suddenly, you hear a soft/ || line =~ /a well concealed shallow pit of spikes!/
-            trapped = true
-            put 'look'
-        end
-        put 'look' if line =~ /stunned!/
+loop do
+  trapped = false
+  while line = get?
+    if line =~ /^Suddenly, a carefully concealed net/ ||
+         line =~ /^Suddenly, you hear a soft/ ||
+         line =~ /a well concealed shallow pit of spikes!/
+      trapped = true
+      put 'look'
     end
-        
-    unless checkdead
-        stunnedfriend = GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /stun/i }
+    put 'look' if line =~ /stunned!/
+  end
 
-        if (checkstunned || stunnedfriend || trapped) && checkmana.to_i > 100
-            if running? BANDIT_SCRIPT
-                # kill instead of pause - don't want to restart it and have it poach
-                kill_script BANDIT_SCRIPT
-                killed_script = true
-            end
-            fput 'shout 1040'
-            waitcastrt?
-            put 'look'
-        else
-            if killed_script
-                start_script BANDIT_SCRIPT if !running? BANDIT_SCRIPT
-                killed_script = false
-            end
-        end
+  unless checkdead
+    stunnedfriend =
+      GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /stun/i }
+
+    if (checkstunned || stunnedfriend || trapped) && checkmana.to_i > 100
+      if running? BANDIT_SCRIPT
+        # kill instead of pause - don't want to restart it and have it poach
+        kill_script BANDIT_SCRIPT
+        killed_script = true
+      end
+      fput 'shout 1040'
+      waitcastrt?
+      put 'look'
+    else
+      if killed_script
+        start_script BANDIT_SCRIPT if !running? BANDIT_SCRIPT
+        killed_script = false
+      end
     end
-    sleep 0.25
-}
+  end
+  sleep 0.25
+end

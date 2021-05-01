@@ -6,15 +6,15 @@ Script.start('standgroup')
 # brooch stuff
 if Char.name == 'Idios' || Char.name == 'Aranthius' || Char.name == 'Gossan'
   if percentmind >= 62
-    Script.run "turnbrooch", "red 2"
-    Script.run "turnbrooch", "blue 1"
+    Script.run 'turnbrooch', 'red 2'
+    Script.run 'turnbrooch', 'blue 1'
   end
 end
 
 if Char.name == 'Gossan'
   Script.start('isigns')
-  Spell[211].cast()
-  Spell[215].cast()
+  Spell[211].cast
+  Spell[215].cast
   Script.start('Gossan-surge')
   Script.start('shattered_empath')
 elsif Char.name == 'Helsfeld'
@@ -22,6 +22,7 @@ elsif Char.name == 'Helsfeld'
   Script.start('Helsfeld-surge')
 elsif Char.name == 'Idios'
   Script.start('symbolz')
+
   # Script.start('tonis') # enough mana? =/
   Script.start('Idios-unstun')
 elsif Char.name == 'Aranthius'
@@ -31,51 +32,63 @@ elsif Char.name == 'Azanoth'
 end
 
 # start attacking
-echo "Starting attack sequence"
+echo 'Starting attack sequence'
 if Char.name == 'Aranthius'
-  Script.start('rapid')  
+  Script.start('rapid')
 elsif Char.name == 'Azanoth'
-  fput "cman surge" if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-  fput "cman dervish"
+  if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
+    fput 'cman surge'
+  end
+  fput 'cman dervish'
   waitrt?
-  fput "war shout"
+  fput 'war shout'
   waitrt?
   Script.start('Azanoth-506')
 end
 
-loop {
+loop do
   break if bounty? =~ $AZ_BOUNTY_PATTERN_NUM
   sleep 1
-}
+end
 
 if bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
   $AZANOTH_SHARED_OBJECT['bandits'].set_count(Char.name, $1.to_i)
   echo "Set count #{$1}"
 else
-  throw "Failed to find bounty count"
+  throw 'Failed to find bounty count'
 end
 
 original_other_bounty_counts = nil
-loop {
+loop do
   sleep 5 if Char.name == 'Helsfeld' # hack... original_other_bounty_counts isn't ready yet
-  bounty_counts = $AZANOTH_SHARED_OBJECT['bandits'].get_counts()
+  bounty_counts = $AZANOTH_SHARED_OBJECT['bandits'].get_counts
   echo bounty_counts
 
-  other_bounty_counts = bounty_counts.reject { |k, v| k === Char.name || k == 'Gossan' || k == 'Helsfeld' }
+  other_bounty_counts =
+    bounty_counts.reject do |k, v|
+      k === Char.name || k == 'Gossan' || k == 'Helsfeld'
+    end
   if original_other_bounty_counts.nil?
     original_other_bounty_counts = other_bounty_counts
   end
   if Char.name == 'Gossan'
     break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 1
   elsif Char.name == 'Helsfeld'
-    break if bounty_counts[Char.name] >= other_bounty_counts.values.max && other_bounty_counts.all? { |k, v| v < original_other_bounty_counts[k] }
+    if bounty_counts[Char.name] >=
+         other_bounty_counts.values.max && other_bounty_counts.all? do |k, v|
+         v < original_other_bounty_counts[k]
+       end
+      break
+    end
   else
-    break if bounty_counts[Char.name] >= (other_bounty_counts.values.max || 0) - 3
+    if bounty_counts[Char.name] >= (other_bounty_counts.values.max || 0) - 3
+      break
+    end
   end
 
-  echo "Waiting for other character to get more credit"
+  echo 'Waiting for other character to get more credit'
   sleep 0.5
-}
+end
 
 Script.start("#{Char.name}-bandits")
 

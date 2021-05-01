@@ -1,7 +1,13 @@
-Script.run("foreach", "unmarked unregistered jewelry in my  #{Vars.lootsack} | get item | waitfor You remove | ;sellunder 35000 | stow all")
+Script.run(
+  'foreach',
+  "unmarked unregistered jewelry in my  #{Vars.lootsack} | get item | waitfor You remove | ;sellunder 35000 | stow all"
+)
 
-echo "WATCH NOW"
+echo 'WATCH NOW'
 echo ';exec 2.times { fput "sell ##{GameObj.right_hand.id}"; }; fput "stow all"'
 sleep 2
-Script.run("foreach", "unmarked unregistered jewelry in my  #{Vars.lootsack} | get item | waitfor You remove | recall item quick | sleep 5 | stow all")
-Script.run("bankdrop")
+Script.run(
+  'foreach',
+  "unmarked unregistered jewelry in my  #{Vars.lootsack} | get item | waitfor You remove | recall item quick | sleep 5 | stow all"
+)
+Script.run('bankdrop')

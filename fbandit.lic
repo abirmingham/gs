@@ -1,117 +1,125 @@
-PEOPLE = ['Idios', 'Azanoth', 'Aranthius', 'Gossan', 'Helsfeld']
+PEOPLE = %w[Idios Azanoth Aranthius Gossan Helsfeld]
 
-raise "You aren't ready to finish" if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Gossan'  && Char.name != 'Helsfeld'
+if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Gossan' &&
+     Char.name != 'Helsfeld'
+  raise "You aren't ready to finish"
+end
 
-taskfinish = [420, 1957, 28978]
+taskfinish = [420, 1957, 28_978]
 taskfinish_match = /sentry|guard|sergeant/
-rest = [1844, 28813, 29260]
-scripts_to_kill = [
-  "tonis", "isigns", "symbolz", "isigils",
-  "standgroup", "rapid", "sloot", "prep"
-]
+rest = [1844, 28_813, 29_260]
+scripts_to_kill = %w[tonis isigns symbolz isigils standgroup rapid sloot prep]
 
 def turn_off_enh()
-    result = ''
-    loop {
-        result = dothistimeout "inv enh off", 2, /You already are not accepting|You are no longer accepting the benefits/
-        return if result
-    }
+  result = ''
+  loop do
+    result =
+      dothistimeout 'inv enh off',
+                    2,
+                    /You already are not accepting|You are no longer accepting the benefits/
+    return if result
+  end
 end
 
 def join_healer()
   return if Char.name == 'Gossan'
   sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == 'Gossan' }
-  fput "join Gossan"
+  fput 'join Gossan'
 end
 
-Script.list.each { |s| Script.kill(s.name) if s.name.start_with? "#{Char.name}-" }
+Script.list.each do |s|
+  Script.kill(s.name) if s.name.start_with? "#{Char.name}-"
+end
 scripts_to_kill.each { |s| Script.kill(s) }
 waitrt?
-fput "stance def" if stance != "defensive"
+fput 'stance def' if stance != 'defensive'
 
 if !rest.include? Room.current.id
   # If I'm not at rest, trigger fbandit on friends
   # (if I am at rest, they probably already did it and
   #  this is being triggered manually)
-  PEOPLE.each { |char|
-    fput "whisper ooc #{char} do:start-script:fbandit" if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
-  }
-  fput "disband"
-  put "group open"
+  PEOPLE.each do |char|
+    if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
+      fput "whisper ooc #{char} do:start-script:fbandit"
+    end
+  end
+  fput 'disband'
+  put 'group open'
 end
 
 if bounty? =~ /^You (have )?succeeded/
   target_room = Room.current.find_nearest(taskfinish)
-  Script.run("go2", target_room.to_s + " --disable-confirm") until Room.current.id == target_room
+  until Room.current.id == target_room
+    Script.run('go2', target_room.to_s + ' --disable-confirm')
+  end
   npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
-  raise "Failed to find npc" if npc.nil?
+  raise 'Failed to find npc' if npc.nil?
   fput "ask ##{npc.id} about bounty"
 end
 
 rest_room = Room.current.find_nearest(rest)
-Script.run("go2", rest_room.to_s + " --disable-confirm")
-if checkmind == "saturated"
+Script.run('go2', rest_room.to_s + ' --disable-confirm')
+if checkmind == 'saturated'
   join_healer
-  echo "Mind is saturated - waiting before turning in bounty"
+  echo 'Mind is saturated - waiting before turning in bounty'
+
   # turn_off_enh() if Char.name == 'Azanoth'
   Script.run('waggle')
-  while checkmind == "saturated"
-    fput "exp" if Time.now.to_f.round(0) % 60 == 0
+  while checkmind == 'saturated'
+    fput 'exp' if Time.now.to_f.round(0) % 60 == 0
     sleep 0.75
   end
-  wait_while { checkmind == "saturated" }
+  wait_while { checkmind == 'saturated' }
 end
 
 def get_exp()
   put 'exp'
   while line = get
-    if line =~ /Total Exp: ([\d,]*)/
-      return $1.gsub(',', '').to_i 
-    end
+    return $1.gsub(',', '').to_i if line =~ /Total Exp: ([\d,]*)/
   end
 end
 
 if bounty? =~ /^You (have )?succeeded/
-  fput "leave"
-  put "group open"
-  Script.run("go2", "advguild")
+  fput 'leave'
+  put 'group open'
+  Script.run('go2', 'advguild')
   npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
-  raise "Failed to find npc" if npc.nil?
+  raise 'Failed to find npc' if npc.nil?
   put 'experience'
-  before_exp = get_exp()
+  before_exp = get_exp
   dothistimeout "ask ##{npc.id} about bounty", 5, /You have earned/
-  after_exp = get_exp()
+  after_exp = get_exp
   echo [before_exp, after_exp]
   echo "Experience gained: #{after_exp - before_exp}"
 end
 
 if Char.name == 'Aranthius'
   fput 'store all'
-  Script.run("go2", "gemshop")
-  fput "rem pack"
-  fput "sell pack"
-  fput "wear pack"
+  Script.run('go2', 'gemshop')
+  fput 'rem pack'
+  fput 'sell pack'
+  fput 'wear pack'
 end
 
 # bank
-Script.run "go2", "bank --disable-confirm"
-fput "deposit all"
-fput "check balance"
+Script.run 'go2', 'bank --disable-confirm'
+fput 'deposit all'
+fput 'check balance'
 
 # rest
-Script.run("go2", rest_room.to_s + " --disable-confirm")
+Script.run('go2', rest_room.to_s + ' --disable-confirm')
 Script.run('waggle')
 
 if Char.name == 'Azanoth'
-    fput 'armor support'
-    fput 'armor support Idios'
-    fput 'armor support Aranthius'
+  fput 'armor support'
+  fput 'armor support Idios'
+  fput 'armor support Aranthius'
 elsif Char.name == 'Aranthius'
-    Script.run("waggle", "Azanoth")
-    Script.run("waggle", "Idios")
-    Script.run("waggle", "Gossan")
-    Script.run("waggle", "Helsfeld")
-    Spell[911].cast() if Spell[911].affordable?
+  Script.run('waggle', 'Azanoth')
+  Script.run('waggle', 'Idios')
+  Script.run('waggle', 'Gossan')
+  Script.run('waggle', 'Helsfeld')
+  Spell[911].cast if Spell[911].affordable?
 end
 
 join_healer if Spell[9003].active?
@@ -119,11 +127,15 @@ if Char.name == 'Gossan' || Char.name == 'Helsfeld'
   # always turn in - need to reset count so that spawns
   # keep coming and so that she has a chance to ever finish
   # (which won't happen if her number is low)
-  Script.run("azswapbounty")
+  Script.run('azswapbounty')
 end
-Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
-Script.run("getbounty")
-Script.run("go2", rest_room.to_s + " --disable-confirm") until Room.current.id == rest_room
+until Room.current.id == rest_room
+  Script.run('go2', rest_room.to_s + ' --disable-confirm')
+end
+Script.run('getbounty')
+until Room.current.id == rest_room
+  Script.run('go2', rest_room.to_s + ' --disable-confirm')
+end
 join_healer
 
 do_client ';magic'

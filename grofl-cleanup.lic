@@ -1,19 +1,42 @@
-echo "WARNING: Assumes lootsack is set and that stow location is same as lootsack"
+echo 'WARNING: Assumes lootsack is set and that stow location is same as lootsack'
 
-fput "inv"
+fput 'inv'
 lootsack = GameObj.inv.find { |obj| obj.noun == Lich.lootsack }
 fput "look in my #{lootsack}"
 exit if lootsack.contents.nil?
 
 # TODO filter to note types rather than hard-coding
-["light yellow note", "pale pink note", "bright pink note", "pale blue note", "bright orange note", "vivid pink note", "deep black note", "vivid blue note", "light pink note", "light blue note", "bright blue note"].each { |note_type|
-  notes = lootsack.contents.reject { |obj| obj.name != note_type && obj.name != "stack of #{note_type}s" }
+[
+  'light yellow note',
+  'pale pink note',
+  'bright pink note',
+  'pale blue note',
+  'bright orange note',
+  'vivid pink note',
+  'deep black note',
+  'vivid blue note',
+  'light pink note',
+  'light blue note',
+  'bright blue note'
+].each do |note_type|
+  notes =
+    lootsack.contents.reject do |obj|
+      obj.name != note_type && obj.name != "stack of #{note_type}s"
+    end
   next if notes.length <= 1
-  fput "stow all"
-  while note = lootsack.contents.find { |obj| obj.name == note_type || obj.name == "stack of #{note_type}s" }
+
+  fput 'stow all'
+
+  loop do
+    note =
+      lootsack.contents.find do |obj|
+        obj.name == note_type || obj.name == "stack of #{note_type}s"
+      end
+    break if !note
     fput "get ##{note.id}"
-    fput "bundle"
+    fput 'bundle'
     sleep 0.05
   end
+
   fput "look in my #{lootsack}"
-}
+end

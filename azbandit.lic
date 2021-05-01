@@ -13,9 +13,9 @@ It will work better if followers allow the leader to see their bounty via lichne
 =end
 
 # TODO large groups overwhelm lnet with requests - throttle lnet requests
-status_tags "on"
-fput "flag groupmovement on"
-fput "flag description on"
+status_tags 'on'
+fput 'flag groupmovement on'
+fput 'flag description on'
 
 module AzBandit
   # user configurable (AKA STUFF YOU MIGHT ACTUALLY CARE ABOUT)
@@ -28,19 +28,31 @@ module AzBandit
   @PROGRESS_UPDATE_INTERVAL = 10
   @DEBUG = false
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
-  @BANDIT_SET = Set["thief", "rogue", "bandit", "mugger", "outlaw", "highwayman", "marauder", "brigand", "thug", "robber"]
+  @BANDIT_SET =
+    Set[
+      'thief',
+      'rogue',
+      'bandit',
+      'mugger',
+      'outlaw',
+      'highwayman',
+      'marauder',
+      'brigand',
+      'thug',
+      'robber'
+    ]
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
-  @NOT_ON_TASK = "not on task"
-  @DIFFERENT_LOCATION_TASK = "different location bounty"
-  @FINISHED = "finished"
-  @DENIED = "denied"
-  @MY_CHARS_HACK = ["Idios", "Azanoth", "Aranthius", 'Gossan', "Helsfeld"]
+  @NOT_ON_TASK = 'not on task'
+  @DIFFERENT_LOCATION_TASK = 'different location bounty'
+  @FINISHED = 'finished'
+  @DENIED = 'denied'
+  @MY_CHARS_HACK = %w[Idios Azanoth Aranthius Gossan Helsfeld]
 
   # dynamic variables
   @grouplist = []
   @groupset = {}
-  @bounty_text = ""
-  @bounty_location = ""
+  @bounty_text = ''
+  @bounty_location = ''
   @deniers = {}
   @last_progress_update = nil
   @last_progress_msg = ''
@@ -48,49 +60,55 @@ module AzBandit
   @start_time = Time.now.to_f
 
   def self.main()
-    raise "Failed to find lootsack (#{Vars.lootsack})" if @LOOTING_ENABLED && !GameObj.inv.find {|x| x.noun == Vars.lootsack }
+    if @LOOTING_ENABLED && !GameObj.inv.find { |x| x.noun == Vars.lootsack }
+      raise "Failed to find lootsack (#{Vars.lootsack})"
+    end
 
     # Setup
-    @grouplist, @groupset = populate_group()
-    echo "Group is #{@grouplist.length ? @grouplist.join(", ") : "empty"}"
-    @bounty_text, @bounty_location = find_bounty_text()
-    exit_azbandit() if all_done?()
+    @grouplist, @groupset = populate_group
+    echo "Group is #{@grouplist.length ? @grouplist.join(', ') : 'empty'}"
+    @bounty_text, @bounty_location = find_bounty_text
+    exit_azbandit if all_done?
     echo "Bounty location is #{@bounty_location}"
 
     # Go to bounty area
-    rooms_list = populate_rooms_list()
+    rooms_list = populate_rooms_list
     if !rooms_list.include? Room.current.id
       move_to_bounty_area(rooms_list[0])
       sleep 0.5
       if Room.current.id != rooms_list[0]
-        echo "Failed to get to bounty area"
+        echo 'Failed to get to bounty area'
         exit
       end
     end
 
     # Handle first room
     # TODO have this move to just outside the bounty area, then proceed as normal
-    echo "Handling first room" if @DEBUG
-    wait_for_battle() if game_obj_bandits().length > 0 && !is_poaching?()
+    echo 'Handling first room' if @DEBUG
+    wait_for_battle if game_obj_bandits.length > 0 && !is_poaching?
 
     # Main loop - handle remaining rooms
-    echo "Handling remaining rooms" if @DEBUG
+    echo 'Handling remaining rooms' if @DEBUG
     prev_room = nil
     prev_room_poaching = nil
     step2_result = nil
-    loop {
+    loop do
       poaching = step2_result && step2_result['poaching']
+
       # Identify next room
       # (we prefer previous room unless we were poaching or are poaching in this
       #  room, to avoid getting stuck in e.g. y1/x2 in a x1-y1-x2 layout where
       #  another group is in y1)
-      next_room = Room.current.id != prev_room && prev_room &&
-                  !prev_room_poaching && !poaching ?
-        prev_room :
-        Room.current.find_nearest(rooms_list).to_i
+      next_room =
+        if Room.current.id != prev_room && prev_room && !prev_room_poaching &&
+             !poaching
+          prev_room
+        else
+          Room.current.find_nearest(rooms_list).to_i
+        end
 
       if next_room == 0 || next_room.nil?
-        rooms_list = populate_rooms_list()
+        rooms_list = populate_rooms_list
         next
       end
 
@@ -111,13 +129,13 @@ module AzBandit
       # Possibly wait for battle
       if step2_result['bandits'] && !step2_result['poaching']
         i = 0
-        while i == 0 || (game_obj_bandits().length > 0 && !is_poaching?())
+        while i == 0 || (game_obj_bandits.length > 0 && !is_poaching?)
           i = i + 1
-          wait_for_battle()
+          wait_for_battle
         end
       end
-      exit_azbandit() if all_done?()
-    }
+      exit_azbandit if all_done?
+    end
   end
 
   def self.move_to_bounty_area(first_room_id)
@@ -132,11 +150,19 @@ module AzBandit
     #   move "go trail"
     # end
     # END
-    Script.run("go2", "#{first_room_id}") unless Room.current.id == first_room_id
+    unless Room.current.id == first_room_id
+      Script.run('go2', "#{first_room_id}")
+    end
   end
 
   def self.is_kraken_falls_bounty()
-    return !!(@bounty_text =~ /Widowmaker's Road/ or @bounty_text =~ /Muddy Village/ or @bounty_text =~ /Cliffwalk/ or @bounty_text =~ /Black Weald/)
+    return(
+      !!(
+        @bounty_text =~ /Widowmaker's Road/ or
+          @bounty_text =~ /Muddy Village/ or @bounty_text =~ /Cliffwalk/ or
+          @bounty_text =~ /Black Weald/
+      )
+    )
   end
 
   def self.populate_rooms_list()
@@ -144,62 +170,116 @@ module AzBandit
 
     if !$AZBANDIT_ROOM_CACHE[@bounty_location]
       if @bounty_text =~ /Widowmaker's Road/
-        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29021, 29022, 29023, 29024, 29025, 29026, 29027, 29028, 29029, 29030, 29050, 29051, 29053, 29054, 29055]
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = [
+          29_021,
+          29_022,
+          29_023,
+          29_024,
+          29_025,
+          29_026,
+          29_027,
+          29_028,
+          29_029,
+          29_030,
+          29_050,
+          29_051,
+          29_053,
+          29_054,
+          29_055
+        ]
       elsif @bounty_text =~ /Muddy Village/
-        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29047, 29049, 29059, 29060, 29070, 29071, 29066, 29065]
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = [
+          29_047,
+          29_049,
+          29_059,
+          29_060,
+          29_070,
+          29_071,
+          29_066,
+          29_065
+        ]
       elsif @bounty_text =~ /Cliffwalk/
-        $AZBANDIT_ROOM_CACHE[@bounty_location] = [29124, 29120, 29128, 29129, 29133, 29134, 29217, 29219,29223, 29222]
+        $AZBANDIT_ROOM_CACHE[@bounty_location] = [
+          29_124,
+          29_120,
+          29_128,
+          29_129,
+          29_133,
+          29_134,
+          29_217,
+          29_219,
+          29_223,
+          29_222
+        ]
       elsif @bounty_text =~ /Black Weald/
-        return [29227, 29228, 29229, 29234, 29235, 29236, 29237, 29238, 29239, 29240, 29231, 29230]
+        return [
+          29_227,
+          29_228,
+          29_229,
+          29_234,
+          29_235,
+          29_236,
+          29_237,
+          29_238,
+          29_239,
+          29_240,
+          29_231,
+          29_230
+        ]
       else
-        echo "Loading bounty rooms..."
-        $AZBANDIT_ROOM_CACHE[@bounty_location] = Room.list.find_all { |r|
-          r.outside? &&
-          r.location =~ /#{@bounty_location}/i &&
-          r.location !~ @BAD_LOCATIONS
-        }.collect { |r| r.id }
-        echo "...done!"
+        echo 'Loading bounty rooms...'
+        $AZBANDIT_ROOM_CACHE[@bounty_location] =
+          Room.list.find_all do |r|
+            r.outside? && r.location =~ /#{@bounty_location}/i &&
+              r.location !~ @BAD_LOCATIONS
+          end.collect { |r| r.id }
+        echo '...done!'
       end
     end
     return $AZBANDIT_ROOM_CACHE[@bounty_location]
   end
 
   def self.populate_group()
-    status_tags "off"
+    status_tags 'off'
     grouplist = []
     groupset = {}
-    fput "group"
+    fput 'group'
     while line = get
-      if line =~ /(\w+) is (?:following you|the leader of your group|also a member of your group)/i && !$1.nil?
+      if line =~
+           /(\w+) is (?:following you|the leader of your group|also a member of your group)/i &&
+           !$1.nil?
         grouplist.push($1)
         groupset[$1] = true
-      elsif line =~ /group status is currently|to set your group status|^.$|You are not currently in a group/m
-        status_tags "on"
-        return [grouplist, groupset]
+      elsif line =~
+            /group status is currently|to set your group status|^.$|You are not currently in a group/m
+        status_tags 'on'
+        return grouplist, groupset
       end
     end
   end
 
   def self.find_bounty_text()
-    bounty_text = [
-      bounty?,
-      *@grouplist.map { |n| LNet.get_data(n, "bounty") },
-    ].find { |b| b =~ @BANDIT_BOUNTY }
+    bounty_text =
+      [bounty?, *@grouplist.map { |n| LNet.get_data(n, 'bounty') }].find do |b|
+        b =~ @BANDIT_BOUNTY
+      end
     if !bounty_text
-      echo "Unable to find bandit bounty on you or group! Exiting"
+      echo 'Unable to find bandit bounty on you or group! Exiting'
       exit
     end
-    return [bounty_text, $1]
+    return bounty_text, $1
   end
 
   def self.get_target_bounty_count(name)
     echo "get_target_bounty_count #{name}" if @DEBUG
 
-    result = name == Char.name ? bounty? : LNet.get_data(name, "bounty")
+    result = name == Char.name ? bounty? : LNet.get_data(name, 'bounty')
     return @DENIED if result.nil?
     return @FINISHED if result =~ /^You succeeded in your task/
     if result =~ @BANDIT_BOUNTY
-      return @DIFFERENT_LOCATION_TASK if !result.downcase.match(@bounty_location.downcase)
+      if !result.downcase.match(@bounty_location.downcase)
+        return @DIFFERENT_LOCATION_TASK
+      end
       bandit_count = result.scan(/\d+/).first
       if bandit_count.nil?
         echo "ERROR finding bandit count: #{result}"
@@ -212,20 +292,22 @@ module AzBandit
 
   def self.game_obj_bandits()
     return [] if GameObj.npcs.nil?
-    return GameObj.npcs.reject { |npc|
-      npc.name.start_with?("animated ") ||
-        !(npc.type =~ /bandit/ || @BANDIT_SET.include?(npc.noun))
-    }
+    return(
+      GameObj.npcs.reject do |npc|
+        npc.name.start_with?('animated ') ||
+          !(npc.type =~ /bandit/ || @BANDIT_SET.include?(npc.noun))
+      end
+    )
   end
 
   def self.room_needs_looting?()
-    echo "room_needs_looting?" if @DEBUG
-    return GameObj.npcs.any? { |n| n.status == "dead" } ||
-             GameObj.loot.any? { |n|
-              #  n.type == "skin" ||
-               n.type == "gem" ||
-               n.name =~ /coins/
-             }
+    echo 'room_needs_looting?' if @DEBUG
+    return(
+      GameObj.npcs.any? { |n| n.status == 'dead' } || GameObj.loot.any? do |n|
+        #  n.type == "skin" ||
+        n.type == 'gem' || n.name =~ /coins/
+      end
+    )
   end
 
   def self.is_poaching?()
@@ -241,36 +323,48 @@ module AzBandit
     start_room_id = Room.current.id
     step2_result = nil
     while Room.current.id == start_room_id
-      fput "stand" until standing?
-      GameObj.pcs.each { |pc|
-        if @groupset[pc.noun] and pc.status =~ /kneeling|sitting|lying down|prone/
+      fput 'stand' until standing?
+      GameObj.pcs.each do |pc|
+        if @groupset[pc.noun] and
+             pc.status =~ /kneeling|sitting|lying down|prone/
           put "pull #{pc.noun}"
         end
-      }
+      end
       step2_result = step2(room_id)
       echo "STEP2_RESULT: #{step2_result}" if @DEBUG
       if !step2_result['moved']
         sleep 0.5
-        echo({'game_obj_bandits' => game_obj_bandits().length, 'is_poaching' => start_room_poaching}) if @DEBUG
-        stay_here = !start_room_poaching && Room.current.id == start_room_id && (step2_result['bandits'] || game_obj_bandits().length > 0)
+        if @DEBUG
+          echo(
+            {
+              'game_obj_bandits' => game_obj_bandits.length,
+              'is_poaching' => start_room_poaching
+            }
+          )
+        end
+        stay_here =
+          !start_room_poaching && Room.current.id == start_room_id &&
+            (step2_result['bandits'] || game_obj_bandits.length > 0)
         if stay_here
           # couldn't move (probably cause follower couldn't follow)
           # but that's okay cause we have bandits now
           echo "INFO: I don't need to move anymore - bandits are here and I'm not poaching"
-          return {
-            "moved" => false,
-            "bandits" => true,
-            "poaching" => false,
-            "stragglers" => false,
-          }
+          return(
+            {
+              'moved' => false,
+              'bandits' => true,
+              'poaching' => false,
+              'stragglers' => false
+            }
+          )
         end
       end
     end
 
-    throw "ERROR: no step2_result" if step2_result.nil?
+    throw 'ERROR: no step2_result' if step2_result.nil?
     return step2_result
   end
-  
+
   def self.step2(destination_room)
     # TODO fix this - it looks like we need to drain the queue more.
     # Up until the most recent <streamWindow id="main" perhaps?
@@ -298,16 +392,25 @@ module AzBandit
     # [azbandit: Bandits are here and we own the room]
 
     # adapted from step2.lic
-    echo "running step2 towards #{destination_room} (current #{Room.current.id})" if @DEBUG
-    throw "current room was not found in the map database" unless Room.current.id
-    throw "destination room was not found in the map database" unless destination_room
+    if @DEBUG
+      echo "running step2 towards #{destination_room} (current #{Room.current.id})"
+    end
+    unless Room.current.id
+      throw 'current room was not found in the map database'
+    end
+    unless destination_room
+      throw 'destination room was not found in the map database'
+    end
 
     start_room = Room.current.id
-    throw "ERROR: start room and destination room are the same" if start_room == destination_room
+    if start_room == destination_room
+      throw 'ERROR: start room and destination room are the same'
+    end
 
     key = "#{start_room}->#{destination_room}"
     unless @step2_ways[key]
-      previous, shortest_distances = Map.dijkstra(Room.current.id, destination_room)
+      previous, shortest_distances =
+        Map.dijkstra(Room.current.id, destination_room)
       unless previous[destination_room]
         echo "error: failed to find a path between your current room (#{start_room}) and destination room (#{destination_room})"
         exit
@@ -315,7 +418,8 @@ module AzBandit
       path = [destination_room]
       path.push(previous[path[-1]]) until previous[path[-1]].nil?
       path.reverse!
-      @step2_ways[key] = Room.current.wayto[path[path.index(start_room) + 1].to_s]
+      @step2_ways[key] =
+        Room.current.wayto[path[path.index(start_room) + 1].to_s]
     end
 
     # drain get? buffer
@@ -327,84 +431,96 @@ module AzBandit
     way = @step2_ways[key]
 
     # move
-    fput "stand" until standing?
-    start_time = Time.now().to_i
+    fput 'stand' until standing?
+    start_time = Time.now.to_i
     if way.class == String
       move way, 2
     elsif way.class == Proc
       way.call
     else
-      throw "error in the map database"
+      throw 'error in the map database'
     end
 
     # return new state
     result = {
-      "moved" => false,
-      "bandits" => false,
-      "poaching" => false,
-      "stragglers" => false,
+      'moved' => false,
+      'bandits' => false,
+      'poaching' => false,
+      'stragglers' => false
     }
     is_grouped = @grouplist.length > 0
 
-    loop {
+    loop do
       line = get?
       if !line
-        if Time.now().to_i >= start_time + 5 # seconds
-          echo "WARNING: step2 timed out"
-          return result.merge({'poaching' => true}) # not sure what to return
+        if Time.now.to_i >= start_time + 5
+          # seconds
+          echo 'WARNING: step2 timed out'
+          return result.merge({ 'poaching' => true }) # not sure what to return
         end
         sleep 0.05
         next
       end
+
       # echo line
 
       if count = match_dialog_data_targets(line)
         result['bandits'] = count > 0
-
       elsif line =~ /^Also here:\s+(.*)/
         # Also here: Great Lady <a exist="-11144418" noun="Carolanne">Carolanne</a>, <a exist="-11178762" noun="Ithloria">Ithloria</a>
         # Check to see if we'd be poaching
         result['poaching'] = false
+
         # Parse xml with a regex? Seems like a bad idea, let's see how it turns out
-        pcs = $1.split('noun="').reject { |x| x.start_with?('<a') }.collect { |x| x.split('"')[0] }
+        pcs =
+          $1.split('noun="').reject { |x| x.start_with?('<a') }.collect do |x|
+            x.split('"')[0]
+          end
         echo "INFO: also here: #{pcs}" if @DEBUG
-        pcs.each do |pc|
-          result['poaching'] = true if !@groupset[pc]
-        end
+        pcs.each { |pc| result['poaching'] = true if !@groupset[pc] }
         # note that in actuality we can generally assume that we're not poaching if we see Obvious paths/exits
         # before we see Also here:. However, there is ONE case where this isn't true - when we're picking up
         # a straggler. le sigh
-
-      elsif !is_grouped && (line.start_with?('Obvious paths: ') || line.start_with?('Obvious exits: '))
-        return result.merge({'moved' => true})
-
-      elsif is_grouped && line.start_with?('<compass') && line =~ /<a exist=(.*) followed\.$/
-        followers = $1.split('noun="').reject { |x| x.start_with?('<a') }.collect { |x| x.split('"')[0] }
-        return result.merge({
-          'moved' => true,
-          'stragglers' => @grouplist.any? { |x| !followers.include? x },
-        })
-
+      elsif !is_grouped &&
+            (
+              line.start_with?('Obvious paths: ') ||
+                line.start_with?('Obvious exits: ')
+            )
+        return result.merge({ 'moved' => true })
+      elsif is_grouped && line.start_with?('<compass') &&
+            line =~ /<a exist=(.*) followed\.$/
+        followers =
+          $1.split('noun="').reject { |x| x.start_with?('<a') }.collect do |x|
+            x.split('"')[0]
+          end
+        return(
+          result.merge(
+            {
+              'moved' => true,
+              'stragglers' => @grouplist.any? { |x| !followers.include? x }
+            }
+          )
+        )
       elsif is_grouped && line.end_with?(' is unable to follow you.')
-        return result.merge({'moved' => false})
+        return result.merge({ 'moved' => false })
       end
-    }
+    end
   end
 
   def self.retrieve_stragglers(prev_room_id)
-    echo "Retrieving stragglers"
-    stragglers = identify_stragglers()
+    echo 'Retrieving stragglers'
+    stragglers = identify_stragglers
     while stragglers.length > 0
-      put "look"
+      put 'look'
       sleep 0.5 # try again in a second - this thing is fiddly
-      put "look"
+      put 'look'
       sleep 0.5
-      echo "whisper ooc group We left behind #{stragglers.join(" and ")}"
+      echo "whisper ooc group We left behind #{stragglers.join(' and ')}"
       step2_result = step2(prev_room_id)
       waitrt?
       stragglers.each { |char| fput "hold #{char}" }
       fput 'look'
-      stragglers = identify_stragglers()
+      stragglers = identify_stragglers
       sleep 3 # if they're stunned, give other chars time to unstun them
       return step2_result if stragglers.length == 0 # we got em
     end
@@ -424,9 +540,10 @@ module AzBandit
     # NOTE THAT THIS APPEARS TO BE A PARTIAL VIEW - NOT ALL BANDITS APPEAR HERE
     # UNCLEAR WHY IT IS PARTIAL OR WHAT RULES IT HAS
     bandit_count = nil
-    if line =~ /<dialogData id='combat'>.*content_text="(.*)" content_value="(.+?)" anchor_left.*<\/dialogData>/
+    if line =~
+         %r{<dialogData id='combat'>.*content_text="(.*)" content_value="(.+?)" anchor_left.*<\/dialogData>}
       #<dialogData id='combat'><dropDownBox id='dDBTarget' value="none" cmd="target %dDBTarget%" tooltip='Select Target' content_text="none,human thief,halfling rogue" content_value="target help,#132801883,#132801878" anchor_left='cmdTarget' anchor_right='cmdAttack' height='20' width='80'  top='70' left='0' align='n'/></dialogData>
-      echo({"text" => $1, "value" => $2}) if @DEBUG
+      echo({ 'text' => $1, 'value' => $2 }) if @DEBUG
       bandit_count = 0
       targets = $1.split(/\s*,\s*/)
       for i in 0..targets.length - 1
@@ -439,22 +556,22 @@ module AzBandit
   end
 
   def self.wait_for_battle()
-    echo "Bandits are here and we own the room"    
+    echo 'Bandits are here and we own the room'
 
     # bandits from <dialogData/> in feed
     # if nil, assume that there are some, we'll know soon enough
     dialog_data_bandits = nil # TODO pass in ids so we can do a diff?
 
     disabler_cast_count = 0
-    disabler_cd_time = Time.now().to_i
-    start_time = Time.now().to_i
+    disabler_cd_time = Time.now.to_i
+    start_time = Time.now.to_i
     timeout_time = 2 # seconds
     i = -1
 
-    loop {
+    loop do
       sleep 0.25 # yield
       i = i + 1
-      fput "stand" until standing?
+      fput 'stand' until standing?
 
       # scan for dialog_data targets
       while line = get?
@@ -463,58 +580,82 @@ module AzBandit
       end
 
       # bandits from GameObj.targets
-      game_obj_bandits = game_obj_bandits()
+      game_obj_bandits = game_obj_bandits
 
       # timeout?
-      if (dialog_data_bandits.nil? && game_obj_bandits.length == 0 && Time.now().to_i > start_time + timeout_time)
-        echo "wait_for_battle timed out"
+      if (
+           dialog_data_bandits.nil? && game_obj_bandits.length == 0 &&
+             Time.now.to_i > start_time + timeout_time
+         )
+        echo 'wait_for_battle timed out'
         return
       end
 
       # all done?
       # dialog_data_bandits doesn't seem reliable over time,
       # so we switch to game_obj_bandits after a bit
-      any_bandits = (dialog_data_bandits.nil? || (Time.now().to_i < start_time + timeout_time)) ? true : game_obj_bandits.length > 0
+      any_bandits =
+        if (
+             dialog_data_bandits.nil? ||
+               (Time.now.to_i < start_time + timeout_time)
+           )
+          true
+        else
+          game_obj_bandits.length > 0
+        end
       return if !any_bandits
 
       # cast disabler
-      disablers_enabled = disabler_cast_count == 0 ? (@CAST_DISABLERS && @CAST_DISABLERS_REPEATEDLY) : @CAST_DISABLERS
-      can_cast = checkrt == 0 && checkcastrt == 0 && checkmana >= @DISABLER_MIN_MANA;
-      bandits_need_disabling = dialog_data_bandits.nil? || dialog_data_bandits > 0 || game_obj_bandits.any? { |x| x.status.nil? }
-
-      cast_disabler = disablers_enabled && can_cast && bandits_need_disabling && Time.now.to_i >= disabler_cd_time
-      if cast_disabler
-        if Char.prof == "Wizard" && Spell[410].known?
-          Spell[410].cast()
-        elsif Char.prof == "Sorcerer" && Spell[709].known?
-          Spell[709].cast()
+      disablers_enabled =
+        if disabler_cast_count == 0
+          (@CAST_DISABLERS && @CAST_DISABLERS_REPEATEDLY)
+        else
+          @CAST_DISABLERS
         end
+      can_cast =
+        checkrt == 0 && checkcastrt == 0 && checkmana >= @DISABLER_MIN_MANA
+      bandits_need_disabling =
+        dialog_data_bandits.nil? || dialog_data_bandits > 0 || game_obj_bandits
+          .any? { |x| x.status.nil? }
+
+      cast_disabler =
+        disablers_enabled && can_cast && bandits_need_disabling &&
+          Time.now.to_i >= disabler_cd_time
+      if cast_disabler
+        if Char.prof == 'Wizard' && Spell[410].known?
+          Spell[410].cast
+        elsif Char.prof == 'Sorcerer' && Spell[709].known?
+          Spell[709].cast
+        end
+
         # cooldown: 1, 4, 9, 16.. (plus cast rt, minus one)
         disabler_cast_count = disabler_cast_count + 1
-        disabler_cd_time = Time.now.to_i + disabler_cast_count.pow(2) + checkcastrt - 1
+        disabler_cd_time =
+          Time.now.to_i + disabler_cast_count.pow(2) + checkcastrt - 1
         next
       end
-      
+
       # check if room needs to be looted
-      if room_needs_looting?()
+      if room_needs_looting?
         if !@LOOTING_ENABLED
-          echo "Waiting for looting" if i % 10 == 9
+          echo 'Waiting for looting' if i % 10 == 9
           next
         end
         waitrt?
+
         # search bodies
-        bodies = game_obj_bandits().reject { |npc| npc.status != 'dead' }
-        bodies.each_with_index { |bandit|
-          fput "loot ##{bandit.id}"
-        }
+        bodies = game_obj_bandits.reject { |npc| npc.status != 'dead' }
+        bodies.each_with_index { |bandit| fput "loot ##{bandit.id}" }
+
         # sleep 0.1 # yield
         lootsack = nil
         loot = GameObj.loot
+
         # loot
-        loot.each { |x|
+        loot.each do |x|
           if x.type == 'gem'
             if lootsack.nil?
-              lootsack = GameObj.inv.find {|x| x.noun == Vars.lootsack }
+              lootsack = GameObj.inv.find { |x| x.noun == Vars.lootsack }
               if !lootsack
                 echo "WARNING: Failed to find lootsack (#{Vars.lootsack})"
                 fput 'inv'
@@ -524,23 +665,24 @@ module AzBandit
             end
             fput "_drag ##{x.id} ##{lootsack.id}"
           elsif x.name =~ /coins/
-            fput "get coins"
+            fput 'get coins'
           end
-        }
+        end
+
         # fput 'look' if game_obj_bandits().length == 0 # force refresh
         next
       end
 
       # if we're here, it means bandits are still alive
       if i % 10 == 9
-        echo "Waiting for targets to be killed"
+        echo 'Waiting for targets to be killed'
         echo "game_obj_bandits: #{game_obj_bandits.collect { |x| x.noun }}"
         echo "dialog_data_bandits: #{dialog_data_bandits}"
       end
-    }
+    end
   end
 
-  def self.whisper_cmd(char, cmd, arg = "")
+  def self.whisper_cmd(char, cmd, arg = '')
     fput "whisper ooc #{char} do:#{cmd}:#{arg}"
     while line = get
       # <pushStream id="speech"/><preset id="whisper">(OOC) Idios's player whispers,</preset> "DONE."
@@ -555,32 +697,40 @@ module AzBandit
     pcs = GameObj.pcs.collect { |pc| pc.noun }
 
     if @MY_CHARS_HACK.any? { |char| Char.name == char }
-      throw "Failed to find all group" if !@grouplist.all? { |char| pcs.include? char }
+      if !@grouplist.all? { |char| pcs.include? char }
+        throw 'Failed to find all group'
+      end
 
       # I'm in MY_CHARS_HACK and my entire group is here
-      throw "Not done" unless bounty? =~ /^You succeeded in your task/
-      @MY_CHARS_HACK.each { |char|
-        if char != Char.name && char != 'Gossan' && char != 'Helsfeld' && pcs.include?(char)
-          result = whisper_cmd(char, "verify-done")
-          throw "Failed to verify" unless result
+      throw 'Not done' unless bounty? =~ /^You succeeded in your task/
+      @MY_CHARS_HACK.each do |char|
+        if char != Char.name && char != 'Gossan' && char != 'Helsfeld' &&
+             pcs.include?(char)
+          result = whisper_cmd(char, 'verify-done')
+          throw 'Failed to verify' unless result
         end
-      }
+      end
       echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
       fput "whisper ooc group 8#{(Time.now.to_f - @start_time).to_i}9"
-      Script.start("fbandit")
+      Script.start('fbandit')
     end
 
     exit
   end
 
   def self.all_done?()
-    echo "Checking if done" if @DEBUG
+    echo 'Checking if done' if @DEBUG
     status_by_char = {}
     counts = []
 
-    shared_counts = defined?($AZANOTH_SHARED_OBJECT) ? $AZANOTH_SHARED_OBJECT['bandits'].get_counts() : {}
+    shared_counts =
+      if defined?($AZANOTH_SHARED_OBJECT)
+        $AZANOTH_SHARED_OBJECT['bandits'].get_counts
+      else
+        {}
+      end
 
-    [Char.name, *@grouplist].each { |name|
+    [Char.name, *@grouplist].each do |name|
       if shared_counts[name]
         status = shared_counts[name]
         # echo "fast - #{name} #{status}"
@@ -590,23 +740,33 @@ module AzBandit
       end
 
       if status == @DENIED
-        echo "WARNING - #{name} denied your request for bounty information. Counting them as finished." if !@deniers[name]
+        if !@deniers[name]
+          echo "WARNING - #{name} denied your request for bounty information. Counting them as finished."
+        end
         @deniers[name] = true
       end
 
       status_by_char[name] = status
       next if name == 'Gossan' || name == 'Helsfeld'
       counts.push(
-        [@DENIED, @NOT_ON_TASK, @DIFFERENT_LOCATION_TASK, @FINISHED].include?(status) ?
-          0 : status
+        if [
+             @DENIED,
+             @NOT_ON_TASK,
+             @DIFFERENT_LOCATION_TASK,
+             @FINISHED
+           ].include?(status)
+          0
+        else
+          status
+        end
       )
-    }
+    end
 
     all_done = counts.all? { |count| count == 0 }
-    give_progress_update = all_done ||
-                           @last_progress_update.nil? ||
-                           @last_progress_update < Time.now.to_f - @PROGRESS_UPDATE_INTERVAL
-    msg = status_by_char.map { |char, status| "#{char} #{status}" }.join(". ")
+    give_progress_update =
+      all_done || @last_progress_update.nil? ||
+        @last_progress_update < Time.now.to_f - @PROGRESS_UPDATE_INTERVAL
+    msg = status_by_char.map { |char, status| "#{char} #{status}" }.join('. ')
 
     if give_progress_update && msg != @last_progress_msg
       fput "whisper ooc group Status - #{msg}"
@@ -615,9 +775,9 @@ module AzBandit
     end
 
     if all_done
-      fput "whisper ooc group Everyone is done!"
+      fput 'whisper ooc group Everyone is done!'
       if @deniers.length > 0
-        echo "...except maybe those who aren't sharing bounty info via lich: #{@deniers.keys.join(", ")}"
+        echo "...except maybe those who aren't sharing bounty info via lich: #{@deniers.keys.join(', ')}"
       end
       return true
     end
@@ -626,4 +786,4 @@ module AzBandit
   end
 end
 
-AzBandit.main()
+AzBandit.main
