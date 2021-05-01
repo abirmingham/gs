@@ -25,8 +25,8 @@ module AzBandit
   @LOOTING_ENABLED = true # faster but you get less control over what gets looted
 
   # static variables
-  @PROGRESS_UPDATE_INTERVAL = 0.1
-  @DEBUG = true
+  @PROGRESS_UPDATE_INTERVAL = 10
+  @DEBUG = false
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
   @BANDIT_SET = Set["thief", "rogue", "bandit", "mugger", "outlaw", "highwayman", "marauder", "brigand", "thug", "robber"]
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
@@ -43,6 +43,7 @@ module AzBandit
   @bounty_location = ""
   @deniers = {}
   @last_progress_update = nil
+  @last_progress_msg = ''
   @step2_ways = {}
   @start_time = Time.now.to_f
 
@@ -113,9 +114,9 @@ module AzBandit
         while i == 0 || (game_obj_bandits().length > 0 && !is_poaching?())
           i = i + 1
           wait_for_battle()
-          exit_azbandit() if all_done?()
         end
       end
+      exit_azbandit() if all_done?()
     }
   end
 
@@ -193,6 +194,7 @@ module AzBandit
 
   def self.get_target_bounty_count(name)
     echo "get_target_bounty_count #{name}" if @DEBUG
+
     result = name == Char.name ? bounty? : LNet.get_data(name, "bounty")
     return @DENIED if result.nil?
     return @FINISHED if result =~ /^You succeeded in your task/
@@ -575,8 +577,17 @@ module AzBandit
     echo "Checking if done" if @DEBUG
     status_by_char = {}
     counts = []
+
+    shared_counts = defined?($AZANOTH_SHARED_OBJECT) ? $AZANOTH_SHARED_OBJECT['bandits'].get_counts() : {}
+
     [Char.name, *@grouplist].each { |name|
-      status = get_target_bounty_count(name)
+      if shared_counts[name]
+        status = shared_counts[name]
+        # echo "fast - #{name} #{status}"
+      else
+        status = get_target_bounty_count(name)
+        echo "slow - #{name} #{status}"
+      end
 
       if status == @DENIED
         echo "WARNING - #{name} denied your request for bounty information. Counting them as finished." if !@deniers[name]
@@ -595,11 +606,12 @@ module AzBandit
     give_progress_update = all_done ||
                            @last_progress_update.nil? ||
                            @last_progress_update < Time.now.to_f - @PROGRESS_UPDATE_INTERVAL
+    msg = status_by_char.map { |char, status| "#{char} #{status}" }.join(". ")
 
-    if give_progress_update
-      msg = status_by_char.map { |char, status| "#{char} #{status}" }.join(". ")
+    if give_progress_update && msg != @last_progress_msg
       fput "whisper ooc group Status - #{msg}"
       @last_progress_update = Time.now.to_f
+      @last_progress_msg = msg
     end
 
     if all_done

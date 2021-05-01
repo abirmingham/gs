@@ -40,7 +40,7 @@ elsif result =~ /It is your duty to oppose the/
 elsif result =~ /You succeeded/
 	echo "You need to turn in your bounty at the appropriate npc before running this script."
 	exit
-elsif result =~  /You have succeeded/ 
+elsif result =~ $AZ_BOUNTY_FINISHED
 	multifput "ask taskmaster about bounty", "ask taskmaster about bounty"
 else 
 	multifput "ask taskmaster about removal", "ask taskmaster about removal", "ask taskmaster about bounty"

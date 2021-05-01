@@ -17,8 +17,8 @@ throw "No bounty" unless bounty?
 
 if bounty? !~ /^You have been tasked/
   echo "Waiting for bounty"
-  wait_while { bounty? !~ /^You have been tasked/ || running?('go2') }
-  sleep 10
+  wait_while { bounty? !~ /^You have been tasked/ || running?('fbandit') || running?('go2') }
+  sleep 5
 end
 
 # Identify bounty location
@@ -53,6 +53,9 @@ GROUP.each { |char|
     fput "hold #{char}"
   end
 }
+
+# Clear previous counts
+$AZANOTH_SHARED_OBJECT['bandits'].clear_counts()
 
 # Share bounty
 Script.run("go2", "advguild")

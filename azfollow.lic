@@ -1,4 +1,9 @@
+require 'drb/drb'
 hide_me
+
+DRb.start_service
+$AZANOTH_SHARED_OBJECT = DRbObject.new_with_uri('druby://localhost:9999')
+
 $AZ_CHARS = ['Azanoth', 'Aranthius', 'Idios', 'Gossan', 'Helsfeld']
 $AZ_CHARS_REGEX = /#{$AZ_CHARS.join('|')}/
 $AZ_CHARS_SET = $AZ_CHARS.collect { |char| [char, true] }.to_h
@@ -6,22 +11,27 @@ $AZ_BANDIT_TARGET_SET = {}
 "rogue marauder thief mugger bandit brigand robber outlaw thug highwayman".split(" ").each do |noun|
   $AZ_BANDIT_TARGET_SET[noun] = true
 end
+$AZ_BOUNTY_PATTERN_NUM = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?.*\s(?:near|between|under|\.).* (\d+) (?:more )?of them/
+$AZ_BOUNTY_PATTERN_FINISHED = /^You succeeded in your task/
 
 $AZ_BANDIT_ATTACK = Proc.new { |attack_routine|
   # state
   poaching = false
   carried_line = nil
+  last_bounty_text = ''
 
   # main loop
+  i = -1
   while true
-    fput "stand" until standing?
+    i = i + 1
+    fput "stand" if !standing?
 
     # identify targets
     targets = GameObj.npcs.select do |npc|
       $AZ_BANDIT_TARGET_SET[npc.noun] && npc.status != "dead" && !npc.name.start_with?("animated ")
     end
 
-    # check to see if we've moved
+    # check to see if we've moved, and whether we've progressed on bandits
     # we carry over the last line of the buffer to account for the situation
     # where we slurp a line that is important to our next loop iteration
     buffer = carried_line ? [carried_line] : []
@@ -30,7 +40,20 @@ $AZ_BANDIT_ATTACK = Proc.new { |attack_routine|
       carried_line = line
     end
     if carried_line && (carried_line.start_with?('Obvious paths:') || carried_line.start_with?('Obvious exits:'))
+      # we don't want to consider this line in the next loop
       carried_line = nil
+    end
+
+    bounty_text = bounty?
+    if last_bounty_text != bounty_text
+      new_count = 100
+      if bounty_text =~ $AZ_BOUNTY_PATTERN_FINISHED
+        new_count = 0
+      elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
+        new_count = $1.to_i
+      end
+      $AZANOTH_SHARED_OBJECT['bandits'].set_count(Char.name, new_count)
+      last_bounty_text = bounty_text
     end
     
     for i in 1..buffer.length do
@@ -50,7 +73,6 @@ $AZ_BANDIT_ATTACK = Proc.new { |attack_routine|
           pcs = $1.split(', ').collect { |x|
             x.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
           }
-          # echo "INFO: azfollow.lic: #{pcs}" if !group?
           poaching = pcs.any? { |x| !$AZ_CHARS_SET[x] }
         elsif line && !group?
           # I must be leading and not poaching
@@ -114,7 +136,6 @@ def run_cmd(leader, cmd, arg)
       end
     end
     wait_while { Spell[9056].active? }
-    echo "REMOVING"
     fput "ask luc to remove"
     fput "ask luc to remove"
     fput "whisper ooc #{leader} DONE"
