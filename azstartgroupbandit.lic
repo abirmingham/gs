@@ -17,7 +17,8 @@ throw 'No bounty' unless bounty?
 if bounty? !~ /^You have been tasked/
   echo 'Waiting for bounty'
   wait_while do
-    bounty? !~ /^You have been tasked/ || running?('fbandit') || running?('go2') || running?('getbounty')
+    bounty? !~ /^You have been tasked/ || running?('fbandit') ||
+      running?('go2') || running?('getbounty')
   end
   sleep 5
 end
@@ -39,9 +40,7 @@ end
 
 # Form group
 multifput 'disband', 'leave'
-GROUP.each do |char|
-  fput "hold #{char}" if Char.name != char
-end
+GROUP.each { |char| fput "hold #{char}" if Char.name != char }
 
 # Set new group (clears previous counts)
 $AZ_REMOTE['bandits'].set_new_group GROUP

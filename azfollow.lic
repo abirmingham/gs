@@ -149,16 +149,18 @@ $AZ_RUN_CMD =
       if bounty? =~ bounty_re
         if $1 == arg
           echo 'ALREADY HAVE REQUESTED LOCATION'
+
           # also prep for bandits
-          Script.start "prep"
+          Script.start 'prep'
           return true
         end
       end
       wait_while { Spell[9056].active? }
       fput 'ask luc to remove'
       fput 'ask luc to remove'
+
       # also prep for bandits
-      Script.start "prep"
+      Script.start 'prep'
       return true
     elsif cmd == 'start-script' && arg.length > 0
       Script.start(arg)
@@ -174,6 +176,7 @@ $AZ_RUN_CMD =
         fput "whisper ooc Aranthius #{msg}"
       end
       wait_while { Spell[9056].active? } unless has_bounty
+
       # also prep for bandits
       Script.running.each { |x| x.kill }
       fput 'disband'
@@ -187,14 +190,14 @@ $AZ_RUN_CMD =
 
 loop do
   ACTIONS = $AZ_REMOTE['actions']
-    actions = (ACTIONS.get_actions(Char.name) || []).reject { |x| x['done'] }
-    actions.each do |action|
-      success = $AZ_RUN_CMD.call(action['cmd'], action['args'])
-      ACTIONS.mark_action_done(
-        Char.name,
-        action['id'],
-        success ? nil : 'FAILED RUN_CMD'
-      )
-    end
+  actions = (ACTIONS.get_actions(Char.name) || []).reject { |x| x['done'] }
+  actions.each do |action|
+    success = $AZ_RUN_CMD.call(action['cmd'], action['args'])
+    ACTIONS.mark_action_done(
+      Char.name,
+      action['id'],
+      success ? nil : 'FAILED RUN_CMD'
+    )
+  end
   sleep 1
 end

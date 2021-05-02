@@ -1,8 +1,8 @@
 module FixVocalCords
-    def self.wait_while_indisposed()
+  def self.wait_while_indisposed()
     sleep 0.25 while stunned? || waitrt?
   end
-  
+
   def self.dothisloop(cmd, timeout, rsp_re)
     wait_while_indisposed
     result = nil
@@ -12,9 +12,9 @@ module FixVocalCords
       sleep 1
     end
   end
-  
+
   def self.fix_vocal_cords()
-    echo "FIXING VOCAL CORDS"
+    echo 'FIXING VOCAL CORDS'
     Script.pause('azbandit') if Script.running? 'azbandit'
     wait_while_indisposed
     fput 'store left' if !(checkleft && checkright).nil?
@@ -32,10 +32,10 @@ module FixVocalCords
 
   def self.main()
     while line = get?
-        if line =~ /slices deep into your vocal cords!$/
-            fix_vocal_cords # I'm not sure if we need this for other chars now that we have an empath
-        end
-        sleep 1
+      if line =~ /slices deep into your vocal cords!$/
+        fix_vocal_cords # I'm not sure if we need this for other chars now that we have an empath
+      end
+      sleep 1
     end
   end
 end

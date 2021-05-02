@@ -696,6 +696,7 @@ module AzBandit
 
       # I'm in MY_CHARS_HACK and my entire group is here
       throw 'Not done' unless bounty? =~ /^You succeeded in your task/
+
       # @MY_CHARS_HACK.each do |char|
       #   if char != Char.name && char != 'Gossan' && char != 'Helsfeld' &&
       #        pcs.include?(char)

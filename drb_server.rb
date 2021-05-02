@@ -27,7 +27,7 @@ class Bandits
     @counts
   end
   def clear_counts()
-    log "clear_counts" if @debug
+    log 'clear_counts' if @debug
     @counts = {}
   end
   def log(msg)
@@ -90,7 +90,7 @@ class ActionQueue
       @actions[char]['queue'].reject { |x| x['id'] == id }
   end
   def clear_all_actions()
-    log "clear_all_actions" if @debug
+    log 'clear_all_actions' if @debug
     @actions = {}
   end
   def log(msg)
