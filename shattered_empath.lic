@@ -6,6 +6,7 @@
 # CONFIGURATION	:	Use "setup" parameter at command line
 # WARNING	:	This is not designed with sub-level 14 empaths in mind. Newbs will heal to death.
 
+hide_me
 silence_me
 fput 'set description off'
 

@@ -8,7 +8,6 @@ end
 taskfinish = [420, 1957, 28_978]
 taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28_813, 29_260]
-scripts_to_kill = %w[tonis isigns symbolz isigils standgroup rapid sloot prep]
 
 def turn_off_enh()
   result = ''
@@ -27,20 +26,19 @@ def join_healer()
   fput 'join Gossan'
 end
 
-Script.list.each do |s|
-  Script.kill(s.name) if s.name.start_with? "#{Char.name}-"
-end
-scripts_to_kill.each { |s| Script.kill(s) }
+Script.running.each { |x| x.kill unless x == Script.current }
 waitrt?
 fput 'stance def' if stance != 'defensive'
 
 if !rest.include? Room.current.id
-  # If I'm not at rest, trigger fbandit on friends
-  # (if I am at rest, they probably already did it and
-  #  this is being triggered manually)
-  PEOPLE.each do |char|
-    if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
-      ACTIONS.queue_action char, 'start-script', 'fbandit'
+  if !group?
+    # If I'm not at rest, trigger fbandit on followers
+    # (if I am at rest, they probably already did it and
+    #  this is being triggered manually)
+    PEOPLE.each do |char|
+      if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
+        ACTIONS.queue_action char, 'start-script', 'fbandit'
+      end
     end
   end
   fput 'disband'

@@ -141,36 +141,6 @@ $AZ_BANDIT_ATTACK =
     end
   end
 
-def wait_while_indisposed()
-  sleep 0.25 while stunned? || waitrt?
-end
-
-def dothisloop(cmd, timeout, rsp_re)
-  wait_while_indisposed
-  result = nil
-  while result.nil?
-    result = dothistimeout cmd, timeout, rsp_re
-    break if result
-    sleep 1
-  end
-end
-
-def fix_vocal_cords()
-  Script.pause('azbandit') if Script.running? 'azbandit'
-  wait_while_indisposed
-  fput 'store left' if !(checkleft && checkright).nil?
-  fput 'stow left' if !(checkleft && checkright).nil?
-  dothisloop 'get my aloeas stem', 3, /You carefully remove some|You remove/
-  dothisloop 'eat my aloeas stem', 3, /You take a bite of/
-  if checkright == 'stem' or checkleft == 'stem'
-    dothisloop 'stow my stem', 3, /I could not find what|You put some/
-  end
-  wait_while_indisposed
-  fput 'gird'
-  sleep 10
-  Script.unpause('azbandit') if Script.running? 'azbandit'
-end
-
 $AZ_RUN_CMD =
   lambda do |cmd, arg|
     echo "run_cmd(#{cmd}, #{arg})"
@@ -179,17 +149,16 @@ $AZ_RUN_CMD =
       if bounty? =~ bounty_re
         if $1 == arg
           echo 'ALREADY HAVE REQUESTED LOCATION'
+          # also prep for bandits
+          Script.start "prep"
           return true
         end
       end
       wait_while { Spell[9056].active? }
       fput 'ask luc to remove'
       fput 'ask luc to remove'
-      return true
-    elsif cmd == 'ungroup'
-      fput 'disband'
-      fput 'leave'
-      fput 'group open'
+      # also prep for bandits
+      Script.start "prep"
       return true
     elsif cmd == 'start-script' && arg.length > 0
       Script.start(arg)
@@ -197,8 +166,6 @@ $AZ_RUN_CMD =
     elsif cmd == 'stop-script' && arg.length > 0
       Script.kill(arg) if running? arg
       return true
-    elsif cmd == 'verify-done'
-      return bounty? =~ /^You succeeded in your task/
     elsif cmd == 'wait_groupbounty_cooldown_unless' && arg.length > 0
       has_bounty = bounty? =~ bounty_re && $1 == arg
       if Spell[9056].active? && !has_bounty
@@ -207,23 +174,19 @@ $AZ_RUN_CMD =
         fput "whisper ooc Aranthius #{msg}"
       end
       wait_while { Spell[9056].active? } unless has_bounty
-      return true
-    elsif cmd == 'wait_while_active' && arg.length > 0
-      if Spell[arg].active?
-        msg =
-          "Waiting #{Spell[arg].timeleft} minutes (ie #{Spell[arg].timeleft * 60} seconds)"
-        fput "whisper ooc Aranthius #{msg}"
-      end
-      wait_while { Spell[arg].active? }
+      # also prep for bandits
+      Script.running.each { |x| x.kill }
+      fput 'disband'
+      fput 'leave'
+      fput 'group open'
       return true
     end
     echo 'SWITCH FALL THROUGH'
     return false
   end
 
-$AZ_DO_WORK_SYNC =
-  Proc.new do
-    ACTIONS = $AZ_REMOTE['actions']
+loop do
+  ACTIONS = $AZ_REMOTE['actions']
     actions = (ACTIONS.get_actions(Char.name) || []).reject { |x| x['done'] }
     actions.each do |action|
       success = $AZ_RUN_CMD.call(action['cmd'], action['args'])
@@ -233,22 +196,5 @@ $AZ_DO_WORK_SYNC =
         success ? nil : 'FAILED RUN_CMD'
       )
     end
-  end
-
-# TODO this just becomes a healer script
-loop do
-  while line = get?
-    # (OOC) Azanoth's player whispers, "Do:exchange-unless:Muddy Village."
-    if line =~ /slices deep into your vocal cords!$/ && Char.name == 'Gossan'
-      fix_vocal_cords # I'm not sure if we need this for other chars now that we have an empath
-    elsif line =~
-          /^\(OOC\) (#{$AZ_CHARS_REGEX})'s player whispers, "Do:(.*?)\.?"/
-      tokens = $2.split ':'
-
-      # run_cmd $1, tokens[0].downcase, tokens[1]
-      echo 'skipping run_cmd'
-    end
-  end
-  $AZ_DO_WORK_SYNC.call
-  sleep 0.25
+  sleep 1
 end

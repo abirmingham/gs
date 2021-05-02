@@ -9,15 +9,29 @@ class Bandits
   include DRb::DRbUndumped
   def initialize()
     @counts = {}
+    @group = []
+    @debug = true
+  end
+  def set_new_group(group)
+    @group = group
+    clear_counts
+  end
+  def has_group_registered?
+    return @group.all? { |x| @counts[x] }
   end
   def set_count(char, count)
+    log "set_count #{char} #{count}" if @debug
     @counts[char] = count
   end
   def get_counts()
     @counts
   end
   def clear_counts()
+    log "clear_counts" if @debug
     @counts = {}
+  end
+  def log(msg)
+    print "BANDITS: #{msg}\n"
   end
 end
 
@@ -29,14 +43,14 @@ class ActionQueue
   end
   def init_queue(char)
     if !@actions[char]
-      print "Initializing queue for #{char}\n" if @debug
+      log "Initializing queue for #{char}" if @debug
       @actions[char] = { 'count' => 0, 'queue' => [] }
     end
   end
   def queue_action(char, cmd, args = [])
     init_queue char
     id = @actions[char]['count']
-    print "queue_action #{char}/#{cmd}\n" if @debug
+    log "queue_action #{char} #{cmd}" if @debug
 
     @actions[char]['queue'].push(
       {
@@ -58,26 +72,29 @@ class ActionQueue
     @actions[char]['queue']
   end
   def get_action(char, id)
-    print "get_action #{char}/#{id}\n" if @debug
+    log "get_action #{char}, #{id}" if @debug
     init_queue char
     @actions[char]['queue'].find { |x| x['id'] == id }
   end
   def mark_action_done(char, id, error = nil)
-    print "mark_action_done #{char}/#{id}\n" if @debug
+    log "mark_action_done #{char}, #{id}" if @debug
     init_queue char
     index = @actions[char]['queue'].find_index { |x| x['id'] == id }
     @actions[char]['queue'][index] =
       @actions[char]['queue'][index].merge({ 'done' => true, 'error' => error })
   end
   def clear_action(char, id)
-    print "clear_action #{char}/#{id}\n" if @debug
+    log "clear_action #{char}, #{id}" if @debug
     init_queue char
     @actions[char]['queue'] =
       @actions[char]['queue'].reject { |x| x['id'] == id }
   end
   def clear_all_actions()
-    print "clear_all_actions\n" if @debug
+    log "clear_all_actions" if @debug
     @actions = {}
+  end
+  def log(msg)
+    print "BANDITS: #{msg}\n"
   end
 end
 
