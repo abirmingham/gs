@@ -29,14 +29,14 @@ throw 'Failed to find bounty location' unless bounty_location
 # Wait for share-ready
 GROUP.each do |char|
   if Char.name != char
-    $AZ_SEND_ACTION_SYNC.call char, 'wait_groupbounty_cooldown_unless', bounty_location
+    $AZ_SEND_ACTION_SYNC.call char,
+                              'wait_groupbounty_cooldown_unless',
+                              bounty_location
   end
 end
 
 GROUP.each do |char|
-  if Char.name != char
-    $AZ_SEND_ACTION_SYNC.call char, 'stop-script', 'fbandit'
-  end
+  $AZ_SEND_ACTION_SYNC.call char, 'stop-script', 'fbandit' if Char.name != char
 end
 
 # Form group
@@ -51,7 +51,7 @@ GROUP.each do |char|
   end
 end
 
-fput "group close"
+fput 'group close'
 
 # Clear previous counts
 $AZ_REMOTE['bandits'].clear_counts

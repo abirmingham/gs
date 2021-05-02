@@ -715,12 +715,7 @@ module AzBandit
     status_by_char = {}
     counts = []
 
-    shared_counts =
-      if defined?($AZ_REMOTE)
-        $AZ_REMOTE['bandits'].get_counts
-      else
-        {}
-      end
+    shared_counts = defined?($AZ_REMOTE) ? $AZ_REMOTE['bandits'].get_counts : {}
 
     [Char.name, *@grouplist].each do |name|
       if shared_counts[name]
