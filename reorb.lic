@@ -5,9 +5,9 @@ sleep 3
 fput 'go vortex'
 dothistimeout 'go vortex', 3, /You make a running jump/
 
-result = dothistimeout 'raise pendant', 3, /Are you sure/
+result = dothistimeout 'raise my pendant', 3, /Are you sure/
 throw 'Failed' if !result
-result = dothistimeout 'raise pendant', 3, /Your hand glows a shade of blue/
+result = dothistimeout 'raise my pendant', 3, /Your hand glows a shade of blue/
 throw 'Failed' if !result
 
 while Room.current.id != 24_888

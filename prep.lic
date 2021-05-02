@@ -64,7 +64,7 @@ end
 original_other_bounty_counts = nil
 loop do
   bounty_counts = $AZ_REMOTE['bandits'].get_counts
-  echo bounty_counts
+  # echo bounty_counts
 
   other_bounty_counts =
     bounty_counts.reject do |k, v|
