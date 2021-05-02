@@ -8,9 +8,25 @@
 Script.run 'turnbrooch', 'red 2' if Char.name == 'Azanoth'
 Script.run 'turnbrooch', 'blue'
 
+is_liabo_moon = false
+loop {
+  result = dothistimeout "anal q bro", 2, /resulting in the ability to instantly absorb/
+  if result =~ /instantly absorb ([,\d]+)/
+    is_liabo_moon = $1 == "2,350" ? true : false
+    break
+  else
+    echo "Failed to find result"
+    sleep 1
+  end
+}
+
 loop do
+  echo "Liabo Moon: #{is_liabo_moon}"
   wait_until { checkmind == 'must rest' || checkmind == 'saturated' }
   sleep 1
+  if is_liabo_moon
+    12.times { waitfor "searches an ethereal " }
+  end
   waitrt?
   waitcastrt?
   fput 'rub my q bro'

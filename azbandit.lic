@@ -580,7 +580,7 @@ module AzBandit
       end
 
       # bandits from GameObj.targets
-      local_game_obj_bandits = game_obj_bandits()
+      local_game_obj_bandits = game_obj_bandits
 
       # timeout?
       if (
@@ -615,8 +615,10 @@ module AzBandit
       can_cast =
         checkrt == 0 && checkcastrt == 0 && checkmana >= @DISABLER_MIN_MANA
       bandits_need_disabling =
-        dialog_data_bandits.nil? || dialog_data_bandits > 0 || local_game_obj_bandits
-          .any? { |x| x.status.nil? }
+        dialog_data_bandits.nil? ||
+          dialog_data_bandits > 0 || local_game_obj_bandits.any? do |x|
+          x.status.nil?
+        end
 
       cast_disabler =
         disablers_enabled && can_cast && bandits_need_disabling &&
@@ -682,15 +684,6 @@ module AzBandit
     end
   end
 
-  def self.whisper_cmd(char, cmd, arg = '')
-    fput "whisper ooc #{char} do:#{cmd}:#{arg}"
-    while line = get
-      # <pushStream id="speech"/><preset id="whisper">(OOC) Idios's player whispers,</preset> "DONE."
-      return true if line =~ /\(OOC\) #{char}'s player whispers,.*"DONE/
-      return false if line =~ /\(OOC\) #{char}'s player whispers,.*"FAIL/
-    end
-  end
-
   def self.exit_azbandit()
     fput 'look'
     sleep 0.25 # yield
@@ -706,8 +699,7 @@ module AzBandit
       @MY_CHARS_HACK.each do |char|
         if char != Char.name && char != 'Gossan' && char != 'Helsfeld' &&
              pcs.include?(char)
-          result = whisper_cmd(char, 'verify-done')
-          throw 'Failed to verify' unless result
+          $AZ_SEND_ACTION_SYNC.call char, 'verify-done'
         end
       end
       echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
@@ -724,8 +716,8 @@ module AzBandit
     counts = []
 
     shared_counts =
-      if defined?($AZANOTH_SHARED_OBJECT)
-        $AZANOTH_SHARED_OBJECT['bandits'].get_counts
+      if defined?($AZ_REMOTE)
+        $AZ_REMOTE['bandits'].get_counts
       else
         {}
       end

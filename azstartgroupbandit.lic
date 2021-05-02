@@ -8,13 +8,7 @@ GROUP =
 
 echo GROUP
 
-def whisper_cmd(char, cmd, arg = '')
-  fput "whisper ooc #{char} do:#{cmd}:#{arg}"
-  while line = get
-    return if line =~ /^\(OOC\) #{char}'s player whispers, "DONE/
-    throw 'FAIL' if line =~ /^\(OOC\) #{char}'s player whispers, "FAIL/
-  end
-end
+$AZ_REMOTE['actions'].clear_all_actions
 
 throw 'No bounty' unless bounty?
 
@@ -35,14 +29,13 @@ throw 'Failed to find bounty location' unless bounty_location
 # Wait for share-ready
 GROUP.each do |char|
   if Char.name != char
-    whisper_cmd char, 'wait_groupbounty_cooldown_unless', bounty_location
+    $AZ_SEND_ACTION_SYNC.call char, 'wait_groupbounty_cooldown_unless', bounty_location
   end
 end
 
 GROUP.each do |char|
   if Char.name != char
-    whisper_cmd char, 'stop-script', 'fbandit'
-    fput "hold #{char}"
+    $AZ_SEND_ACTION_SYNC.call char, 'stop-script', 'fbandit'
   end
 end
 
@@ -53,21 +46,23 @@ fput 'group open'
 
 GROUP.each do |char|
   if Char.name != char
-    whisper_cmd char, 'ungroup'
+    $AZ_SEND_ACTION_SYNC.call char, 'ungroup'
     fput "hold #{char}"
   end
 end
 
+fput "group close"
+
 # Clear previous counts
-$AZANOTH_SHARED_OBJECT['bandits'].clear_counts
+$AZ_REMOTE['bandits'].clear_counts
 
 # Share bounty
 Script.run('go2', 'advguild')
 
 GROUP.each do |char|
   if Char.name != char
-    whisper_cmd char, 'exchange-unless', bounty_location
-    whisper_cmd char, 'start-script', 'prep'
+    $AZ_SEND_ACTION_SYNC.call char, 'exchange-unless', bounty_location
+    $AZ_SEND_ACTION_SYNC.call char, 'start-script', 'prep'
     fput "ask luc to add #{char}"
   end
 end

@@ -2,7 +2,7 @@ require 'drb/drb'
 hide_me
 
 DRb.start_service
-$AZANOTH_SHARED_OBJECT = DRbObject.new_with_uri('druby://localhost:9999')
+$AZ_REMOTE = DRbObject.new_with_uri('druby://localhost:9999')
 
 $AZ_CHARS = %w[Azanoth Aranthius Idios Gossan Helsfeld]
 $AZ_CHARS_REGEX = /#{$AZ_CHARS.join('|')}/
@@ -13,6 +13,22 @@ $AZ_BANDIT_TARGET_SET = {}
   .each { |noun| $AZ_BANDIT_TARGET_SET[noun] = true }
 $AZ_BOUNTY_PATTERN_NUM = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?.*\s(?:near|between|under|\.).* (\d+) (?:more )?of them/
 $AZ_BOUNTY_PATTERN_FINISHED = /^You succeeded in your task/
+
+$AZ_SEND_ACTION_SYNC = lambda { |char, cmd, arg=''|
+  ACTIONS = $AZ_REMOTE['actions']
+  id = ACTIONS.queue_action char, cmd, arg
+  loop {
+    sleep 0.25
+    action = ACTIONS.get_action char, id
+    echo action
+    throw "Failed to get expected action" if !action
+    if action['done']
+      ACTIONS.clear_action char, id
+      throw "ACTION HAS ERROR: #{action['error']}" if action['error']
+      return
+    end
+  }
+}
 
 $AZ_BANDIT_ATTACK =
   Proc.new do |attack_routine|
@@ -124,65 +140,6 @@ $AZ_BANDIT_ATTACK =
     end
   end
 
-def run_cmd(leader, cmd, arg)
-  echo "run_cmd(#{cmd}, #{arg})"
-  bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
-  if cmd == 'exchange-unless' && arg.length > 0
-    if bounty? =~ bounty_re
-      if $1 == arg
-        echo 'ALREADY HAVE REQUESTED LOCATION'
-        fput "whisper ooc #{leader} DONE"
-        return
-      end
-    end
-    wait_while { Spell[9056].active? }
-    fput 'ask luc to remove'
-    fput 'ask luc to remove'
-    fput "whisper ooc #{leader} DONE"
-    return
-  elsif cmd == 'ungroup'
-    fput 'disband'
-    fput 'leave'
-    fput 'group open'
-    fput "whisper ooc #{leader} DONE"
-    return
-  elsif cmd == 'start-script' && arg.length > 0
-    fput "whisper ooc #{leader} DONE"
-    Script.start(arg)
-    return
-  elsif cmd == 'stop-script' && arg.length > 0
-    fput "whisper ooc #{leader} DONE"
-    Script.kill(arg) if running? arg
-    return
-  elsif cmd == 'verify-done'
-    result = bounty? =~ /^You succeeded in your task/ ? 'DONE' : 'FAIL'
-    dothistimeout "whisper ooc #{leader} #{result}",
-                  30,
-                  /You quietly whisper to /
-    return
-  elsif cmd == 'wait_groupbounty_cooldown_unless' && arg.length > 0
-    has_bounty = bounty? =~ bounty_re && $1 == arg
-    if Spell[9056].active? && !has_bounty
-      msg =
-        "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
-      fput "whisper ooc #{leader} #{msg}"
-    end
-    wait_while { Spell[9056].active? } unless has_bounty
-    fput "whisper ooc #{leader} DONE"
-    return
-  elsif cmd == 'wait_while_active' && arg.length > 0
-    if Spell[arg].active?
-      msg =
-        "Waiting #{Spell[arg].timeleft} minutes (ie #{Spell[arg].timeleft * 60} seconds)"
-      fput "whisper ooc #{leader} #{msg}"
-    end
-    wait_while { Spell[arg].active? }
-    fput "whisper ooc #{leader} DONE"
-    return
-  end
-  echo 'SWITCH FALL THROUGH'
-end
-
 def wait_while_indisposed()
   sleep 0.25 while stunned? || waitrt?
 end
@@ -213,6 +170,65 @@ def fix_vocal_cords()
   Script.unpause('azbandit') if Script.running? 'azbandit'
 end
 
+$AZ_RUN_CMD = lambda { |cmd, arg|
+  echo "run_cmd(#{cmd}, #{arg})"
+  bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+  if cmd == 'exchange-unless' && arg.length > 0
+    if bounty? =~ bounty_re
+      if $1 == arg
+        echo 'ALREADY HAVE REQUESTED LOCATION'
+        return true
+      end
+    end
+    wait_while { Spell[9056].active? }
+    fput 'ask luc to remove'
+    fput 'ask luc to remove'
+    return true
+  elsif cmd == 'ungroup'
+    fput 'disband'
+    fput 'leave'
+    fput 'group open'
+    return true
+  elsif cmd == 'start-script' && arg.length > 0
+    Script.start(arg)
+    return true
+  elsif cmd == 'stop-script' && arg.length > 0
+    Script.kill(arg) if running? arg
+    return true
+  elsif cmd == 'verify-done'
+    return bounty? =~ /^You succeeded in your task/
+  elsif cmd == 'wait_groupbounty_cooldown_unless' && arg.length > 0
+    has_bounty = bounty? =~ bounty_re && $1 == arg
+    if Spell[9056].active? && !has_bounty
+      msg =
+        "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
+      fput "whisper ooc Aranthius #{msg}"
+    end
+    wait_while { Spell[9056].active? } unless has_bounty
+    return true
+  elsif cmd == 'wait_while_active' && arg.length > 0
+    if Spell[arg].active?
+      msg =
+        "Waiting #{Spell[arg].timeleft} minutes (ie #{Spell[arg].timeleft * 60} seconds)"
+      fput "whisper ooc Aranthius #{msg}"
+    end
+    wait_while { Spell[arg].active? }
+    return true
+  end
+  echo 'SWITCH FALL THROUGH'
+  return false
+}
+
+$AZ_DO_WORK_SYNC = Proc.new do
+  ACTIONS = $AZ_REMOTE['actions']
+  actions = (ACTIONS.get_actions(Char.name) || []).reject { |x| x['done'] }
+  actions.each { |action|
+    success = $AZ_RUN_CMD.call(action["cmd"], action["args"])
+    ACTIONS.mark_action_done Char.name, action["id"], success ? nil : 'FAILED RUN_CMD'
+  }
+end
+
+# TODO this just becomes a healer script
 loop do
   while line = get?
     # (OOC) Azanoth's player whispers, "Do:exchange-unless:Muddy Village."
@@ -221,8 +237,10 @@ loop do
     elsif line =~
           /^\(OOC\) (#{$AZ_CHARS_REGEX})'s player whispers, "Do:(.*?)\.?"/
       tokens = $2.split ':'
-      run_cmd $1, tokens[0].downcase, tokens[1]
+      # run_cmd $1, tokens[0].downcase, tokens[1]
+      echo 'skipping run_cmd'
     end
   end
-  sleep 0.1
+  $AZ_DO_WORK_SYNC.call
+  sleep 0.25
 end

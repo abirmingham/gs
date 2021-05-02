@@ -40,7 +40,7 @@ if !rest.include? Room.current.id
   #  this is being triggered manually)
   PEOPLE.each do |char|
     if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
-      fput "whisper ooc #{char} do:start-script:fbandit"
+      ACTIONS.queue_action char, 'start-script', 'fbandit'
     end
   end
   fput 'disband'

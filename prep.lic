@@ -52,7 +52,7 @@ loop do
 end
 
 if bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
-  $AZANOTH_SHARED_OBJECT['bandits'].set_count(Char.name, $1.to_i)
+  $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
   echo "Set count #{$1}"
 else
   throw 'Failed to find bounty count'
@@ -61,7 +61,7 @@ end
 original_other_bounty_counts = nil
 loop do
   sleep 5 if Char.name == 'Helsfeld' # hack... original_other_bounty_counts isn't ready yet
-  bounty_counts = $AZANOTH_SHARED_OBJECT['bandits'].get_counts
+  bounty_counts = $AZ_REMOTE['bandits'].get_counts
   echo bounty_counts
 
   other_bounty_counts =
@@ -92,10 +92,9 @@ end
 
 Script.start("#{Char.name}-bandits")
 
-
 last_bounty_text = ''
 
-loop {
+loop do
   bounty_text = bounty?
   if last_bounty_text != bounty_text
     new_count = 100
@@ -104,8 +103,8 @@ loop {
     elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
       new_count = $1.to_i
     end
-    $AZANOTH_SHARED_OBJECT['bandits'].set_count(Char.name, new_count)
+    $AZ_REMOTE['bandits'].set_count(Char.name, new_count)
     last_bounty_text = bounty_text
   end
   sleep 0.5
-}
+end
