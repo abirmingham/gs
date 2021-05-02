@@ -16,12 +16,12 @@ $AZ_BOUNTY_PATTERN_FINISHED = /^You succeeded in your task/
 
 $AZ_SEND_ACTION_SYNC =
   lambda do |char, cmd, arg = ''|
+    echo "Queueing action - #{char} #{cmd} #{arg}"
     ACTIONS = $AZ_REMOTE['actions']
     id = ACTIONS.queue_action char, cmd, arg
     loop do
       sleep 0.25
       action = ACTIONS.get_action char, id
-      echo action
       throw 'Failed to get expected action' if !action
       if action['done']
         ACTIONS.clear_action char, id
@@ -169,13 +169,13 @@ $AZ_RUN_CMD =
       Script.kill(arg) if running? arg
       return true
     elsif cmd == 'wait_groupbounty_cooldown_unless' && arg.length > 0
-      has_bounty = bounty? =~ bounty_re && $1 == arg
-      if Spell[9056].active? && !has_bounty
+      has_that_bounty = bounty? =~ bounty_re && $1 == arg
+      if Spell[9056].active? && !has_that_bounty
         msg =
           "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
         fput "whisper ooc Aranthius #{msg}"
       end
-      wait_while { Spell[9056].active? } unless has_bounty
+      wait_while { Spell[9056].active? } unless has_that_bounty
 
       # also prep for bandits
       Script.running.each { |x| x.kill }

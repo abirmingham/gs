@@ -11,31 +11,25 @@ if Char.name == 'Idios' || Char.name == 'Aranthius' || Char.name == 'Gossan'
   end
 end
 
+# start scripts
 if Char.name == 'Gossan'
   Script.start('isigns')
   Spell[211].cast
   Spell[215].cast
   Script.start('Gossan-surge')
-  Script.start('shattered_empath')
+  # fix-vocal-cords and shattered_empath start
+  # at launch and have hide_me
 elsif Char.name == 'Helsfeld'
   Script.start('isigils')
   Script.start('Helsfeld-surge')
 elsif Char.name == 'Idios'
   Script.start('symbolz')
-
-  # Script.start('tonis') # enough mana? =/
   Script.start('Idios-unstun')
 elsif Char.name == 'Aranthius'
   Script.start('symbolz')
-elsif Char.name == 'Azanoth'
-  Script.start('symbolz')
-end
-
-# start attacking
-echo 'Starting attack sequence'
-if Char.name == 'Aranthius'
   Script.start('rapid')
 elsif Char.name == 'Azanoth'
+  Script.start('symbolz')
   if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
     fput 'cman surge'
   end
@@ -46,26 +40,27 @@ elsif Char.name == 'Azanoth'
   Script.start('Azanoth-506')
 end
 
+# wait until I have bounty
 loop do
-  # wait until I have bounty
   break if bounty? =~ $AZ_BOUNTY_PATTERN_NUM
   sleep 1
 end
 
+# tell remote my bounty count
 if bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
-  # tell remote my bounty count
   $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
   echo "Set count #{$1}"
 else
   throw 'Failed to find bounty count'
 end
 
+# wait until everyone else has registered bounty count
 loop do
-  # wait until everyone else has registered bounty count
   break if $AZ_REMOTE['bandits'].has_group_registered?
   sleep 1
 end
 
+# wait for other characters to get more credit?
 original_other_bounty_counts = nil
 loop do
   bounty_counts = $AZ_REMOTE['bandits'].get_counts
@@ -98,11 +93,11 @@ loop do
   sleep 0.5
 end
 
+# start attack script
 Script.start("#{Char.name}-bandits")
 
-last_bounty_text = ''
-
 # update remote as count is reduced
+last_bounty_text = ''
 loop do
   bounty_text = bounty?
   if last_bounty_text != bounty_text
