@@ -725,7 +725,9 @@ module AzBandit
       end
 
       status_by_char[name] = status
-      next if defined?($AZ_HAS_TAG) && $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY)
+      if defined?($AZ_HAS_TAG) && $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, name)
+        next
+      end
       counts.push(
         if [
              @DENIED,

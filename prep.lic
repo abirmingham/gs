@@ -80,7 +80,9 @@ loop do
 
   # only includes higher priority chars
   other_bounty_counts =
-    bounty_counts.reject { |k, v| k === Char.name || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, k) }
+    bounty_counts.reject do |k, v|
+      k === Char.name || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, k)
+    end
   if original_other_bounty_counts.nil?
     original_other_bounty_counts = other_bounty_counts
   end
