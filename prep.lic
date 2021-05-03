@@ -11,24 +11,27 @@ if $AZ_HAS_TAG.call $AZ_TAG_RUBS_WEAK_BROOCH
   end
 end
 
+# start global scripts
+Script.start 'standgroup'
+
 # start society scripts
 if Society.status == 'Order of Voln'
-  Script.start('symbolz')
+  Script.start 'symbolz'
 elsif Society.status == 'Council of Light'
-  Script.start('isigns')
+  Script.start 'isigns'
 elsif Society.status == 'Guardians of Sunfist'
-  Script.start('isigils')
+  Script.start 'isigils'
 end
 
 # start profession scripts
 if Char.prof == 'Wizard'
-  Script.start('rapid')
+  Script.start 'rapid'
 elsif Char.prof == 'Empath'
-  Script.start('Gossan-surge')
+  Script.start 'Gossan-surge'
   # fix-vocal-cords and shattered_empath start
   # at launch and have hide_me
 elsif Char.prof == 'Bard'
-  Script.start('Idios-unstun')
+  Script.start 'Idios-unstun'
 end
 
 # group buffs
@@ -40,16 +43,7 @@ if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
 end
 
 # start personal scripts
-if Char.name == 'Azanoth'
-  if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-    fput 'cman surge'
-  end
-  fput 'cman dervish'
-  waitrt?
-  fput 'war shout'
-  waitrt?
-  Script.start('Azanoth-506')
-end
+$AZ_PERSONAL_SCRIPTS[Char.name].call
 
 # wait until I have bounty
 loop do

@@ -45,6 +45,21 @@ $AZ_CHAR_TAGS =
 $AZ_HAS_TAG =
   Proc.new { |tag, char = Char.name| $AZ_CHAR_TAGS[char].include? tag }
 
+  
+$AZ_PERSONAL_SCRIPTS =
+Hash[*$AZ_CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge({
+  'Azanoth' => Proc.new {
+    if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
+      fput 'cman surge'
+    end
+    fput 'cman dervish'
+    waitrt?
+    fput 'war shout'
+    waitrt?
+    Script.start 'Azanoth-506'
+  },
+})
+
 $AZ_BANDIT_TARGET_SET = {}
 'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'
   .split(' ')
