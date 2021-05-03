@@ -7,6 +7,36 @@ $AZ_REMOTE = DRbObject.new_with_uri('druby://localhost:9999')
 $AZ_CHARS = %w[Azanoth Aranthius Idios Gossan Helsfeld]
 $AZ_CHARS_REGEX = /#{$AZ_CHARS.join('|')}/
 $AZ_CHARS_SET = $AZ_CHARS.collect { |char| [char, true] }.to_h
+
+$AZ_TAG_SELLS_GEMS = 'sells_gems'
+$AZ_TAG_GIVES_ARMOR_SUPPORT = 'gives_armor_support'
+$AZ_TAG_RECEIVES_ARMOR_SUPPORT = 'receives_armor_support'
+$AZ_TAG_WAGGLES_OTHERS = 'waggles_others'
+$AZ_TAG_RESTING_GROUP_LEADER = 'resting_group_leader'
+$AZ_TAG_LOW_BOUNTY_PRIORITY = 'low_bounty_priority'
+$AZ_TAG_RUBS_WEAK_BROOCH = 'rubs_weak_brooch'
+$AZ_TAG_CASTS_SHORT_BUFFS = 'casts_short_buffs'
+$AZ_CHAR_TAGS =
+  Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
+    {
+      'Azanoth' => Set.new([$AZ_TAG_GIVES_ARMOR_SUPPORT]),
+      'Idios' => Set.new([]),
+      'Aranthius' =>
+        Set.new([$AZ_TAG_WAGGLES_OTHERS, $AZ_TAG_RECEIVES_ARMOR_SUPPORT]),
+      'Gossan' =>
+        Set.new(
+          [
+            $AZ_TAG_RESTING_GROUP_LEADER,
+            $AZ_TAG_CASTS_SHORT_BUFFS,
+            $AZ_TAG_LOW_BOUNTY_PRIORITY
+          ]
+        ),
+      'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY])
+    }
+  )
+$AZ_HAS_TAG =
+  Proc.new { |tag, char = Char.name| $AZ_CHAR_TAGS[char].include? tag }
+
 $AZ_BANDIT_TARGET_SET = {}
 'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'
   .split(' ')
@@ -99,21 +129,6 @@ $AZ_BANDIT_ATTACK =
             echo "#{buffer.length} - #{i} - 1"
             echo buffer
             echo '-----------'
-
-            # Following:
-            # Lord Aranthius's group just went northeast.
-            # [Muddy Village, Pathway - 29049]
-            # The charred blah blah.
-            # Also here: Gossan, Helsfeld, Idios, Lord Aranthius
-            # Obvious paths: north, northeast, southwest
-            # J>
-            # Leading:
-            # [azbandit]>northwest
-            # [Black Weald, Sky Pond - 29228]
-            # Far enough Blah blah
-            # Obvious paths: southeast
-            # Idios, Azanoth, Helsfeld and Gossan followed.
-            # J>
             poaching = true
           end
           break
@@ -163,7 +178,7 @@ $AZ_RUN_CMD =
       Script.start 'prep'
       return true
     elsif cmd == 'start-script' && arg.length > 0
-      Script.start(arg)
+      Script.start(arg) if !running? arg
       return true
     elsif cmd == 'stop-script' && arg.length > 0
       Script.kill(arg) if running? arg

@@ -1,7 +1,4 @@
-PEOPLE = %w[Idios Azanoth Aranthius Gossan Helsfeld]
-
-if bounty? !~ /^You (have )?succeeded/ && Char.name != 'Gossan' &&
-     Char.name != 'Helsfeld'
+if bounty? !~ /^You (have )?succeeded/ && !$AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY)
   raise "You aren't ready to finish"
 end
 
@@ -20,10 +17,13 @@ def turn_off_enh()
   end
 end
 
-def join_healer()
-  return if Char.name == 'Gossan'
-  sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == 'Gossan' }
-  fput 'join Gossan'
+def join_resting_group_leader()
+  leader =
+    $AZ_CHARS.find { |x| $AZ_HAS_TAG.call $AZ_TAG_RESTING_GROUP_LEADER, x }
+  return if Char.name == leader
+  sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == leader }
+  wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } }
+  fput "join #{leader}"
 end
 
 Script.running.each { |x| x.kill unless x == Script.current }
@@ -35,7 +35,7 @@ if !rest.include? Room.current.id
     # If I'm not at rest, trigger fbandit on followers
     # (if I am at rest, they probably already did it and
     #  this is being triggered manually)
-    PEOPLE.each do |char|
+    $AZ_CHARS.each do |char|
       if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
         ACTIONS.queue_action char, 'start-script', 'fbandit'
       end
@@ -58,10 +58,9 @@ end
 rest_room = Room.current.find_nearest(rest)
 Script.run('go2', rest_room.to_s + ' --disable-confirm')
 if checkmind == 'saturated'
-  join_healer
+  join_resting_group_leader
   echo 'Mind is saturated - waiting before turning in bounty'
 
-  # turn_off_enh() if Char.name == 'Azanoth'
   Script.run('waggle')
   while checkmind == 'saturated'
     fput 'exp' if Time.now.to_f.round(0) % 60 == 0
@@ -91,12 +90,13 @@ if bounty? =~ /^You (have )?succeeded/
   echo "Experience gained: #{after_exp - before_exp}"
 end
 
-if Char.name == 'Aranthius'
+if $AZ_HAS_TAG.call $AZ_TAG_SELLS_GEMS
   fput 'store all'
+  fput 'stow all'
   Script.run('go2', 'gemshop')
-  fput 'rem pack'
-  fput 'sell pack'
-  fput 'wear pack'
+  fput "rem #{Vars.lootsack}"
+  fput "sell #{Vars.lootsack}"
+  fput "wear #{Vars.lootsack}"
 end
 
 # bank
@@ -104,36 +104,42 @@ Script.run 'go2', 'bank --disable-confirm'
 fput 'deposit all'
 fput 'check balance'
 
-# rest
+# go to rest area
 Script.run('go2', rest_room.to_s + ' --disable-confirm')
+
+# support
 Script.run('waggle')
 
-if Char.name == 'Azanoth'
+if $AZ_HAS_TAG.call $AZ_TAG_GIVES_ARMOR_SUPPORT
   fput 'armor support'
-  fput 'armor support Idios'
-  fput 'armor support Aranthius'
-elsif Char.name == 'Aranthius'
-  Script.run('waggle', 'Azanoth')
-  Script.run('waggle', 'Idios')
-  Script.run('waggle', 'Gossan')
-  Script.run('waggle', 'Helsfeld')
+  $AZ_CHARS.each do |x|
+    if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_ARMOR_SUPPORT, x
+      fput "armor support #{x}" if checkpcs.include? x
+    end
+  end
+end
+
+if $AZ_HAS_TAG.call $AZ_TAG_WAGGLES_OTHERS
+  $AZ_CHARS.each { |x| Script.run 'waggle', x if checkpcs.include? x }
   Spell[911].cast if Spell[911].affordable?
 end
 
-join_healer if Spell[9003].active?
-if Char.name == 'Gossan' || Char.name == 'Helsfeld'
+join_resting_group_leader if Spell[9003].active?
+if $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
   # always turn in - need to reset count so that spawns
   # keep coming and so that she has a chance to ever finish
-  # (which won't happen if her number is low)
+  # (which won't happen if their number is low)
   Script.run('azswapbounty')
 end
+
 until Room.current.id == rest_room
   Script.run('go2', rest_room.to_s + ' --disable-confirm')
 end
+
 Script.run('getbounty')
 until Room.current.id == rest_room
   Script.run('go2', rest_room.to_s + ' --disable-confirm')
 end
-join_healer
 
+join_resting_group_leader
 do_client ';magic'

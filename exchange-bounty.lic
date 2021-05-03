@@ -28,6 +28,7 @@ if bounty? =~ bounty_regex && acceptable_bounty?(targets, $1)
 end
 
 until bounty? =~ bounty_regex && acceptable_bounty?(targets, $1)
+  echo bounty?
   echo bounty? =~ bounty_regex
   echo $0
   echo $1
@@ -48,6 +49,7 @@ until bounty? =~ bounty_regex && acceptable_bounty?(targets, $1)
   )
   npc = GameObj.npcs.find { |npc| npc.name =~ taskfinish_match }
   fput "ask ##{npc.id} about bounty"
+  wait_until { bounty? =~ bounty_regex }
 end
 
 Script.run('go2', Room.current.find_nearest(rest).to_s + ' --disable-confirm')

@@ -4,32 +4,43 @@ put 'gird'
 Script.start('standgroup')
 
 # brooch stuff
-if Char.name == 'Idios' || Char.name == 'Aranthius' || Char.name == 'Gossan'
+if $AZ_HAS_TAG.call $AZ_TAG_RUBS_WEAK_BROOCH
   if percentmind >= 62
     Script.run 'turnbrooch', 'red 2'
     Script.run 'turnbrooch', 'blue 1'
   end
 end
 
-# start scripts
-if Char.name == 'Gossan'
+# start society scripts
+if Society.status == 'Order of Voln'
+  Script.start('symbolz')
+elsif Society.status == 'Council of Light'
   Script.start('isigns')
-  Spell[211].cast
-  Spell[215].cast
+elsif Society.status == 'Guardians of Sunfist'
+  Script.start('isigils')
+end
+
+# start profession scripts
+if Char.prof == 'Wizard'
+  Script.start('rapid')
+elsif Char.prof == 'Empath'
   Script.start('Gossan-surge')
   # fix-vocal-cords and shattered_empath start
   # at launch and have hide_me
-elsif Char.name == 'Helsfeld'
-  Script.start('isigils')
-  Script.start('Helsfeld-surge')
-elsif Char.name == 'Idios'
-  Script.start('symbolz')
+elsif Char.prof == 'Bard'
   Script.start('Idios-unstun')
-elsif Char.name == 'Aranthius'
-  Script.start('symbolz')
-  Script.start('rapid')
-elsif Char.name == 'Azanoth'
-  Script.start('symbolz')
+end
+
+# group buffs
+if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
+  if Char.prof == 'Empath'
+    Spell[211].cast
+    Spell[215].cast
+  end
+end
+
+# start personal scripts
+if Char.name == 'Azanoth'
   if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
     fput 'cman surge'
   end
@@ -62,31 +73,30 @@ end
 
 # wait for other characters to get more credit?
 original_other_bounty_counts = nil
+i_am_lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
 loop do
   bounty_counts = $AZ_REMOTE['bandits'].get_counts
-  # echo bounty_counts
+  lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
 
+  # only includes higher priority chars
   other_bounty_counts =
-    bounty_counts.reject do |k, v|
-      k === Char.name || k == 'Gossan' || k == 'Helsfeld'
-    end
+    bounty_counts.reject { |k, v| k === Char.name || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, k) }
   if original_other_bounty_counts.nil?
     original_other_bounty_counts = other_bounty_counts
   end
 
-  if Char.name == 'Gossan'
-    break if bounty_counts[Char.name] >= other_bounty_counts.values.max - 1
-  elsif Char.name == 'Helsfeld'
-    if bounty_counts[Char.name] >=
-         other_bounty_counts.values.max && other_bounty_counts.all? do |k, v|
+  i_am_ahead =
+    bounty_counts[Char.name] < (other_bounty_counts.values.max || 100)
+
+  if i_am_lower_priority
+    # wait until I'm not ahead and all higher priority chars have tagged
+    if !i_am_ahead && other_bounty_counts.all? do |k, v|
          v < original_other_bounty_counts[k]
        end
       break
     end
   else
-    if bounty_counts[Char.name] >= (other_bounty_counts.values.max || 0) - 3
-      break
-    end
+    break if !i_am_ahead
   end
 
   echo 'Waiting for other character to get more credit'

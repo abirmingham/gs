@@ -3,14 +3,10 @@ GROUP =
   if args.length > 0
     [Char.name, *args.collect { |name| name.capitalize }].uniq
   else
-    %w[Azanoth Idios Aranthius Gossan Helsfeld]
+    $AZ_CHARS
   end
 
 echo "GROUP: #{GROUP}"
-
-# clean up previous state
-Script.running.each { |x| x.kill unless x == Script.current }
-$AZ_REMOTE['actions'].clear_all_actions
 
 throw 'No bounty' unless bounty?
 
@@ -22,6 +18,10 @@ if bounty? !~ /^You have been tasked/
   end
   sleep 5
 end
+
+# clean up previous state
+Script.running.each { |x| x.kill unless x == Script.current }
+$AZ_REMOTE['actions'].clear_all_actions
 
 # Identify bounty location
 bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/

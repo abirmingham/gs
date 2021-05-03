@@ -46,7 +46,7 @@ module AzBandit
   @DIFFERENT_LOCATION_TASK = 'different location bounty'
   @FINISHED = 'finished'
   @DENIED = 'denied'
-  @MY_CHARS_HACK = %w[Idios Azanoth Aranthius Gossan Helsfeld]
+  @MY_CHARS_HACK = defined?($AZ_CHARS) ? $AZ_CHARS : []
 
   # dynamic variables
   @grouplist = []
@@ -693,18 +693,8 @@ module AzBandit
       if !@grouplist.all? { |char| pcs.include? char }
         throw 'Failed to find all group'
       end
-
-      # I'm in MY_CHARS_HACK and my entire group is here
-      throw 'Not done' unless bounty? =~ /^You succeeded in your task/
-
-      # @MY_CHARS_HACK.each do |char|
-      #   if char != Char.name && char != 'Gossan' && char != 'Helsfeld' &&
-      #        pcs.include?(char)
-      #     $AZ_SEND_ACTION_SYNC.call char, 'verify-done'
-      #   end
-      # end
       echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
-      fput "whisper ooc group 8#{(Time.now.to_f - @start_time).to_i}9"
+      fput "whisper ooc group #{(Time.now.to_f - @start_time).to_i}"
       Script.start('fbandit')
     end
 
@@ -735,7 +725,7 @@ module AzBandit
       end
 
       status_by_char[name] = status
-      next if name == 'Gossan' || name == 'Helsfeld'
+      next if defined?($AZ_HAS_TAG) && $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY)
       counts.push(
         if [
              @DENIED,
@@ -757,7 +747,7 @@ module AzBandit
     msg = status_by_char.map { |char, status| "#{char} #{status}" }.join('. ')
 
     if give_progress_update && msg != @last_progress_msg
-      fput "whisper ooc group Status - #{msg}"
+      fput "whisper ooc group Status - #{msg} (#{(Time.now.to_f - @start_time).to_i})"
       @last_progress_update = Time.now.to_f
       @last_progress_msg = msg
     end

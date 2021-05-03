@@ -80,6 +80,7 @@ class ActionQueue
     log "mark_action_done #{char}, #{id}" if @debug
     init_queue char
     index = @actions[char]['queue'].find_index { |x| x['id'] == id }
+    return if !index
     @actions[char]['queue'][index] =
       @actions[char]['queue'][index].merge({ 'done' => true, 'error' => error })
   end
