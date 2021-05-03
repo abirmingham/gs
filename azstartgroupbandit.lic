@@ -58,7 +58,6 @@ end
 
 # Go!
 Script.start('prep')
-# sleep 3 # wait for warcry # TODO move to bandit start thing
 
 loop do
   # wait until everyone else has registered bounty count

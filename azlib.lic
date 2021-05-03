@@ -22,14 +22,21 @@ $AZ_CHAR_TAGS =
       'Azanoth' => Set.new([$AZ_TAG_GIVES_ARMOR_SUPPORT]),
       'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH]),
       'Aranthius' =>
-        Set.new([$AZ_TAG_RUBS_WEAK_BROOCH, $AZ_TAG_RECEIVES_ARMOR_SUPPORT, $AZ_TAG_WAGGLES_OTHERS, $AZ_TAG_SELLS_GEMS]),
+        Set.new(
+          [
+            $AZ_TAG_RUBS_WEAK_BROOCH,
+            $AZ_TAG_RECEIVES_ARMOR_SUPPORT,
+            $AZ_TAG_WAGGLES_OTHERS,
+            $AZ_TAG_SELLS_GEMS
+          ]
+        ),
       'Gossan' =>
         Set.new(
           [
             $AZ_TAG_RUBS_WEAK_BROOCH,
             $AZ_TAG_LOW_BOUNTY_PRIORITY,
             $AZ_TAG_RESTING_GROUP_LEADER,
-            $AZ_TAG_CASTS_SHORT_BUFFS,
+            $AZ_TAG_CASTS_SHORT_BUFFS
           ]
         ),
       'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY])
