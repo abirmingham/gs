@@ -90,7 +90,10 @@ $AZ_BANDIT_ATTACK =
   Proc.new do |attack_routine|
     # wait for bounty
     loop do
-      break if bounty? =~ $AZ_BOUNTY_PATTERN_NUM || bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+      if bounty? =~ $AZ_BOUNTY_PATTERN_NUM ||
+           bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+        break
+      end
       sleep 1
     end
 
@@ -213,7 +216,7 @@ $AZ_BANDIT_ATTACK =
             bounty_counts[Char.name] < v && v == original_other_bounty_counts[k]
           end
       end
-      echo "---- DEFER: #{defer}"
+      # echo "---- DEFER: #{defer}"
 
       # chill or attack
       if defer || poaching || targets.nil? || targets.length == 0
