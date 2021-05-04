@@ -41,9 +41,7 @@ end
 # Form group
 GROUP.each do |char|
   if Char.name != char
-    $AZ_SEND_ACTION_SYNC.call char,
-                              'ungroup',
-                              bounty_location
+    $AZ_SEND_ACTION_SYNC.call char, 'ungroup', bounty_location
   end
 end
 

@@ -45,20 +45,22 @@ $AZ_CHAR_TAGS =
 $AZ_HAS_TAG =
   Proc.new { |tag, char = Char.name| $AZ_CHAR_TAGS[char].include? tag }
 
-  
 $AZ_PERSONAL_SCRIPTS =
-Hash[*$AZ_CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge({
-  'Azanoth' => Proc.new {
-    if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-      fput 'cman surge'
-    end
-    fput 'cman dervish'
-    waitrt?
-    fput 'war shout'
-    waitrt?
-    Script.start 'Azanoth-506'
-  },
-})
+  Hash[*$AZ_CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge(
+    {
+      'Azanoth' =>
+        Proc.new do
+          if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
+            fput 'cman surge'
+          end
+          fput 'cman dervish'
+          waitrt?
+          fput 'war shout'
+          waitrt?
+          Script.start 'Azanoth-506'
+        end
+    }
+  )
 
 $AZ_BANDIT_TARGET_SET = {}
 'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'
@@ -188,22 +190,24 @@ $AZ_BANDIT_ATTACK =
         bounty_counts.reject do |k, v|
           k === Char.name || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, k)
         end
-      
+
       defer = true
       if i_am_lower_priority
         # wait until I am last and all high-priority chars have tagged
-        i_am_last = bounty_counts[Char.name] >= (other_bounty_counts.values.max || 100)
-        all_chars_tagged = other_bounty_counts.all? do |k, v|
+        i_am_last =
+          bounty_counts[Char.name] >= (other_bounty_counts.values.max || 100)
+        all_chars_tagged =
+          other_bounty_counts.all? do |k, v|
             v < original_other_bounty_counts[k]
           end
         defer = false if i_am_last && all_chars_tagged
       else
         # defer if I have less than any untagged high-priority character
         # TODO is there some way we can let Gossan get a shot here?
-        defer = other_bounty_counts.any? do |k, v|
-          bounty_counts[Char.name] < v &&
-          v == original_other_bounty_counts[k]
-        end
+        defer =
+          other_bounty_counts.any? do |k, v|
+            bounty_counts[Char.name] < v && v == original_other_bounty_counts[k]
+          end
       end
       echo "---- DEFER: #{defer}"
 
