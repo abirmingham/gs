@@ -67,7 +67,7 @@ $AZ_BANDIT_TARGET_SET = {}
   .split(' ')
   .each { |noun| $AZ_BANDIT_TARGET_SET[noun] = true }
 $AZ_BOUNTY_PATTERN_NUM = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?.*\s(?:near|between|under|\.).* (\d+) (?:more )?of them/
-$AZ_BOUNTY_PATTERN_FINISHED = /^You succeeded in your task/
+$AZ_BOUNTY_PATTERN_FINISHED = /^You (have )?succeeded/
 
 $AZ_SEND_ACTION_SYNC =
   lambda do |char, cmd, arg = ''|
@@ -90,12 +90,16 @@ $AZ_BANDIT_ATTACK =
   Proc.new do |attack_routine|
     # wait for bounty
     loop do
-      break if bounty? =~ $AZ_BOUNTY_PATTERN_NUM
+      break if bounty? =~ $AZ_BOUNTY_PATTERN_NUM || bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
       sleep 1
     end
 
     # send count to remote
-    if bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
+    if bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+      # this should only happen if we killed char-bandits.lic and restarted it
+      # mid-run, causing us to skip an update.
+      $AZ_REMOTE['bandits'].set_count(Char.name, 0)
+    elsif bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
       $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
       echo "Set count #{$1}"
     else

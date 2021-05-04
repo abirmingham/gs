@@ -1,4 +1,4 @@
-if bounty? !~ /^You (have )?succeeded/ &&
+if bounty? !~ $AZ_BOUNTY_PATTERN_FINISHED &&
      !$AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY)
   raise "You aren't ready to finish"
 end
