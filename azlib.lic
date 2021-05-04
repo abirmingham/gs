@@ -89,6 +89,8 @@ $AZ_BANDIT_ATTACK =
     # state
     poaching = false
     carried_line = nil
+    original_other_bounty_counts = $AZ_REMOTE['bandits'].get_counts
+    i_am_lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
 
     # main loop
     i = -1
@@ -158,14 +160,39 @@ $AZ_BANDIT_ATTACK =
         end
       end
 
-      if poaching || targets.nil? || targets.length == 0
+      # defer to others?
+      bounty_counts = $AZ_REMOTE['bandits'].get_counts
+      lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
+      other_bounty_counts =
+        bounty_counts.reject do |k, v|
+          k === Char.name || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, k)
+        end
+      
+      defer = true
+      if i_am_lower_priority
+        # wait until I am last and all high-priority chars have tagged
+        i_am_last = bounty_counts[Char.name] >= (other_bounty_counts.values.max || 100)
+        all_chars_tagged = other_bounty_counts.all? do |k, v|
+            v < original_other_bounty_counts[k]
+          end
+        defer = false if i_am_last && all_chars_tagged
+      else
+        # defer if I have less than any untagged high-priority character
+        # TODO is there some way we can let Gossan get a shot here?
+        defer = other_bounty_counts.any? do |k, v|
+          bounty_counts[Char.name] < v &&
+          v == original_other_bounty_counts[k]
+        end
+      end
+      echo "---- DEFER: #{defer}"
+
+      # chill or attack
+      if defer || poaching || targets.nil? || targets.length == 0
         if checkcastrt == 0
           fput 'stance def' if checkstance != 'defensive'
         elsif checkstance != 'guarded'
           fput 'stance def'
         end
-      elsif running? 'sloot'
-        wait_while { running? 'sloot' }
       else
         attack_routine.call(targets)
       end
@@ -214,8 +241,8 @@ $AZ_RUN_CMD =
         fput "whisper ooc Aranthius #{msg}"
       end
       wait_while { Spell[9056].active? } unless has_that_bounty
-
-      # also prep for bandits
+      return true
+    elsif cmd == 'ungroup'
       Script.running.each { |x| x.kill }
       fput 'disband'
       fput 'leave'

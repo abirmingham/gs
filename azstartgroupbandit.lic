@@ -39,6 +39,14 @@ GROUP.each do |char|
 end
 
 # Form group
+GROUP.each do |char|
+  if Char.name != char
+    $AZ_SEND_ACTION_SYNC.call char,
+                              'ungroup',
+                              bounty_location
+  end
+end
+
 multifput 'disband', 'leave'
 GROUP.each { |char| fput "hold #{char}" if Char.name != char }
 
