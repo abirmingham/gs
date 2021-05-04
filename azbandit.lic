@@ -25,7 +25,7 @@ module AzBandit
   @LOOTING_ENABLED = true # faster but you get less control over what gets looted
 
   # static variables
-  @PROGRESS_UPDATE_INTERVAL = 10
+  @PROGRESS_UPDATE_INTERVAL = 1
   @DEBUG = false
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
   @BANDIT_SET =

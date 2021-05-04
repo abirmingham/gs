@@ -1,7 +1,7 @@
 # prep
 put 'stance def'
 put 'gird'
-Script.start('standgroup')
+Script.start 'standgroup'
 
 # brooch stuff
 if $AZ_HAS_TAG.call $AZ_TAG_RUBS_WEAK_BROOCH
@@ -44,4 +44,4 @@ end
 
 # start personal scripts
 $AZ_PERSONAL_SCRIPTS[Char.name].call
-Script.start("#{Char.name}-bandits")
+Script.start "#{Char.name}-bandits"

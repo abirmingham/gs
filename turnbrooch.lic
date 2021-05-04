@@ -77,7 +77,7 @@ if rubs > 0
   end
   raise 'FAILED TO FIND RUBS AVAILABLE' if rubs_available.nil?
   if rubs_available == 0
-    echo 'No operation - no rubs available. To turn brooch, pass with no rubs argument'
+    echo 'Brooch turned, but no more rubs are available.'
     exit
   elsif rubs > rubs_available
     rubs = rubs_available
@@ -101,5 +101,3 @@ else
 end
 
 rubs.times { fput 'rub my q bro' } if rubs > 0
-
-# dothistimeout "turn my q bro"
