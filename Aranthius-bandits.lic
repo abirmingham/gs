@@ -7,9 +7,7 @@ $AZ_BANDIT_ATTACK.call(
       # if targets.length >= 2 && checkmana >= 40
       #   fput 'incant 518 air'
       # elsif checkmana >= 20
-      if checkmana >= 20
-        fput 'incant 903'
-      end
+      fput 'incant 903' if checkmana >= 20
     end
   end
 )

@@ -5,7 +5,7 @@ $AZ_BANDIT_ATTACK.call(
     elsif checkmana >= 10
       fput 'incant 1106'
     else
-      echo "WARNING: out of mana"
+      echo 'WARNING: out of mana'
     end
   end
 )

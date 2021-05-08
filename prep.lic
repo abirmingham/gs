@@ -44,9 +44,7 @@ if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
 end
 if $AZ_HAS_TAG.call $AZ_TAG_GIVES_515
   checkpcs.each do |x|
-    if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_515, x
-      Spell[515].cast x
-    end
+    Spell[515].cast x if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_515, x
   end
 end
 
