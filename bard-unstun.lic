@@ -9,9 +9,8 @@ loop do
          line =~ /^Suddenly, you hear a soft/ ||
          line =~ /a well concealed shallow pit of spikes!/
       trapped = true
-      put 'look'
     end
-    put 'look' if line =~ /stunned!/
+    sleep 0.25 if line =~ /stunned!/ # yield
   end
 
   unless checkdead
@@ -26,7 +25,6 @@ loop do
       end
       fput 'shout 1040'
       waitcastrt?
-      put 'look'
     else
       if killed_script
         start_script BANDIT_SCRIPT if !running? BANDIT_SCRIPT

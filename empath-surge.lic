@@ -8,7 +8,7 @@ loop do
     if line =~ /^Suddenly.*carefully concealed metal jaws slam shut on (\w+)'s/
       trapped_person = $1
     end
-    put 'look' if line =~ /stunned!/
+    sleep 1 # yield
   end
 
   unless checkdead || checkstunned
@@ -17,7 +17,7 @@ loop do
         $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stunned/
       end
 
-    if (stunnedfriend || trapped_person) && checkmana.to_i > 80
+    if (stunnedfriend || trapped_person) && checkmana.to_i > 50
       if running? BANDIT_SCRIPT
         # kill instead of pause - don't want to restart it and have it poach
         kill_script BANDIT_SCRIPT
@@ -25,7 +25,6 @@ loop do
       end
       Spell[1107].cast(trapped_person || stunnedfriend)
       waitcastrt?
-      put 'look'
     else
       if killed_script
         start_script BANDIT_SCRIPT if !running? BANDIT_SCRIPT

@@ -16,27 +16,31 @@ $AZ_TAG_RESTING_GROUP_LEADER = 'resting_group_leader'
 $AZ_TAG_LOW_BOUNTY_PRIORITY = 'low_bounty_priority'
 $AZ_TAG_RUBS_WEAK_BROOCH = 'rubs_weak_brooch'
 $AZ_TAG_CASTS_SHORT_BUFFS = 'casts_short_buffs'
+$AZ_TAG_GIVES_515 = 'gives_515'
+$AZ_TAG_RECEIVES_515 = 'receives_515'
 $AZ_CHAR_TAGS =
   Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
     {
       'Azanoth' => Set.new([$AZ_TAG_GIVES_ARMOR_SUPPORT]),
-      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH]),
+      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH, $AZ_TAG_RECEIVES_515]),
       'Aranthius' =>
         Set.new(
           [
             $AZ_TAG_RUBS_WEAK_BROOCH,
             $AZ_TAG_RECEIVES_ARMOR_SUPPORT,
             $AZ_TAG_WAGGLES_OTHERS,
-            $AZ_TAG_SELLS_GEMS
+            $AZ_TAG_SELLS_GEMS,
+            $AZ_TAG_GIVES_515
           ]
         ),
       'Gossan' =>
         Set.new(
           [
             $AZ_TAG_RUBS_WEAK_BROOCH,
-            $AZ_TAG_LOW_BOUNTY_PRIORITY,
+            # $AZ_TAG_LOW_BOUNTY_PRIORITY,
             $AZ_TAG_RESTING_GROUP_LEADER,
-            $AZ_TAG_CASTS_SHORT_BUFFS
+            $AZ_TAG_CASTS_SHORT_BUFFS,
+            $AZ_TAG_RECEIVES_515
           ]
         ),
       'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY])
@@ -50,13 +54,13 @@ $AZ_PERSONAL_SCRIPTS =
     {
       'Azanoth' =>
         Proc.new do
+          # fput 'cman dervish'
+          # waitrt?
+          fput 'war shout'
+          waitrt?
           if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
             fput 'cman surge'
           end
-          fput 'cman dervish'
-          waitrt?
-          fput 'war shout'
-          waitrt?
           Script.start 'Azanoth-506'
         end
     }
@@ -86,10 +90,51 @@ $AZ_SEND_ACTION_SYNC =
     end
   end
 
+def is_deferred?(char)
+  # only called for high priority chars
+  count = bounty_counts[char]
+  is_tagged = original_bounty_counts[char] != count
+  bounty_counts.reject do |x|
+    x == char || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, x)
+  end.any? do |their_char, their_count|
+    they_are_tagged = original_bounty_counts[their_char] != their_count
+    if is_tagged
+      if they_are_tagged
+        false # may as well attack - neither need credit
+      else
+        count <= their_count # they need credit
+      end
+    else
+      if they_are_tagged
+        count < their_count # they need to catch up
+      else
+        count < their_count # they need to catch up
+      end
+    end
+  end
+end
+
+module AzLib
+  # should 'a' defer to 'b'?
+  def self.should_defer?(a, b, current_counts, original_counts)
+    a_is_tagged = current_counts[a] != original_counts[a]
+    b_is_tagged = current_counts[b] != original_counts[b]
+    if a_is_tagged
+      if b_is_tagged
+        false # may as well attack - neither need credit
+      else
+        current_counts[a] <= current_counts[b] # they need credit
+      end
+    else
+      current_counts[a] < current_counts[b] # they need to catch up
+    end
+  end
+end
+
 $AZ_BANDIT_ATTACK =
   Proc.new do |attack_routine|
     # wait for bounty
-    echo "Waiting for bounty"
+    echo 'Waiting for bounty'
     loop do
       if bounty? =~ $AZ_BOUNTY_PATTERN_NUM ||
            bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
@@ -110,7 +155,8 @@ $AZ_BANDIT_ATTACK =
       throw 'Failed to find bounty count'
     end
 
-    echo "Waiting for group registration"
+    echo 'Waiting for group registration'
+
     # wait for group registration
     loop do
       break if $AZ_REMOTE['bandits'].has_group_registered?
@@ -125,7 +171,7 @@ $AZ_BANDIT_ATTACK =
     i_am_lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
 
     # main loop
-    echo "Main attack loop"
+    echo 'Main attack loop'
     i = -1
     while true
       i = i + 1
@@ -195,41 +241,28 @@ $AZ_BANDIT_ATTACK =
 
       # defer to others?
       bounty_counts = $AZ_REMOTE['bandits'].get_counts
-      lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
-      other_bounty_counts =
-        bounty_counts.reject do |k, v|
-          k == Char.name || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, k)
+      high_priority_counts =
+        bounty_counts.reject do |x|
+          $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, x)
         end
 
       defer = true
       if i_am_lower_priority
         # wait until I am last and all high-priority chars have tagged
-        i_am_last =
-          bounty_counts[Char.name] >= (other_bounty_counts.values.max || 100)
-        all_chars_tagged =
-          other_bounty_counts.all? do |k, v|
-            v < original_bounty_counts[k]
-          end
-        defer = false if i_am_last && all_chars_tagged
-      else
-        # defer if I have less than any untagged high-priority character
-        # TODO is there some way we can let Gossan get a shot here?
         defer =
-          other_bounty_counts.any? do |char, their_count|
-            my_count = bounty_counts[Char.name]
-            i_am_tagged = original_bounty_counts[Char.name] != my_count
-            they_are_tagged = original_bounty_counts[char] != their_count
-
-            if i_am_tagged && they_are_tagged
-              false
-            elsif i_am_tagged
-              my_count <= their_count
-            else
-              my_count < their_count
-            end
+          high_priority_counts.all? do |k, v|
+            bounty_counts[Char.name] > v && v < original_bounty_counts[k]
           end
+      else
+        defer =
+          high_priority_counts.any? do |their_char, their_count|
+            AzLib.should_defer? Char.name,
+                                their_char,
+                                bounty_counts,
+                                original_bounty_counts
+          end
+        echo "---- DEFER: #{defer}"
       end
-      echo "---- DEFER: #{defer}"
 
       # chill or attack
       if defer || poaching || targets.nil? || targets.length == 0
@@ -239,16 +272,12 @@ $AZ_BANDIT_ATTACK =
           fput 'stance def'
         end
       else
-        attack_routine.call(targets)
+        attack_routine.call targets
       end
 
       # yield
       rt = checkrt
-      if rt > 2
-        sleep(rt - 1)
-      else
-        sleep 0.25
-      end
+      sleep(rt > 2 ? rt - 1 : 0.25)
 
       # update bounty count
       bounty_text = bounty?
@@ -259,9 +288,12 @@ $AZ_BANDIT_ATTACK =
         elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
           new_count = $1.to_i
         end
-        $AZ_REMOTE['bandits'].set_count(Char.name, new_count)
+        $AZ_REMOTE['bandits'].set_count Char.name, new_count
         last_bounty_text = bounty_text
       end
+
+      # yield
+      sleep 0.25
     end
   end
 

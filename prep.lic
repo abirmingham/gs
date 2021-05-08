@@ -25,6 +25,7 @@ end
 
 # start profession scripts
 if Char.prof == 'Wizard'
+  Spell[515].cast
   Script.start 'rapid'
 elsif Char.prof == 'Empath'
   Script.start 'empath-surge'
@@ -39,6 +40,13 @@ if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
   if Char.prof == 'Empath'
     Spell[211].cast
     Spell[215].cast
+  end
+end
+if $AZ_HAS_TAG.call $AZ_TAG_GIVES_515
+  checkpcs.each do |x|
+    if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_515, x
+      Spell[515].cast x
+    end
   end
 end
 

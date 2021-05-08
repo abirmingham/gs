@@ -1,3 +1,11 @@
 $AZ_BANDIT_ATTACK.call(
-  Proc.new { |targets| fput 'incant 1106' if checkmana >= 30 }
+  Proc.new do |targets|
+    if checkmana >= 20
+      fput 'incant 1115'
+    elsif checkmana >= 10
+      fput 'incant 1106'
+    else
+      echo "WARNING: out of mana"
+    end
+  end
 )

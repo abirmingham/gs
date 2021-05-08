@@ -1,12 +1,13 @@
 $AZ_BANDIT_ATTACK.call(
   Proc.new do |targets|
     if checkmana >= 60
-      if targets.length > 1
-        # fput "incant 1030"
-        fput 'incant 1030 open'
-      elsif targets.length > 0
-        fput 'incant 1030'
-      end
+      fput 'incant 1030'
+      # if targets.length > 1
+      #   # fput "incant 1030"
+      #   fput 'incant 1030 open'
+      # elsif targets.length > 0
+      #   fput 'incant 1030'
+      # end
     end
     fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
   end
