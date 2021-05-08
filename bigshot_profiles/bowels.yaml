@@ -1,0 +1,80 @@
+---
+resting_room_id: '1259'
+resting_commands: store all, inven enhancive off, armor reinforce
+resting_scripts: sleep5,useherbs --buy-missing=on,poolparty,sloot sell,sithold alornen,waggle
+fog_return: 0
+hunting_room_id: '8374'
+hunting_boundaries: '8375,3839'
+targets: jarl(b),elder(b), greater earth elemental(e)
+quickhunt_targets: ''
+hunting_stance: 'off'
+hunting_prep_commands: stow left,gird,inven enhancive on
+hunting_scripts: ''
+signs: '9621,9605,9805,9806'
+loot_script: sloot
+wracking_spirit: ''
+ambush: ''
+archery_aim: ''
+flee_count: '5'
+invalid_targets: ''
+always_flee_from: ''
+flee_message: ''
+wander_wait: ''
+hunting_commands: berserk (s40 mob2), tackle target (s20 prone), ambush target head
+  (!prone)
+hunting_commands_b: berserk (s60 mob3), wtrick feint target (s40 prone), tackle target
+  (s40 prone) and ambush target head (!prone), ambush target head (!prone), ambush
+  target head (!prone), ambush target head (!prone), ambush target head (!prone)
+hunting_commands_c: ambush target right leg (prone) and ambush target head (!prone)
+hunting_commands_d: wtrick feint target (s20 prone), ambush target right leg (prone),
+  mstrike target (!prone) and kill target (!prone) and kill target (!prone) and kill
+  target (!prone)
+hunting_commands_e: berserk (s60 mob3), wtrick feint target (s20 prone), ambush target
+  right leg (prone), kill target (!prone) and kill target (!prone) and kill target
+  (!prone)
+hunting_commands_f: ''
+hunting_commands_g: ''
+hunting_commands_h: ''
+hunting_commands_i: ''
+hunting_commands_j: ''
+disable_commands: ''
+quick_commands: ''
+tier3: ''
+aim: ''
+uac_mstrike: ''
+mstrike_stamina_cooldown: ''
+mstrike_stamina_quickstrike: ''
+mstrike_mob: ''
+rest_till_exp: '65'
+rest_till_mana: '0'
+rest_till_spirit: '6'
+fried: '100'
+overkill: '2'
+oom: "-1"
+encumbered: ''
+wounded_eval: percenthealth <= 75
+ammo_container: ''
+ammo: ''
+fresh_wand_container: ''
+dead_wand_container: ''
+wand: ''
+dead_man_switch: false
+monitor_interaction: false
+depart_switch: false
+flee_clouds: true
+flee_vines: true
+flee_webs: true
+priority: true
+use_wracking: true
+delay_loot: true
+loot_stance: true
+pull: true
+spam: true
+lone_targets_only: false
+bless: false
+uac_smite: false
+mstrike_cooldown: false
+mstrike_quickstrike: false
+hide_for_ammo: false
+wand_if_oom: false
+trusted_companions: ''

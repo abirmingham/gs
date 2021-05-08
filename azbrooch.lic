@@ -1,0 +1,30 @@
+fput "store all"
+fput "stow all"
+fput "gird"
+fput 'reim transport confirm' until Room.current.id == 24888
+start_script 'brooch'
+Script.run "go2", "treim"
+start_script 'standgroup'
+
+if Society.status == 'Order of Voln'
+    Script.start 'symbolz'
+elsif Society.status == 'Council of Light'
+    Script.start 'isigns'
+elsif Society.status == 'Guardians of Sunfist'
+    Script.start 'isigils'
+end  
+
+if Char.name == 'Azanoth'
+    start_script 'treim', ['attack']
+    start_script 'Azanoth-506'
+    loop {
+        put 'stance off'
+        put 'kill'
+        sleep 1;
+    }
+elsif Char.prof == 'Empath'
+    start_script 'unpoison'
+    start_script 'treim', ['1115']
+elsif Char.prof == 'Wizard'
+    start_script 'treim', ['903']
+end

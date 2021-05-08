@@ -1,0 +1,78 @@
+---
+resting_room_id: '1259'
+resting_commands: stance def, store all, inven enhanc off
+resting_scripts: sleep5,useherbs --buy-missing=on,sloot sell,sithold azanoth,porc-run,waggle,fletch-master
+fog_return: 0
+hunting_room_id: '24675'
+hunting_boundaries: '7892,16744,24696'
+targets: mammoth(a), tiger(b), boar(b), viper (c)
+quickhunt_targets: ''
+hunting_stance: offensive
+hunting_prep_commands: store all, stow all, gird, aim right eye, inven enhancive on
+hunting_scripts: isigns
+signs: ''
+loot_script: sloot
+wracking_spirit: ''
+ambush: ''
+archery_aim: ''
+flee_count: '3'
+invalid_targets: ''
+always_flee_from: ''
+flee_message: ''
+wander_wait: ''
+hunting_commands: weed target, fire target
+hunting_commands_b: weed target, fire target
+hunting_commands_c: 607 target, fire target (x1000)
+hunting_commands_d: ''
+hunting_commands_e: ''
+hunting_commands_f: ''
+hunting_commands_g: ''
+hunting_commands_h: ''
+hunting_commands_i: ''
+hunting_commands_j: ''
+disable_commands: ''
+quick_commands: ''
+tier3: ''
+aim: ''
+uac_mstrike: ''
+mstrike_stamina_cooldown: ''
+mstrike_stamina_quickstrike: ''
+mstrike_mob: ''
+rest_till_exp: '65'
+rest_till_mana: '60'
+rest_till_spirit: '7'
+fried: '100'
+overkill: '1'
+oom: '5'
+encumbered: '20'
+wounded_eval: bleeding? || percenthealth <= 75 || [Wounds.head, Scars.head, Wounds.leftEye,
+  Scars.leftEye, Wounds.rightEye, Scars.rightEye, Wounds.nsys, Scars.nsys].max > 1
+  ||  [Wounds.leftArm, Wounds.leftHand, Wounds.rightArm, Wounds.rightHand, Scars.leftArm,
+  Scars.leftHand, Scars.rightArm, Scars.rightHand].max >= 2 || ([Wounds.leftArm, Wounds.leftHand,
+  Scars.leftArm, Scars.leftHand].max > 0 && [Wounds.rightArm, Wounds.rightHand, Scars.leftArm,
+  Scars.leftHand].max > 0)
+ammo_container: cloak
+ammo: arrow
+fresh_wand_container: ''
+dead_wand_container: ''
+wand: ''
+dead_man_switch: false
+monitor_interaction: true
+depart_switch: false
+flee_clouds: true
+flee_vines: false
+flee_webs: true
+priority: false
+use_wracking: false
+delay_loot: true
+loot_stance: true
+pull: true
+spam: true
+lone_targets_only: true
+bless: false
+uac_smite: false
+mstrike_cooldown: false
+mstrike_quickstrike: false
+hide_for_ammo: false
+wand_if_oom: false
+trusted_companions: ''
