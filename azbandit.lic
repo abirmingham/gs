@@ -327,16 +327,14 @@ module AzBandit
       echo "STEP2_RESULT: #{step2_result}" if @DEBUG
       if Room.current.id == start_room_id
         sleep 0.5
-        stay_here = AzLib.room_owned? && (step2_result['bandits'] || game_obj_bandits.length > 0)
+        stay_here =
+          AzLib.room_owned? &&
+            (step2_result['bandits'] || game_obj_bandits.length > 0)
         if stay_here
           # couldn't move but that's okay cause we have bandits now
           echo "INFO: I don't need to move anymore - bandits are here and I'm not poaching"
           return(
-            {
-              'bandits' => true,
-              'poaching' => false,
-              'stragglers' => false
-            }
+            { 'bandits' => true, 'poaching' => false, 'stragglers' => false }
           )
         end
       end
@@ -391,7 +389,7 @@ module AzBandit
     if way.class == String
       put way
     elsif way.class == Proc
-      raise "Unhandled way.class == Proc"
+      raise 'Unhandled way.class == Proc'
       # way.call
     else
       throw 'error in the map database'
@@ -418,11 +416,16 @@ module AzBandit
         # TODO move to AzLib
         result['bandits'] = count > 0
       elsif !line
-        return result.merge({
-          'stragglers' => @grouplist.any? do |char|
-            !room_info.followers.any? { |f| f.noun == char }
-          end
-        })
+        return(
+          result.merge(
+            {
+              'stragglers' =>
+                @grouplist.any? do |char|
+                  !room_info.followers.any? { |f| f.noun == char }
+                end
+            }
+          )
+        )
       end
     end
   end

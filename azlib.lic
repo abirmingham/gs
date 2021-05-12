@@ -112,7 +112,7 @@ module AzLib
         now_time = Time.now.to_i
         echo "timeout_time: #{timeout_time}; now_time: #{now_time}"
         if now_time >= timeout_time
-          echo "WARNING: wait_for_room_change timed out"
+          echo 'WARNING: wait_for_room_change timed out'
           break
         end
         @@room_info_cv.wait(@@mu, timeout_time - now_time)
@@ -124,14 +124,15 @@ module AzLib
   def self.room_owned?(group = $AZ_CHARS_SET)
     @@mu.synchronize do
       ri = @@room_info_snap
-      ri.other_pcs.find_all { |pc| !group.include?(pc.noun) }.empty? && !ri.hiders
+      ri.other_pcs.find_all { |pc| !group.include?(pc.noun) }.empty? &&
+        !ri.hiders
     end
   end
 
   def self.get_gameobjs(line)
-    line.scan(%r{<a exist="(-?\d+)" noun="([^"]+)">([^<]+)</a>}).map { |m|
-      GameObj.new(m[0], m[1], m[2])
-    }
+    line
+      .scan(%r{<a exist="(-?\d+)" noun="([^"]+)">([^<]+)</a>})
+      .map { |m| GameObj.new(m[0], m[1], m[2]) }
   end
 
   DownstreamHook.add(
@@ -158,9 +159,8 @@ module AzLib
       server_string
     end
   )
-  before_dying {
-    DownstreamHook.remove 'AzLib.Status.Room'
-  }
+  before_dying { DownstreamHook.remove 'AzLib.Status.Room' }
+
   #end calael
 
   # if server_string =~ /popStream.*id='room'/
@@ -185,8 +185,10 @@ module AzLib
   # should 'a' defer to 'b'?
   def self.should_defer?(a, b, current_counts, original_counts)
     return false if a == b
-    a_is_tagged = current_counts[a] == 0 || current_counts[a] != original_counts[a]
-    b_is_tagged = current_counts[b] == 0 || current_counts[b] != original_counts[b]
+    a_is_tagged =
+      current_counts[a] == 0 || current_counts[a] != original_counts[a]
+    b_is_tagged =
+      current_counts[b] == 0 || current_counts[b] != original_counts[b]
     if a_is_tagged
       if b_is_tagged
         false # may as well attack - neither need credit
@@ -199,7 +201,6 @@ module AzLib
       current_counts[a] < current_counts[b]
     end
   end
-
 end
 
 $AZ_BANDIT_ATTACK =
@@ -308,7 +309,8 @@ $AZ_BANDIT_ATTACK =
         # wait until I am last and all high-priority chars have tagged
         defer =
           high_priority_counts.any? do |char, their_count|
-            their_count > bounty_counts[Char.name] || their_count == original_bounty_counts[char]
+            their_count > bounty_counts[Char.name] ||
+              their_count == original_bounty_counts[char]
           end
       else
         defer =
@@ -322,6 +324,7 @@ $AZ_BANDIT_ATTACK =
 
       # echo AzLib.room_info
       room_owned = AzLib.room_owned?
+
       # echo high_priority_counts
       # room_owned = !poaching
       echo "---- DEFER: #{defer}; room_owned: #{room_owned}"
