@@ -27,4 +27,6 @@ elsif Char.prof == 'Empath'
   start_script 'treim', ['1115']
 elsif Char.prof == 'Wizard'
   start_script 'treim', ['903']
+elsif Char.prof == 'Bard'
+  start_script 'treim', ['1002']
 end

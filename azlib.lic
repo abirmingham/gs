@@ -22,7 +22,7 @@ $AZ_CHAR_TAGS =
   Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
     {
       'Azanoth' => Set.new([$AZ_TAG_GIVES_ARMOR_SUPPORT]),
-      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH, $AZ_TAG_RECEIVES_515]),
+      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH]),
       'Aranthius' =>
         Set.new(
           [
@@ -90,45 +90,116 @@ $AZ_SEND_ACTION_SYNC =
     end
   end
 
-def is_deferred?(char)
-  # only called for high priority chars
-  count = bounty_counts[char]
-  is_tagged = original_bounty_counts[char] != count
-  bounty_counts.reject do |x|
-    x == char || $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, x)
-  end.any? do |their_char, their_count|
-    they_are_tagged = original_bounty_counts[their_char] != their_count
-    if is_tagged
-      if they_are_tagged
-        false # may as well attack - neither need credit
-      else
-        count <= their_count # they need credit
+module AzLib
+  #begin calael
+  @@room_info ||= OpenStruct.new(count: 0)
+
+  @@mu = Mutex.new
+  @@room_info_cv = ConditionVariable.new
+  @@room_info_snap = @@room_info.clone
+  @@move_timeout = 3 # seconds
+
+  def self.room_info
+    @@mu.synchronize { @@room_info_snap.clone }
+  end
+
+  def self.wait_for_room_change
+    # TODO add recognition of groupmovement fail
+    @@mu.synchronize do
+      start = @@room_info_snap.count
+      timeout_time = Time.now.to_i + @@move_timeout
+      while start == @@room_info_snap.count
+        now_time = Time.now.to_i
+        echo "timeout_time: #{timeout_time}; now_time: #{now_time}"
+        if now_time >= timeout_time
+          echo "WARNING: wait_for_room_change timed out"
+          break
+        end
+        @@room_info_cv.wait(@@mu, timeout_time - now_time)
       end
-    else
-      if they_are_tagged
-        count < their_count # they need to catch up
-      else
-        count < their_count # they need to catch up
-      end
+      start == @@room_info_snap.count ? nil : @@room_info_snap.clone
     end
   end
-end
 
-module AzLib
+  def self.room_owned?(group = $AZ_CHARS_SET)
+    @@mu.synchronize do
+      ri = @@room_info_snap
+      ri.other_pcs.find_all { |pc| !group.include?(pc.noun) }.empty? && !ri.hiders
+    end
+  end
+
+  def self.get_gameobjs(line)
+    line.scan(%r{<a exist="(-?\d+)" noun="([^"]+)">([^<]+)</a>}).map { |m|
+      GameObj.new(m[0], m[1], m[2])
+    }
+  end
+
+  DownstreamHook.add(
+    'AzLib.Status.Room',
+    proc do |server_string|
+      if server_string =~ /popStream.*id='room'/
+        @@room_info.count += 1
+        @@room_info.hiders = false
+        @@room_info.other_pcs = []
+      elsif @@room_info_snap.count != @@room_info.count
+        if server_string =~ /obvious signs of someone hiding/
+          @@room_info.hiders = true
+        elsif server_string =~ /^(?:Also here:|Also in the room:)(?<pc_str>.*)$/
+          @@room_info.other_pcs = get_gameobjs($~['pc_str'])
+        elsif server_string =~ /(?<followers>.*) followed\./
+          @@room_info.followers = get_gameobjs($~['followers'])
+        elsif server_string =~ /<prompt/
+          @@mu.synchronize do
+            @@room_info_snap = @@room_info.clone
+            @@room_info_cv.broadcast
+          end
+        end
+      end
+      server_string
+    end
+  )
+  before_dying {
+    DownstreamHook.remove 'AzLib.Status.Room'
+  }
+  #end calael
+
+  # if server_string =~ /popStream.*id='room'/
+  #   @@room_info.count += 1
+  #   @@room_info.hiders = false
+  #   @@room_info.other_pcs = []
+  #   @@room_info.followers = []
+  #   @@room_info.targets = []
+  # elsif server_string =~ /<dialogData id='combat'>.*content_text="(?<targets>.*)" content_value="(?<ids>.*)" anchor_left.*<\/dialogData>/
+  #     targets = $~['targets'].split /\s*,\s*/
+  #     ids = $~['ids'].split /\s*,\s*/
+  #     @@room_info.target_string = server_string
+  #     @@room_info.targets = targets
+  #     @@room_info.ids = ids
+  #     # @@room_info.targets = targets.collect { |name, i| GameObj.new(ids[i], noun, name) }.reject {
+  #     #   |x| x.noun == 'none'
+  #     # }
+  #     @@mu.synchronize do
+  #       @@room_info_snap = @@room_info.clone
+  #     end
+
   # should 'a' defer to 'b'?
   def self.should_defer?(a, b, current_counts, original_counts)
-    a_is_tagged = current_counts[a] != original_counts[a]
-    b_is_tagged = current_counts[b] != original_counts[b]
+    return false if a == b
+    a_is_tagged = current_counts[a] == 0 || current_counts[a] != original_counts[a]
+    b_is_tagged = current_counts[b] == 0 || current_counts[b] != original_counts[b]
     if a_is_tagged
       if b_is_tagged
         false # may as well attack - neither need credit
       else
-        current_counts[a] <= current_counts[b] # they need credit
+        # let them get credit as soon as I have less
+        current_counts[a] <= current_counts[b]
       end
     else
-      current_counts[a] < current_counts[b] # they need to catch up
+      # let them get credit if they have more than me
+      current_counts[a] < current_counts[b]
     end
   end
+
 end
 
 $AZ_BANDIT_ATTACK =
@@ -164,8 +235,8 @@ $AZ_BANDIT_ATTACK =
     end
 
     # state
-    poaching = false
-    carried_line = nil
+    # poaching = false
+    # carried_line = nil
     last_bounty_text = ''
     original_bounty_counts = $AZ_REMOTE['bandits'].get_counts
     i_am_lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
@@ -177,6 +248,84 @@ $AZ_BANDIT_ATTACK =
       i = i + 1
       fput 'stand' if !standing?
 
+      # check to see if we've moved, and whether we've progressed on bandits
+      # we carry over the last line of the buffer to account for the situation
+      # where we slurp a line that is important to our next loop iteration
+      # buffer = carried_line ? [carried_line] : []
+      # while line = get?
+      #   buffer.push(line)
+      #   carried_line = line
+      # end
+      # if carried_line &&
+      #      (
+      #        carried_line.start_with?('Obvious paths:') ||
+      #          carried_line.start_with?('Obvious exits:')
+      #      )
+      #   # we don't want to consider this line in the next loop
+      #   carried_line = nil
+      # end
+
+      # for i in 1..buffer.length
+      #   line = buffer[buffer.length - i]
+
+      #   if line.start_with?('Obvious paths:') ||
+      #        line.start_with?('Obvious exits:')
+      #     # previous line should be "Also here:" (unless we're leading)
+      #     line = buffer[buffer.length - i - 1]
+      #     if line && line.start_with?('Also here: ') &&
+      #          line =~ /^Also here: (.*)/
+      #       # Check to see if we'd be poaching
+      #       pcs =
+      #         $1
+      #           .split(', ')
+      #           .collect do |x|
+      #             x.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
+      #           end
+      #       poaching = pcs.any? { |x| !$AZ_CHARS_SET[x] }
+      #     elsif line && !group?
+      #       # I must be leading and not poaching
+      #       poaching = false
+      #     else
+      #       # Er... there should be SOME line, like a room description
+      #       echo 'WTF'
+      #       echo "#{buffer.length} - #{i} - 1"
+      #       echo buffer
+      #       echo '-----------'
+      #       poaching = true
+      #     end
+      #   end
+      # end
+
+      # defer to others?
+      bounty_counts = $AZ_REMOTE['bandits'].get_counts
+      high_priority_counts =
+        bounty_counts.reject do |char|
+          $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, char)
+        end
+
+      defer = true
+      if i_am_lower_priority
+        # wait until I am last and all high-priority chars have tagged
+        defer =
+          high_priority_counts.any? do |char, their_count|
+            their_count > bounty_counts[Char.name] || their_count == original_bounty_counts[char]
+          end
+      else
+        defer =
+          high_priority_counts.any? do |char, their_count|
+            AzLib.should_defer? Char.name,
+                                char,
+                                bounty_counts,
+                                original_bounty_counts
+          end
+      end
+
+      # echo AzLib.room_info
+      room_owned = AzLib.room_owned?
+      # echo high_priority_counts
+      # room_owned = !poaching
+      echo "---- DEFER: #{defer}; room_owned: #{room_owned}"
+
       # identify targets
       targets =
         GameObj.npcs.select do |npc|
@@ -184,99 +333,20 @@ $AZ_BANDIT_ATTACK =
             !npc.name.start_with?('animated ')
         end
 
-      # check to see if we've moved, and whether we've progressed on bandits
-      # we carry over the last line of the buffer to account for the situation
-      # where we slurp a line that is important to our next loop iteration
-      buffer = carried_line ? [carried_line] : []
-      while line = get?
-        buffer.push(line)
-        carried_line = line
-      end
-      if carried_line &&
-           (
-             carried_line.start_with?('Obvious paths:') ||
-               carried_line.start_with?('Obvious exits:')
-           )
-        # we don't want to consider this line in the next loop
-        carried_line = nil
-      end
-
-      for i in 1..buffer.length
-        line = buffer[buffer.length - i]
-
-        # NEXT STEPS:
-        # examine poaching_solution.lic and figure out exactly what else we need to
-        # read from the buffer to build a complete picture of the scene, probably
-        # with status_tags.
-        # Hopefully reuse this logic in a function in azbandit
-
-        if line.start_with?('Obvious paths:') ||
-             line.start_with?('Obvious exits:')
-          # previous line should be "Also here:" (unless we're leading)
-          line = buffer[buffer.length - i - 1]
-          if line && line.start_with?('Also here: ') &&
-               line =~ /^Also here: (.*)/
-            # Check to see if we'd be poaching
-            pcs =
-              $1
-                .split(', ')
-                .collect do |x|
-                  x.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
-                end
-            poaching = pcs.any? { |x| !$AZ_CHARS_SET[x] }
-          elsif line && !group?
-            # I must be leading and not poaching
-            poaching = false
-          else
-            # Er... there should be SOME line, like a room description
-            echo 'WTF'
-            echo "#{buffer.length} - #{i} - 1"
-            echo buffer
-            echo '-----------'
-            poaching = true
-          end
-          break
-        end
-      end
-
-      # defer to others?
-      bounty_counts = $AZ_REMOTE['bandits'].get_counts
-      high_priority_counts =
-        bounty_counts.reject do |x|
-          $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, x)
-        end
-
-      defer = true
-      if i_am_lower_priority
-        # wait until I am last and all high-priority chars have tagged
-        defer =
-          high_priority_counts.all? do |k, v|
-            bounty_counts[Char.name] > v && v < original_bounty_counts[k]
-          end
-      else
-        defer =
-          high_priority_counts.any? do |their_char, their_count|
-            AzLib.should_defer? Char.name,
-                                their_char,
-                                bounty_counts,
-                                original_bounty_counts
-          end
-        echo "---- DEFER: #{defer}"
-      end
-
       # chill or attack
-      if defer || poaching || targets.nil? || targets.length == 0
+      if defer || !room_owned || targets.nil? || targets.length == 0
         if checkcastrt == 0
           fput 'stance def' if checkstance != 'defensive'
         elsif checkstance != 'guarded'
           fput 'stance def'
         end
       else
+        # TODO adjust attack routines to attack specific targets
         attack_routine.call targets
       end
 
       # yield
-      rt = checkrt
+      rt = [checkrt, checkcastrt].max
       sleep(rt > 2 ? rt - 1 : 0.25)
 
       # update bounty count

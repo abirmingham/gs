@@ -85,7 +85,7 @@ module AzBandit
     # Handle first room
     # TODO have this move to just outside the bounty area, then proceed as normal
     echo 'Handling first room' if @DEBUG
-    wait_for_battle if game_obj_bandits.length > 0 && !is_poaching?
+    wait_for_battle if game_obj_bandits.length > 0 && AzLib.room_owned?
 
     # Main loop - handle remaining rooms
     echo 'Handling remaining rooms' if @DEBUG
@@ -116,7 +116,7 @@ module AzBandit
       if Room.current.id != next_room
         prev_room = Room.current.id
         prev_room_poaching = step2_result && step2_result['poaching']
-        step2_result = step_to_next_room(prev_room_poaching, next_room)
+        step2_result = step_to_next_room(next_room)
       end
       rooms_list = rooms_list.reject { |id| id == Room.current.id }
       next if !step2_result
@@ -127,9 +127,9 @@ module AzBandit
       end
 
       # Possibly wait for battle
-      if step2_result['bandits'] && !step2_result['poaching']
-        i = 0
-        while i == 0 || (game_obj_bandits.length > 0 && !is_poaching?)
+      if step2_result['bandits'] && AzLib.room_owned?
+        i = 0 # do the following at least once
+        while i == 0 || (game_obj_bandits.length > 0 && AzLib.room_owned?)
           i = i + 1
           wait_for_battle
         end
@@ -310,20 +310,13 @@ module AzBandit
     )
   end
 
-  def self.is_poaching?()
-    if @DEBUG
-      echo "is_poaching? #{(checkpcs - @grouplist).count}"
-      echo @grouplist
-    end
-    return (checkpcs - @grouplist).count > 0
-  end
-
-  def self.step_to_next_room(start_room_poaching, room_id)
+  def self.step_to_next_room(room_id)
     # Step towards next room
     start_room_id = Room.current.id
     step2_result = nil
     while Room.current.id == start_room_id
       fput 'stand' until standing?
+      waitrt?
       GameObj.pcs.each do |pc|
         if @groupset[pc.noun] and
              pc.status =~ /kneeling|sitting|lying down|prone/
@@ -332,26 +325,14 @@ module AzBandit
       end
       step2_result = step2(room_id)
       echo "STEP2_RESULT: #{step2_result}" if @DEBUG
-      if !step2_result['moved']
+      if Room.current.id == start_room_id
         sleep 0.5
-        if @DEBUG
-          echo(
-            {
-              'game_obj_bandits' => game_obj_bandits.length,
-              'is_poaching' => start_room_poaching
-            }
-          )
-        end
-        stay_here =
-          !start_room_poaching && Room.current.id == start_room_id &&
-            (step2_result['bandits'] || game_obj_bandits.length > 0)
+        stay_here = AzLib.room_owned? && (step2_result['bandits'] || game_obj_bandits.length > 0)
         if stay_here
-          # couldn't move (probably cause follower couldn't follow)
-          # but that's okay cause we have bandits now
+          # couldn't move but that's okay cause we have bandits now
           echo "INFO: I don't need to move anymore - bandits are here and I'm not poaching"
           return(
             {
-              'moved' => false,
               'bandits' => true,
               'poaching' => false,
               'stragglers' => false
@@ -366,31 +347,6 @@ module AzBandit
   end
 
   def self.step2(destination_room)
-    # TODO fix this - it looks like we need to drain the queue more.
-    # Up until the most recent <streamWindow id="main" perhaps?
-    # [azbandit: wtf: {"game_obj_bandits"=>0, "is_poaching"=>false}]
-    # [azbandit]>northeast
-    # [Muddy Village, Pathway]
-    # The charred surround of a campfire takes a prominent position beside the muddy pathway through this area.  Blackened bones, tossed haphazardly nearby, have all been cracked open, perhaps to get at the succulent marrow within.  Tall trees surround the space, their verdant growth blocking the view of the lands beyond.  The incessant buzzing of insects forms a symphony with the guttural grunts in the distance.  You also see a spiked club, some lynx hide armor, a wooden shield, a leather helm, some reinforced leather, a wooden shield, a spiked club, a rapier, some lynx hide armor, a rapier, a leather helm, some reinforced leather and a stale raisin tart.
-    # Obvious paths: north, northeast, southwest
-    # Azanoth, Helsfeld, Gossan and Idios followed.
-    # [azbandit: <component id='room objs'>  You also see<b> <pushBold/>a <a exist="224339210" noun="bandit">human bandit</a><popBold/></b> that appears dead,<b> <pushBold/>a <a exist="224339036" noun="marauder">half-krolvin marauder</a><popBold/></b> that appears dead, a <a exist="224317517" noun="club">spiked club</a> and a <a exist="-478604" noun="road">muddy road</a>.</component>]
-    # [azbandit: <component id='room players'>Also here: High Lord <a exist="-10971883" noun="Azanoth">Azanoth</a>, <a exist="-10729734" noun="Helsfeld">Helsfeld</a>, <a exist="-11170346" noun="Gossan">Gossan</a>, <a exist="-11161977" noun="Idios">Idios</a></component>]
-    # [azbandit: <prompt time="1619458711">&gt;</prompt>]
-    # [azbandit: <dialogData id='combat'><dropDownBox id='dDBTarget' value="human bandit" cmd="target %dDBTarget%" tooltip='Select Target' content_text="human bandit" content_value="#224339210" anchor_left='cmdTarget' anchor_right='cmdAttack' height='20' width='80'  top='70' left='0' align='n'/></dialogData>]
-    # [azbandit: {"text"=>"human bandit", "value"=>"#224339210"}]
-    # [azbandit: <streamWindow id='main' title='Story' subtitle=" - Muddy Village, Pathway" location='center' target='drop'/><streamWindow id='room' title='Room' subtitle=" - Muddy Village, Pathway" location='center' target='drop' ifClosed='' resident='true'/><clearStream id='room'/><pushStream id='room'/><compDef id='room desc'>The charred surround of a campfire takes a prominent position beside the muddy pathway through this area.  Blackened bones, tossed haphazardly nearby, have all been cracked open, perhaps to get at the succulent marrow within.  Tall trees surround the space, their verdant growth blocking the view of the lands beyond.  The incessant buzzing of insects forms a symphony with the guttural grunts in the distance.</compDef><compDef id='room objs'>  You also see a <a exist="224326494" noun="club">spiked club</a>, <a exist="224326495" noun="armor">some lynx hide armor</a>, a <a exist="224325579" noun="shield">wooden shield</a>, a <a exist="224325580" noun="helm">leather helm</a>, <a exist="224325581" noun="leather">some reinforced leather</a>, a <a exist="224318499" noun="shield">wooden shield</a>, a <a exist="224317529" noun="club">spiked club</a>, a <a exist="224325578" noun="rapier">rapier</a>, <a exist="224317530" noun="armor">some lynx hide armor</a>, a <a exist="224318498" noun="rapier">rapier</a>, a <a exist="224318500" noun="helm">leather helm</a>, <a exist="224318501" noun="leather">some reinforced leather</a> and a <a exist="224207816" noun="tart">stale raisin tart</a>.</compDef>]
-    # [azbandit: <compDef id='room players'></compDef>]
-    # [azbandit: <compDef id='room exits'>Obvious paths: <d>north</d>, <d>northeast</d>, <d>southwest</d></compDef>]
-    # [azbandit: <compDef id='sprite'></compDef><popStream id='room'/>]
-    # [azbandit: <component id='room players'>Also here: High Lord <a exist="-10971883" noun="Azanoth">Azanoth</a>, <a exist="-10729734" noun="Helsfeld">Helsfeld</a>, <a exist="-11170346" noun="Gossan">Gossan</a>, <a exist="-11161977" noun="Idios">Idios</a></component>]
-    # [azbandit: <resource picture="0"/><nav/><style id="roomName" />[Muddy Village, Pathway]]
-    # [azbandit: <style id=""/><style id="roomDesc"/>The charred surround of a campfire takes a prominent position beside the muddy pathway through this area.  Blackened bones, tossed haphazardly nearby, have all been cracked open, perhaps to get at the succulent marrow within.  Tall trees surround the space, their verdant growth blocking the view of the lands beyond.  The incessant buzzing of insects forms a symphony with the guttural grunts in the distance.  <style id=""/>You also see a <a exist="224326494" noun="club">spiked club</a>, <a exist="224326495" noun="armor">some lynx hide armor</a>, a <a exist="224325579" noun="shield">wooden shield</a>, a <a exist="224325580" noun="helm">leather helm</a>, <a exist="224325581" noun="leather">some reinforced leather</a>, a <a exist="224318499" noun="shield">wooden shield</a>, a <a exist="224317529" noun="club">spiked club</a>, a <a exist="224325578" noun="rapier">rapier</a>, <a exist="224317530" noun="armor">some lynx hide armor</a>, a <a exist="224318498" noun="rapier">rapier</a>, a <a exist="224318500" noun="helm">leather helm</a>, <a exist="224318501" noun="leather">some reinforced leather</a> and a <a exist="224207816" noun="tart">stale raisin tart</a>.]
-    # [azbandit: Obvious paths: <a exist="-11066180" coord="2524,1864" noun="north">north</a>, <a exist="-11066180" coord="2524,1864" noun="northeast">northeast</a>, <a exist="-11066180" coord="2524,1864" noun="southwest">southwest</a>]
-    # [azbandit: <compass><dir value="n"/><dir value="ne"/><dir value="sw"/></compass><a exist="-10971883" noun="Azanoth">Azanoth</a>, <a exist="-10729734" noun="Helsfeld">Helsfeld</a>, <a exist="-11170346" noun="Gossan">Gossan</a> and <a exist="-11161977" noun="Idios">Idios</a> followed.]
-    # [azbandit: STEP2_RESULT: {"moved"=>true, "bandits"=>true, "poaching"=>false, "stragglers"=>false}]
-    # [azbandit: Bandits are here and we own the room]
-
     # adapted from step2.lic
     if @DEBUG
       echo "running step2 towards #{destination_room} (current #{Room.current.id})"
@@ -428,81 +384,45 @@ module AzBandit
       next
     end
     sleep 0.01 # yield
-    way = @step2_ways[key]
 
     # move
+    way = @step2_ways[key]
     fput 'stand' until standing?
-    start_time = Time.now.to_i
     if way.class == String
-      move way, 2
+      put way
     elsif way.class == Proc
-      way.call
+      raise "Unhandled way.class == Proc"
+      # way.call
     else
       throw 'error in the map database'
     end
+    room_info = AzLib.wait_for_room_change
 
     # return new state
+    poaching = !AzLib.room_owned?
     result = {
-      'moved' => false,
       'bandits' => false,
-      'poaching' => false,
+      'poaching' => poaching,
       'stragglers' => false
     }
-    is_grouped = @grouplist.length > 0
+    echo "Poaching: #{poaching}"
+
+    if !room_info
+      echo 'WARNING: step2 timed out'
+      return result.merge({ 'poaching' => true }) # not sure what to return
+    end
 
     loop do
       line = get?
-      if !line
-        if Time.now.to_i >= start_time + 5
-          # seconds
-          echo 'WARNING: step2 timed out'
-          return result.merge({ 'poaching' => true }) # not sure what to return
-        end
-        sleep 0.05
-        next
-      end
-
-      # echo line
-
       if count = match_dialog_data_targets(line)
+        # TODO move to AzLib
         result['bandits'] = count > 0
-      elsif line =~ /^Also here:\s+(.*)/
-        # Also here: Great Lady <a exist="-11144418" noun="Carolanne">Carolanne</a>, <a exist="-11178762" noun="Ithloria">Ithloria</a>
-        # Check to see if we'd be poaching
-        result['poaching'] = false
-
-        # Parse xml with a regex? Seems like a bad idea, let's see how it turns out
-        pcs =
-          $1.split('noun="').reject { |x| x.start_with?('<a') }.collect do |x|
-            x.split('"')[0]
+      elsif !line
+        return result.merge({
+          'stragglers' => @grouplist.any? do |char|
+            !room_info.followers.any? { |f| f.noun == char }
           end
-        echo "INFO: also here: #{pcs}" if @DEBUG
-        pcs.each { |pc| result['poaching'] = true if !@groupset[pc] }
-        # note that in actuality we can generally assume that we're not poaching if we see Obvious paths/exits
-        # before we see Also here:. However, there is ONE case where this isn't true - when we're picking up
-        # a straggler. le sigh
-      elsif !is_grouped &&
-            (
-              line.start_with?('Obvious paths: ') ||
-                line.start_with?('Obvious exits: ')
-            )
-        return result.merge({ 'moved' => true })
-      elsif is_grouped && line.start_with?('<compass') &&
-            line =~ /<a exist=(.*) followed\.$/
-        followers =
-          $1.split('noun="').reject { |x| x.start_with?('<a') }.collect do |x|
-            x.split('"')[0]
-          end
-        return(
-          result.merge(
-            {
-              'moved' => true,
-              'stragglers' => @grouplist.any? { |x| !followers.include? x }
-            }
-          )
-        )
-      elsif is_grouped && line.end_with?(' is unable to follow you.')
-        return result.merge({ 'moved' => false })
+        })
       end
     end
   end
@@ -569,6 +489,10 @@ module AzBandit
     i = -1
 
     loop do
+      if !AzLib.room_owned?
+        echo "ERROR: How did we get here if we don't own the room?"
+        return
+      end
       sleep 0.25 # yield
       i = i + 1
       fput 'stand' until standing?

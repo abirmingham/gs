@@ -18,18 +18,18 @@ loop do
       end
 
     if (stunnedfriend || trapped_person) && checkmana.to_i > 50
-      if running? BANDIT_SCRIPT
-        # kill instead of pause - don't want to restart it and have it poach
-        kill_script BANDIT_SCRIPT
-        killed_script = true
-      end
+      # if running? BANDIT_SCRIPT
+      #   # kill instead of pause - don't want to restart it and have it poach
+      #   kill_script BANDIT_SCRIPT
+      #   killed_script = true
+      # end
       Spell[1107].cast(trapped_person || stunnedfriend)
       waitcastrt?
     else
-      if killed_script
-        start_script BANDIT_SCRIPT if !running? BANDIT_SCRIPT
-        killed_script = false
-      end
+      # if killed_script
+      #   start_script BANDIT_SCRIPT if !running? BANDIT_SCRIPT
+      #   killed_script = false
+      # end
     end
   end
   sleep 0.25

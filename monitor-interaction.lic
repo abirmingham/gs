@@ -1,0 +1,29 @@
+hide_me
+
+monitor_strings = "SEND||POLICY||[Rr](\s)*[Ee](\s)*[Pp](\s)*[Oo](\s)*[Rr](\s)*[Tt](?!ing)||speaking to you||unresponsive||taps you||nods to you||lease respond||not in control||violation||lease speak||peak out loud||Y U SHOU D||whispers,||speaking to you||trying to drag you||\\[Focused\\]||\\[Private\\]"
+monitor_safe_strings = "\[(?!Private)\w*\]-GS(?:T|IV):||I've got a task here from the town||We've noted a troubling increase in bandit activity recently||inviting you to join||Dreavening||Lucrecious||(#{$AZ_CHARS.join '|'})'s player whispers"
+watch_list = /#{monitor_strings.gsub("||","|")}/o
+safe_strings = /#{monitor_safe_strings.gsub("||","|")}/o
+
+loop {
+    line_matched = nil
+    while line = get?
+        line_matched = (watch_list.match?(line) && !safe_strings.match?(line)) ? line : nil
+        break if line_matched
+    end
+    rt = checkrt
+    show_interaction = rt > 9 || line_matched
+    if show_interaction
+        Gtk.queue do
+            myWindow = Gtk::Window.new
+            myWindow.title = Char.name + ' interaction!'
+            myWindow.set_size_request 3050, 1050
+            label = Gtk::Label.new Char.name + ' interaction!'
+            label.set_markup '<span foreground="red" size="xx-large">' + Char.name + ' interaction!</span> ' + (line_matched || '') + rt.to_s
+            myWindow.add label
+            myWindow.show_all
+          end
+          sleep 60
+    end
+    sleep 1
+}

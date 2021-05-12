@@ -1,7 +1,6 @@
 # prep
 put 'stance def'
 put 'gird'
-Script.start 'standgroup'
 
 # brooch stuff
 if $AZ_HAS_TAG.call $AZ_TAG_RUBS_WEAK_BROOCH
@@ -13,6 +12,8 @@ end
 
 # start global scripts
 Script.start 'standgroup'
+Script.start 'spellmerge'
+Script.start 'briefcombat'
 
 # start society scripts
 if Society.status == 'Order of Voln'
@@ -33,6 +34,7 @@ elsif Char.prof == 'Empath'
   # at launch and have hide_me
 elsif Char.prof == 'Bard'
   Script.start 'bard-unstun'
+  Script.start 'tonis'
 end
 
 # group buffs
