@@ -113,12 +113,11 @@ module AzBandit
       next if !step2_result
 
       # Retrieve stragglers?
-      has_stragglers = @grouplist.any? do |char|
-        !AzLib.room_info.followers.any? { |f| f.noun == char }
-      end
-      if has_stragglers
-        step2_result = retrieve_stragglers prev_room
-      end
+      has_stragglers =
+        @grouplist.any? do |char|
+          !AzLib.room_info.followers.any? { |f| f.noun == char }
+        end
+      step2_result = retrieve_stragglers prev_room if has_stragglers
 
       # Possibly wait for battle
       if step2_result['bandits'] && AzLib.room_owned?
@@ -230,7 +229,9 @@ module AzBandit
       [bounty?, *@grouplist.map { |n| LNet.get_data(n, 'bounty') }].find do |b|
         b =~ @BANDIT_BOUNTY
       end
-    raise 'Unable to find bandit bounty on you or group! Exiting' if !bounty_text
+    if !bounty_text
+      raise 'Unable to find bandit bounty on you or group! Exiting'
+    end
     return bounty_text, $1
   end
 
@@ -284,9 +285,7 @@ module AzBandit
         if stay_here
           # couldn't move but that's okay cause we have bandits now
           echo "INFO: I don't need to move anymore - bandits are here and I'm not poaching"
-          return(
-            { 'bandits' => true }
-          )
+          return { 'bandits' => true }
         end
       end
     end
@@ -458,8 +457,8 @@ module AzBandit
       # all done?
       any_bandits =
         if (
-            # dialog_data_bandits doesn't seem reliable over time,
-            # so we switch to game_obj_bandits after a bit
+             # dialog_data_bandits doesn't seem reliable over time,
+             # so we switch to game_obj_bandits after a bit
              dialog_data_bandits.nil? ||
                (Time.now.to_i < start_time + timeout_time)
            )
@@ -500,7 +499,7 @@ module AzBandit
         disabler_cast_count = disabler_cast_count + 1
         disabler_cd_time =
           Time.now.to_i + disabler_cast_count.pow(2) + checkcastrt - 1
-          next # restart wait_for_battle loop
+        next # restart wait_for_battle loop
       end
 
       # check if room needs to be looted
@@ -546,7 +545,9 @@ module AzBandit
   end
 
   def self.exit_azbandit()
-    raise 'Failed to find all group' if !@grouplist.all? { |char| checkpcs.include? char }
+    if !@grouplist.all? { |char| checkpcs.include? char }
+      raise 'Failed to find all group'
+    end
     echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
     fput "whisper ooc group #{(Time.now.to_f - @start_time).to_i}"
     Script.start 'fbandit'
