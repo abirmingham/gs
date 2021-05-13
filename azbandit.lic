@@ -76,7 +76,7 @@ module AzBandit
 
     # Handle first room
     echo 'Handling first room' if @DEBUG
-    wait_for_battle if game_obj_bandits.length > 0 && AzLib.room_owned?
+    wait_for_battle if game_obj_bandits.length > 0 && AzLib::RoomInfo.room_owned?
 
     # Main loop - handle remaining rooms
     echo 'Handling remaining rooms' if @DEBUG
@@ -84,7 +84,7 @@ module AzBandit
     prev_room_poaching = nil
     step2_result = nil
     loop do
-      poaching = !AzLib.room_owned?
+      poaching = !AzLib::RoomInfo.room_owned?
 
       # Identify next room
       # (we prefer previous room unless we were poaching or are poaching in this
@@ -106,7 +106,7 @@ module AzBandit
       # Step to next room (stores new step2_result)
       if Room.current.id != next_room
         prev_room = Room.current.id
-        prev_room_poaching = !AzLib.room_owned?
+        prev_room_poaching = !AzLib::RoomInfo.room_owned?
         step2_result = step_to_next_room next_room
       end
       rooms_list = rooms_list.reject { |id| id == Room.current.id }
@@ -115,14 +115,14 @@ module AzBandit
       # Retrieve stragglers?
       has_stragglers =
         @grouplist.any? do |char|
-          !AzLib.room_info.followers.any? { |f| f.noun == char }
+          !AzLib::RoomInfo.room_info.followers.any? { |f| f.noun == char }
         end
       step2_result = retrieve_stragglers prev_room if has_stragglers
 
       # Possibly wait for battle
-      if step2_result['bandits'] && AzLib.room_owned?
+      if step2_result['bandits'] && AzLib::RoomInfo.room_owned?
         i = 0 # do the following at least once
-        while i == 0 || (game_obj_bandits.length > 0 && AzLib.room_owned?)
+        while i == 0 || (game_obj_bandits.length > 0 && AzLib::RoomInfo.room_owned?)
           i = i + 1
           wait_for_battle
         end
@@ -279,7 +279,7 @@ module AzBandit
       if Room.current.id == start_room_id
         sleep 0.25 # yield
         stay_here =
-          AzLib.room_owned? &&
+          AzLib::RoomInfo.room_owned? &&
             (step2_result['bandits'] || game_obj_bandits.length > 0)
 
         if stay_here
@@ -294,19 +294,17 @@ module AzBandit
     return step2_result
   end
 
+  # adapted from step2.lic
   def self.step_helper(destination_room)
-    # adapted from step2.lic
-    if @DEBUG
-      echo "running step2 towards #{destination_room} (current #{Room.current.id})"
-    end
+    echo "step_helper #{Room.current.id}->#{destination_room}" if @DEBUG
+    start_room = Room.current.id
+
     unless Room.current.id
       raise 'current room was not found in the map database'
     end
     unless destination_room
       raise 'destination room was not found in the map database'
     end
-
-    start_room = Room.current.id
     if start_room == destination_room
       raise 'ERROR: start room and destination room are the same'
     end
@@ -315,9 +313,8 @@ module AzBandit
     unless @step2_ways[key]
       previous, shortest_distances =
         Map.dijkstra(Room.current.id, destination_room)
-      unless previous[destination_room]
-        echo "error: failed to find a path between your current room (#{start_room}) and destination room (#{destination_room})"
-        exit
+      if !previous[destination_room]
+        raise "dijkstra failed for #{start_room}->#{destination_room}"
       end
       path = [destination_room]
       path.push(previous[path[-1]]) until previous[path[-1]].nil?
@@ -343,10 +340,10 @@ module AzBandit
     else
       raise 'error in the map database'
     end
-    room_info = AzLib.wait_for_room_change
+    room_info = AzLib::RoomInfo.wait_for_room_change
 
     # return new state
-    poaching = !AzLib.room_owned?
+    poaching = !AzLib::RoomInfo.room_owned?
     result = { 'bandits' => false }
     echo "Poaching: #{poaching}"
 
@@ -374,7 +371,7 @@ module AzBandit
       put 'look'
       sleep 0.5
       echo "whisper ooc group We left behind #{stragglers.join(' and ')}"
-      step2_result = step2(prev_room_id)
+      step2_result = step_helper prev_room_id
       waitrt?
       stragglers.each { |char| fput "hold #{char}" }
       fput 'look'
@@ -428,7 +425,7 @@ module AzBandit
     i = -1
 
     loop do
-      if !AzLib.room_owned?
+      if !AzLib::RoomInfo.room_owned?
         echo "ERROR: How did we get here if we don't own the room?"
         return
       end
@@ -441,6 +438,8 @@ module AzBandit
         match = match_dialog_data_targets(line)
         dialog_data_bandits = match if !match.nil?
       end
+
+      # echo AzLib::Targets.targets if i % 10 == 0
 
       # bandits from GameObj.targets
       local_game_obj_bandits = game_obj_bandits

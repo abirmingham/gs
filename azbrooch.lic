@@ -1,6 +1,24 @@
+
+# task
+fput "reim camp confirm" until Room.current.id == 24_842
+move "go structure"
+loop {
+  break if dothistimeout 'turn board', 2, /You do not have a finished task/
+  sleep 1
+}
+waitrt?
+fput 'reim task abandon'
+fput 'reim task abandon'
+fput 'get board'
+move 'out'
+
 fput 'store all'
 fput 'stow all'
 fput 'gird'
+
+fput 'go path' until Room.current.id != 24_842
+
+# main
 fput 'reim transport confirm' until Room.current.id == 24_888
 start_script 'brooch'
 Script.run 'go2', 'treim'

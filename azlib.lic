@@ -91,99 +91,128 @@ $AZ_SEND_ACTION_SYNC =
   end
 
 module AzLib
-  #begin calael
-  @@room_info ||= OpenStruct.new(count: 0)
+  module RoomInfo
+    @@HOOK_NAME = self.to_s
+    @@room_info ||= OpenStruct.new(count: 0)
+    @@room_info_mu = Mutex.new
+    @@room_info_cv = ConditionVariable.new
+    @@room_info_snap = @@room_info.clone
+    @@move_timeout = 2 # seconds
 
-  @@mu = Mutex.new
-  @@room_info_cv = ConditionVariable.new
-  @@room_info_snap = @@room_info.clone
-  @@move_timeout = 3 # seconds
-
-  def self.room_info
-    @@mu.synchronize { @@room_info_snap.clone }
-  end
-
-  def self.wait_for_room_change
-    # TODO add recognition of groupmovement fail
-    @@mu.synchronize do
-      start = @@room_info_snap.count
-      timeout_time = Time.now.to_i + @@move_timeout
-      while start == @@room_info_snap.count
-        now_time = Time.now.to_i
-        echo "timeout_time: #{timeout_time}; now_time: #{now_time}"
-        if now_time >= timeout_time
-          echo 'WARNING: wait_for_room_change timed out'
-          break
+    def self.room_info
+      @@room_info_mu.synchronize { @@room_info_snap.clone }
+    end
+  
+    def self.wait_for_room_change
+      @@room_info_mu.synchronize do
+        start = @@room_info_snap.count
+        timeout_time = Time.now.to_i + @@move_timeout
+        while start == @@room_info_snap.count
+          now_time = Time.now.to_i
+          if now_time >= timeout_time
+            echo 'WARNING: wait_for_room_change timed out'
+            break
+          end
+          @@room_info_cv.wait(@@room_info_mu, timeout_time - now_time)
         end
-        @@room_info_cv.wait(@@mu, timeout_time - now_time)
+        start == @@room_info_snap.count ? nil : @@room_info_snap.clone
       end
-      start == @@room_info_snap.count ? nil : @@room_info_snap.clone
     end
+  
+    def self.room_owned?(group = $AZ_CHARS_SET)
+      @@room_info_mu.synchronize do
+        ri = @@room_info_snap
+        ri.other_pcs.find_all { |pc| !group.include?(pc.noun) }.empty? &&
+          !ri.hiders
+      end
+    end
+
+    DownstreamHook.add(
+      @@HOOK_NAME,
+      proc do |server_string|
+        if server_string =~ /popStream.*id='room'/
+          @@room_info.count += 1
+          @@room_info.hiders = false
+          @@room_info.other_pcs = []
+        elsif @@room_info_snap.count != @@room_info.count
+          if server_string =~ /obvious signs of someone hiding/
+            @@room_info.hiders = true
+          elsif server_string =~ /^(?:Also here:|Also in the room:)(?<pc_str>.*)$/
+            @@room_info.other_pcs = AzLib.get_gameobjs($~['pc_str'])
+          elsif server_string =~ /(?<followers>.*) followed\./
+            @@room_info.followers = AzLib.get_gameobjs($~['followers'])
+          elsif server_string =~ /<prompt/
+            @@room_info_mu.synchronize do
+              @@room_info_snap = @@room_info.clone
+              @@room_info_cv.broadcast
+            end
+          end
+        end
+        server_string
+      end
+    )
+    echo "Added #{@@HOOK_NAME} hook"
+    before_dying { DownstreamHook.remove @@HOOK_NAME }
   end
 
-  def self.room_owned?(group = $AZ_CHARS_SET)
-    @@mu.synchronize do
-      ri = @@room_info_snap
-      ri.other_pcs.find_all { |pc| !group.include?(pc.noun) }.empty? &&
-        !ri.hiders
+  module Targets
+    @@HOOK_NAME = self.to_s
+    @@targets ||= OpenStruct.new(value: [])
+    @@targets_mu = Mutex.new
+    @@targets_cv = ConditionVariable.new
+    @@targets_snap = @@targets.clone
+
+    def self.targets
+      @@targets_mu.synchronize { @@targets_snap.clone }
     end
+
+    DownstreamHook.add(
+      @@HOOK_NAME = self.to_s,
+      proc do |server_string|
+        if server_string =~
+            /<dialogData id='combat'>.*content_text="(.*)" content_value="(.+?)" anchor_left.*<\/dialogData>/
+          targets_raw = $1
+          ids = $2.split /\s*,\s*/
+          @@targets.value = []
+          targets_raw.split(/\s*,\s*/).each_with_index do |name, i|
+            next if name == 'none'
+            noun = name.split(/\s+/)[-1]
+            @@targets.value.push GameObj.new(ids[i], noun, name)
+          end
+          @@targets_mu.synchronize do
+            @@targets_snap = @@targets.clone
+            @@targets_cv.broadcast
+          end
+        elsif server_string =~ /<prompt/
+          @@targets.checknpcs = checknpcs
+          @@targets_mu.synchronize do
+            @@targets_snap = @@targets.clone
+            @@targets_cv.broadcast
+          end
+        end
+        # eh I dunno seems to work:
+        # >;exec echo AzLib.targets; echo AzLib.targets.test_checknpcs.length; echo AzLib.targets.value.length
+        # --- Lich: exec1 active.
+        # [exec1: #<OpenStruct value=[#<Games::Gemstone::GameObj:0x0927bd90 @id="#9780936", @noun="monkey", @name="monkey", @before_name=nil, @after_name=nil>, #<Games::Gemstone::GameObj:0x0927af20 @id="#9780381", @noun="hobgoblin", @name="hobgoblin", @before_name=nil, @after_name=nil>], test_checknpcs=["monkey", "hobgoblin"]>]
+        # [exec1: 2]
+        # [exec1: 2]
+        # --- Lich: exec1 has exited.
+        server_string
+      end
+    )
+    echo "Added #{@@HOOK_NAME} hook"
+    before_dying { DownstreamHook.remove @@HOOK_NAME = self.to_s }
   end
 
+  # misc methods
   def self.get_gameobjs(line)
     line
       .scan(%r{<a exist="(-?\d+)" noun="([^"]+)">([^<]+)</a>})
       .map { |m| GameObj.new(m[0], m[1], m[2]) }
   end
 
-  DownstreamHook.add(
-    'AzLib.Status.Room',
-    proc do |server_string|
-      if server_string =~ /popStream.*id='room'/
-        @@room_info.count += 1
-        @@room_info.hiders = false
-        @@room_info.other_pcs = []
-      elsif @@room_info_snap.count != @@room_info.count
-        if server_string =~ /obvious signs of someone hiding/
-          @@room_info.hiders = true
-        elsif server_string =~ /^(?:Also here:|Also in the room:)(?<pc_str>.*)$/
-          @@room_info.other_pcs = get_gameobjs($~['pc_str'])
-        elsif server_string =~ /(?<followers>.*) followed\./
-          @@room_info.followers = get_gameobjs($~['followers'])
-        elsif server_string =~ /<prompt/
-          @@mu.synchronize do
-            @@room_info_snap = @@room_info.clone
-            @@room_info_cv.broadcast
-          end
-        end
-      end
-      server_string
-    end
-  )
-  before_dying { DownstreamHook.remove 'AzLib.Status.Room' }
-
-  #end calael
-
-  # if server_string =~ /popStream.*id='room'/
-  #   @@room_info.count += 1
-  #   @@room_info.hiders = false
-  #   @@room_info.other_pcs = []
-  #   @@room_info.followers = []
-  #   @@room_info.targets = []
-  # elsif server_string =~ /<dialogData id='combat'>.*content_text="(?<targets>.*)" content_value="(?<ids>.*)" anchor_left.*<\/dialogData>/
-  #     targets = $~['targets'].split /\s*,\s*/
-  #     ids = $~['ids'].split /\s*,\s*/
-  #     @@room_info.target_string = server_string
-  #     @@room_info.targets = targets
-  #     @@room_info.ids = ids
-  #     # @@room_info.targets = targets.collect { |name, i| GameObj.new(ids[i], noun, name) }.reject {
-  #     #   |x| x.noun == 'none'
-  #     # }
-  #     @@mu.synchronize do
-  #       @@room_info_snap = @@room_info.clone
-  #     end
-
-  # should 'a' defer to 'b'?
   def self.should_defer?(a, b, current_counts, original_counts)
+    # should 'a' defer to 'b'?
     return false if a == b
     a_is_tagged =
       current_counts[a] == 0 || current_counts[a] != original_counts[a]
@@ -201,6 +230,7 @@ module AzLib
       current_counts[a] < current_counts[b]
     end
   end
+
 end
 
 $AZ_BANDIT_ATTACK =
@@ -249,54 +279,6 @@ $AZ_BANDIT_ATTACK =
       i = i + 1
       fput 'stand' if !standing?
 
-      # check to see if we've moved, and whether we've progressed on bandits
-      # we carry over the last line of the buffer to account for the situation
-      # where we slurp a line that is important to our next loop iteration
-      # buffer = carried_line ? [carried_line] : []
-      # while line = get?
-      #   buffer.push(line)
-      #   carried_line = line
-      # end
-      # if carried_line &&
-      #      (
-      #        carried_line.start_with?('Obvious paths:') ||
-      #          carried_line.start_with?('Obvious exits:')
-      #      )
-      #   # we don't want to consider this line in the next loop
-      #   carried_line = nil
-      # end
-
-      # for i in 1..buffer.length
-      #   line = buffer[buffer.length - i]
-
-      #   if line.start_with?('Obvious paths:') ||
-      #        line.start_with?('Obvious exits:')
-      #     # previous line should be "Also here:" (unless we're leading)
-      #     line = buffer[buffer.length - i - 1]
-      #     if line && line.start_with?('Also here: ') &&
-      #          line =~ /^Also here: (.*)/
-      #       # Check to see if we'd be poaching
-      #       pcs =
-      #         $1
-      #           .split(', ')
-      #           .collect do |x|
-      #             x.sub(/ who is .*/, '').split(' ')[-1] # remove status suffix and prename title
-      #           end
-      #       poaching = pcs.any? { |x| !$AZ_CHARS_SET[x] }
-      #     elsif line && !group?
-      #       # I must be leading and not poaching
-      #       poaching = false
-      #     else
-      #       # Er... there should be SOME line, like a room description
-      #       echo 'WTF'
-      #       echo "#{buffer.length} - #{i} - 1"
-      #       echo buffer
-      #       echo '-----------'
-      #       poaching = true
-      #     end
-      #   end
-      # end
-
       # defer to others?
       bounty_counts = $AZ_REMOTE['bandits'].get_counts
       high_priority_counts =
@@ -322,11 +304,9 @@ $AZ_BANDIT_ATTACK =
           end
       end
 
-      # echo AzLib.room_info
-      room_owned = AzLib.room_owned?
+      room_owned = AzLib::RoomInfo.room_owned?
 
       # echo high_priority_counts
-      # room_owned = !poaching
       echo "---- DEFER: #{defer}; room_owned: #{room_owned}"
 
       # identify targets
