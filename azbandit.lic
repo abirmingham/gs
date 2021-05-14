@@ -66,7 +66,9 @@ module AzBandit
     prev_room_poaching = nil
     loop do
       # Wait for battle?
-      wait_for_battle while AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0
+      while AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0
+        wait_for_battle
+      end
 
       # Identify next room
       # (we prefer previous room unless we were poaching or are poaching in this
@@ -74,7 +76,7 @@ module AzBandit
       #  another group is in y1)
       next_room =
         if Room.current.id != prev_room && prev_room && !prev_room_poaching &&
-            AzLib::RoomInfo.room_owned?
+             AzLib::RoomInfo.room_owned?
           prev_room
         else
           Room.current.find_nearest(rooms_list).to_i
@@ -94,8 +96,10 @@ module AzBandit
       rooms_list = rooms_list.select { |id| id != Room.current.id }
 
       # Retrieve stragglers?
-      retrieve_stragglers prev_room if @grouplist.any? do |char|
-        !AzLib::RoomInfo.room_info.followers.any? { |f| f.noun == char }
+      if @grouplist.any? do |char|
+           !AzLib::RoomInfo.room_info.followers.any? { |f| f.noun == char }
+         end
+        retrieve_stragglers prev_room
       end
 
       # Done?
@@ -220,7 +224,8 @@ module AzBandit
   def self.room_needs_looting?()
     echo 'room_needs_looting?' if @DEBUG
     return(
-      game_obj_bandits.any? { |n| n.status == 'dead' } || GameObj.loot.any? do |n|
+      game_obj_bandits.any? { |n| n.status == 'dead' } || GameObj.loot
+        .any? do |n|
         #  n.type == "skin" ||
         n.type == 'gem' || n.name =~ /coins/
       end
@@ -333,7 +338,9 @@ module AzBandit
         sleep 0.25 # yield
       end
 
-      raise "ERROR: How did we get here if we don't own the room?" if !AzLib::RoomInfo.room_owned?
+      if !AzLib::RoomInfo.room_owned?
+        raise "ERROR: How did we get here if we don't own the room?"
+      end
       i = i + 1
       fput 'stand' until standing?
 
@@ -346,10 +353,10 @@ module AzBandit
         end
       can_cast =
         checkrt == 0 && checkcastrt == 0 && checkmana >= @DISABLER_MIN_MANA
-      bandits_need_disabling = AzLib::Targets.bandits.any? { |x| x.status.nil? || x.status == 'gone' }
+      bandits_need_disabling =
+        AzLib::Targets.bandits.any? { |x| x.status.nil? || x.status == 'gone' }
 
-      cast_disabler =
-        disablers_enabled && can_cast && bandits_need_disabling
+      cast_disabler = disablers_enabled && can_cast && bandits_need_disabling
       if cast_disabler
         if Char.prof == 'Wizard' && Spell[410].known?
           multifput 'prep 410', 'cast'
@@ -395,7 +402,10 @@ module AzBandit
 
       # all done?
       return if AzLib::Targets.bandits.length == 0
-      if (game_obj_bandits.length == 0 && Time.now.to_i > (start_time + timeout_time))
+      if (
+           game_obj_bandits.length == 0 &&
+             Time.now.to_i > (start_time + timeout_time)
+         )
         echo 'wait_for_battle timed out'
         echo AzLib::Targets.bandits
         echo AzLib::Targets.bandits.collect { |x| x.status }

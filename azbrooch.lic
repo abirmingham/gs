@@ -1,11 +1,10 @@
-
 # task
-fput "reim camp confirm" until Room.current.id == 24_842
-move "go structure"
-loop {
+fput 'reim camp confirm' until Room.current.id == 24_842
+move 'go structure'
+loop do
   break if dothistimeout 'turn board', 2, /You do not have a finished task/
   sleep 1
-}
+end
 waitrt?
 fput 'reim task abandon'
 fput 'reim task abandon'

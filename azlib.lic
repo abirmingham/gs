@@ -102,7 +102,7 @@ module AzLib
     def self.room_info
       @@room_info_mu.synchronize { @@room_info_snap.clone }
     end
-  
+
     def self.wait_for_room_change
       @@room_info_mu.synchronize do
         start = @@room_info_snap.count
@@ -118,7 +118,7 @@ module AzLib
         start == @@room_info_snap.count ? nil : @@room_info_snap.clone
       end
     end
-  
+
     def self.room_owned?(group = $AZ_CHARS_SET)
       @@room_info_mu.synchronize do
         ri = @@room_info_snap
@@ -137,7 +137,8 @@ module AzLib
         elsif @@room_info_snap.count != @@room_info.count
           if server_string =~ /obvious signs of someone hiding/
             @@room_info.hiders = true
-          elsif server_string =~ /^(?:Also here:|Also in the room:)(?<pc_str>.*)$/
+          elsif server_string =~
+                /^(?:Also here:|Also in the room:)(?<pc_str>.*)$/
             @@room_info.other_pcs = AzLib.get_gameobjs($~['pc_str'])
           elsif server_string =~ /(?<followers>.*) followed\./
             @@room_info.followers = AzLib.get_gameobjs($~['followers'])
@@ -165,10 +166,9 @@ module AzLib
     def self.targets
       @@targets_mu.synchronize do
         # return dialog_data and game_obj together deduped on id
-        [
-          *@@targets_snap.dialog_data,
-          *@@targets_snap.game_obj,
-        ].uniq { |x| x.id }
+        [*@@targets_snap.dialog_data, *@@targets_snap.game_obj].uniq do |x|
+          x.id
+        end
       end
     end
 
@@ -183,15 +183,21 @@ module AzLib
       @@HOOK_NAME = self.to_s,
       proc do |server_string|
         if server_string =~
-            /<dialogData id='combat'>.*content_text="(.*)" content_value="(.+?)" anchor_left.*<\/dialogData>/
+             %r{<dialogData id='combat'>.*content_text="(.*)" content_value="(.+?)" anchor_left.*<\/dialogData>}
           targets_raw = $1
           ids = $2.split /\s*,\s*/
           @@targets.dialog_data = []
-          targets_raw.split(/\s*,\s*/).each_with_index do |name, i|
-            next if name == 'none'
-            noun = name.split(/\s+/)[-1]
-            @@targets.dialog_data.push GameObj.new(ids[i].sub('#', ''), noun, name)
-          end
+          targets_raw
+            .split(/\s*,\s*/)
+            .each_with_index do |name, i|
+              next if name == 'none'
+              noun = name.split(/\s+/)[-1]
+              @@targets.dialog_data.push GameObj.new(
+                                           ids[i].sub('#', ''),
+                                           noun,
+                                           name
+                                         )
+            end
           @@targets_mu.synchronize do
             @@targets_snap = @@targets.clone
             @@targets_cv.broadcast
@@ -237,7 +243,6 @@ module AzLib
       current_counts[a] < current_counts[b]
     end
   end
-
 end
 
 $AZ_BANDIT_ATTACK =
