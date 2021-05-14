@@ -157,13 +157,26 @@ module AzLib
 
   module Targets
     @@HOOK_NAME = self.to_s
-    @@targets ||= OpenStruct.new(value: [])
+    @@targets ||= OpenStruct.new(dialog_data: [], game_obj: [])
     @@targets_mu = Mutex.new
     @@targets_cv = ConditionVariable.new
     @@targets_snap = @@targets.clone
 
     def self.targets
-      @@targets_mu.synchronize { @@targets_snap.clone }
+      @@targets_mu.synchronize do
+        # return dialog_data and game_obj together deduped on id
+        [
+          *@@targets_snap.dialog_data,
+          *@@targets_snap.game_obj,
+        ].uniq { |x| x.id }
+      end
+    end
+
+    def self.bandits
+      targets.select do |npc|
+        !npc.name.start_with?('animated ') &&
+          (npc.type =~ /bandit/ || $AZ_BANDIT_TARGET_SET.include?(npc.noun))
+      end
     end
 
     DownstreamHook.add(
@@ -173,30 +186,24 @@ module AzLib
             /<dialogData id='combat'>.*content_text="(.*)" content_value="(.+?)" anchor_left.*<\/dialogData>/
           targets_raw = $1
           ids = $2.split /\s*,\s*/
-          @@targets.value = []
+          @@targets.dialog_data = []
           targets_raw.split(/\s*,\s*/).each_with_index do |name, i|
             next if name == 'none'
             noun = name.split(/\s+/)[-1]
-            @@targets.value.push GameObj.new(ids[i], noun, name)
+            @@targets.dialog_data.push GameObj.new(ids[i].sub('#', ''), noun, name)
           end
           @@targets_mu.synchronize do
             @@targets_snap = @@targets.clone
             @@targets_cv.broadcast
           end
         elsif server_string =~ /<prompt/
-          @@targets.checknpcs = checknpcs
+          # use npcs instead of targets so we see dead ones
+          @@targets.game_obj = GameObj.npcs
           @@targets_mu.synchronize do
             @@targets_snap = @@targets.clone
             @@targets_cv.broadcast
           end
         end
-        # eh I dunno seems to work:
-        # >;exec echo AzLib.targets; echo AzLib.targets.test_checknpcs.length; echo AzLib.targets.value.length
-        # --- Lich: exec1 active.
-        # [exec1: #<OpenStruct value=[#<Games::Gemstone::GameObj:0x0927bd90 @id="#9780936", @noun="monkey", @name="monkey", @before_name=nil, @after_name=nil>, #<Games::Gemstone::GameObj:0x0927af20 @id="#9780381", @noun="hobgoblin", @name="hobgoblin", @before_name=nil, @after_name=nil>], test_checknpcs=["monkey", "hobgoblin"]>]
-        # [exec1: 2]
-        # [exec1: 2]
-        # --- Lich: exec1 has exited.
         server_string
       end
     )
@@ -266,8 +273,6 @@ $AZ_BANDIT_ATTACK =
     end
 
     # state
-    # poaching = false
-    # carried_line = nil
     last_bounty_text = ''
     original_bounty_counts = $AZ_REMOTE['bandits'].get_counts
     i_am_lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
@@ -305,9 +310,7 @@ $AZ_BANDIT_ATTACK =
       end
 
       room_owned = AzLib::RoomInfo.room_owned?
-
-      # echo high_priority_counts
-      echo "---- DEFER: #{defer}; room_owned: #{room_owned}"
+      echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
 
       # identify targets
       targets =

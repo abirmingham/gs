@@ -12,7 +12,6 @@ It will work better if followers allow the leader to see their bounty via lichne
 # Version: 0.1
 =end
 
-# TODO large groups overwhelm lnet with requests - throttle lnet requests
 status_tags 'on'
 fput 'flag groupmovement on'
 fput 'flag description on'
@@ -28,19 +27,6 @@ module AzBandit
   @PROGRESS_UPDATE_INTERVAL = 1
   @DEBUG = false
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
-  @BANDIT_SET =
-    Set[
-      'thief',
-      'rogue',
-      'bandit',
-      'mugger',
-      'outlaw',
-      'highwayman',
-      'marauder',
-      'brigand',
-      'thug',
-      'robber'
-    ]
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
   @MY_CHARS_HACK = defined?($AZ_CHARS) ? $AZ_CHARS : []
 
@@ -74,17 +60,13 @@ module AzBandit
       raise 'Failed to get to bounty area' if Room.current.id != rooms_list[0]
     end
 
-    # Handle first room
-    echo 'Handling first room' if @DEBUG
-    wait_for_battle if game_obj_bandits.length > 0 && AzLib::RoomInfo.room_owned?
-
-    # Main loop - handle remaining rooms
+    # Main loop
     echo 'Handling remaining rooms' if @DEBUG
     prev_room = nil
     prev_room_poaching = nil
-    step2_result = nil
     loop do
-      poaching = !AzLib::RoomInfo.room_owned?
+      # Wait for battle?
+      wait_for_battle while AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0
 
       # Identify next room
       # (we prefer previous room unless we were poaching or are poaching in this
@@ -92,7 +74,7 @@ module AzBandit
       #  another group is in y1)
       next_room =
         if Room.current.id != prev_room && prev_room && !prev_room_poaching &&
-             !poaching
+            AzLib::RoomInfo.room_owned?
           prev_room
         else
           Room.current.find_nearest(rooms_list).to_i
@@ -103,30 +85,20 @@ module AzBandit
         next
       end
 
-      # Step to next room (stores new step2_result)
+      # Step to next room
       if Room.current.id != next_room
         prev_room = Room.current.id
         prev_room_poaching = !AzLib::RoomInfo.room_owned?
-        step2_result = step_to_next_room next_room
+        step_to_next_room next_room
       end
-      rooms_list = rooms_list.reject { |id| id == Room.current.id }
-      next if !step2_result
+      rooms_list = rooms_list.select { |id| id != Room.current.id }
 
       # Retrieve stragglers?
-      has_stragglers =
-        @grouplist.any? do |char|
-          !AzLib::RoomInfo.room_info.followers.any? { |f| f.noun == char }
-        end
-      step2_result = retrieve_stragglers prev_room if has_stragglers
-
-      # Possibly wait for battle
-      if step2_result['bandits'] && AzLib::RoomInfo.room_owned?
-        i = 0 # do the following at least once
-        while i == 0 || (game_obj_bandits.length > 0 && AzLib::RoomInfo.room_owned?)
-          i = i + 1
-          wait_for_battle
-        end
+      retrieve_stragglers prev_room if @grouplist.any? do |char|
+        !AzLib::RoomInfo.room_info.followers.any? { |f| f.noun == char }
       end
+
+      # Done?
       exit_azbandit if all_done?
     end
   end
@@ -238,9 +210,9 @@ module AzBandit
   def self.game_obj_bandits()
     return [] if GameObj.npcs.nil?
     return(
-      GameObj.npcs.reject do |npc|
-        npc.name.start_with?('animated ') ||
-          !(npc.type =~ /bandit/ || @BANDIT_SET.include?(npc.noun))
+      GameObj.npcs.select do |npc|
+        !npc.name.start_with?('animated ') &&
+          (npc.type =~ /bandit/ || $AZ_BANDIT_TARGET_SET.include?(npc.noun))
       end
     )
   end
@@ -248,7 +220,7 @@ module AzBandit
   def self.room_needs_looting?()
     echo 'room_needs_looting?' if @DEBUG
     return(
-      GameObj.npcs.any? { |n| n.status == 'dead' } || GameObj.loot.any? do |n|
+      game_obj_bandits.any? { |n| n.status == 'dead' } || GameObj.loot.any? do |n|
         #  n.type == "skin" ||
         n.type == 'gem' || n.name =~ /coins/
       end
@@ -258,10 +230,12 @@ module AzBandit
   def self.step_to_next_room(room_id)
     # Step towards next room
     start_room_id = Room.current.id
-    step2_result = nil
 
     while Room.current.id == start_room_id
-      # prep for move
+      # Return if we no longer need to move
+      return if AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0
+
+      # Move
       fput 'stand' until standing?
       waitrt?
       GameObj.pcs.each do |pc|
@@ -270,28 +244,8 @@ module AzBandit
           put "pull #{pc.noun}"
         end
       end
-
-      # move
-      step2_result = step_helper room_id
-      echo "STEP2_RESULT: #{step2_result}" if @DEBUG
-
-      # if we failed, check if we should now stay
-      if Room.current.id == start_room_id
-        sleep 0.25 # yield
-        stay_here =
-          AzLib::RoomInfo.room_owned? &&
-            (step2_result['bandits'] || game_obj_bandits.length > 0)
-
-        if stay_here
-          # couldn't move but that's okay cause we have bandits now
-          echo "INFO: I don't need to move anymore - bandits are here and I'm not poaching"
-          return { 'bandits' => true }
-        end
-      end
+      step_helper room_id
     end
-
-    raise 'ERROR: no step2_result' if step2_result.nil?
-    return step2_result
   end
 
   # adapted from step2.lic
@@ -309,6 +263,7 @@ module AzBandit
       raise 'ERROR: start room and destination room are the same'
     end
 
+    # Identify movement
     key = "#{start_room}->#{destination_room}"
     unless @step2_ways[key]
       previous, shortest_distances =
@@ -323,61 +278,35 @@ module AzBandit
         Room.current.wayto[path[path.index(start_room) + 1].to_s]
     end
 
-    # drain get? buffer
-    sleep 0.01 # yield
-    while line = get?
-      next
-    end
-
-    # move
+    # Put move and wait for room change
     way = @step2_ways[key]
     fput 'stand' until standing?
     if way.class == String
       put way
     elsif way.class == Proc
+      # this never comes up in bandits, and complicates wait_for_room_change
       raise 'Unhandled way.class == Proc'
       # way.call
     else
       raise 'error in the map database'
     end
     room_info = AzLib::RoomInfo.wait_for_room_change
-
-    # return new state
-    poaching = !AzLib::RoomInfo.room_owned?
-    result = { 'bandits' => false }
-    echo "Poaching: #{poaching}"
-
-    if !room_info
-      echo 'WARNING: step2 timed out'
-      return result
-    end
-
-    loop do
-      line = get?
-      return result if !line
-      if count = match_dialog_data_targets(line)
-        # TODO move to AzLib
-        result['bandits'] = count > 0
-      end
-    end
+    echo 'WARNING: step2 timed out' if !room_info
   end
 
   def self.retrieve_stragglers(prev_room_id)
-    echo 'Retrieving stragglers'
+    echo 'WARNING: Retrieving stragglers'
     stragglers = identify_stragglers
     while stragglers.length > 0
       put 'look'
       sleep 0.5 # try again in a second - this thing is fiddly
-      put 'look'
-      sleep 0.5
-      echo "whisper ooc group We left behind #{stragglers.join(' and ')}"
-      step2_result = step_helper prev_room_id
+      fput "whisper ooc group We left behind #{stragglers.join(' and ')}"
+      step_helper prev_room_id
       waitrt?
       stragglers.each { |char| fput "hold #{char}" }
       fput 'look'
       stragglers = identify_stragglers
       sleep 3 # if they're stunned, give other chars time to unstun them
-      return step2_result if stragglers.length == 0 # we got em
     end
   end
 
@@ -387,35 +316,8 @@ module AzBandit
     return @grouplist.select { |name| !pc_set[name] }
   end
 
-  def self.match_dialog_data_targets(line)
-    # if line matches dialogData, return number of bandit targets in room
-    # example: line matches, no bandits, returns 0
-    # example: line matches, 3 bandits, returns 3
-    # example: line doesn't match, returns nil
-    # NOTE THAT THIS APPEARS TO BE A PARTIAL VIEW - NOT ALL BANDITS APPEAR HERE
-    # UNCLEAR WHY IT IS PARTIAL OR WHAT RULES IT HAS
-    bandit_count = nil
-    if line =~
-         %r{<dialogData id='combat'>.*content_text="(.*)" content_value="(.+?)" anchor_left.*<\/dialogData>}
-      #<dialogData id='combat'><dropDownBox id='dDBTarget' value="none" cmd="target %dDBTarget%" tooltip='Select Target' content_text="none,human thief,halfling rogue" content_value="target help,#132801883,#132801878" anchor_left='cmdTarget' anchor_right='cmdAttack' height='20' width='80'  top='70' left='0' align='n'/></dialogData>
-      echo({ 'text' => $1, 'value' => $2 }) if @DEBUG
-      bandit_count = 0
-      targets = $1.split(/\s*,\s*/)
-      for i in 0..targets.length - 1
-        t = targets[i].split(' ')[-1]
-        next if t == 'none'
-        bandit_count = bandit_count + 1 if @BANDIT_SET.include?(t)
-      end
-    end
-    return bandit_count
-  end
-
   def self.wait_for_battle()
     echo 'Bandits are here and we own the room'
-
-    # bandits from <dialogData/> in feed
-    # if nil, assume that there are some, we'll know soon enough
-    dialog_data_bandits = nil # TODO pass in ids so we can do a diff?
 
     disabler_cast_count = 0
     disabler_cd_time = Time.now.to_i
@@ -425,47 +327,15 @@ module AzBandit
     i = -1
 
     loop do
-      if !AzLib::RoomInfo.room_owned?
-        echo "ERROR: How did we get here if we don't own the room?"
-        return
+      if checkrt > 0
+        waitrt?
+      else
+        sleep 0.25 # yield
       end
-      sleep 0.25 # yield
+
+      raise "ERROR: How did we get here if we don't own the room?" if !AzLib::RoomInfo.room_owned?
       i = i + 1
       fput 'stand' until standing?
-
-      # scan for dialog_data targets
-      while line = get?
-        match = match_dialog_data_targets(line)
-        dialog_data_bandits = match if !match.nil?
-      end
-
-      # echo AzLib::Targets.targets if i % 10 == 0
-
-      # bandits from GameObj.targets
-      local_game_obj_bandits = game_obj_bandits
-
-      # timeout?
-      if (
-           dialog_data_bandits.nil? && game_obj_bandits.length == 0 &&
-             Time.now.to_i > start_time + timeout_time
-         )
-        echo 'wait_for_battle timed out'
-        return
-      end
-
-      # all done?
-      any_bandits =
-        if (
-             # dialog_data_bandits doesn't seem reliable over time,
-             # so we switch to game_obj_bandits after a bit
-             dialog_data_bandits.nil? ||
-               (Time.now.to_i < start_time + timeout_time)
-           )
-          true
-        else
-          local_game_obj_bandits.length > 0
-        end
-      return if !any_bandits
 
       # cast disabler?
       disablers_enabled =
@@ -476,41 +346,30 @@ module AzBandit
         end
       can_cast =
         checkrt == 0 && checkcastrt == 0 && checkmana >= @DISABLER_MIN_MANA
-      bandits_need_disabling =
-        dialog_data_bandits.nil? ||
-          dialog_data_bandits > 0 || local_game_obj_bandits.any? do |x|
-          x.status.nil?
-        end
+      bandits_need_disabling = AzLib::Targets.bandits.any? { |x| x.status.nil? || x.status == 'gone' }
 
       cast_disabler =
-        disablers_enabled && can_cast && bandits_need_disabling &&
-          Time.now.to_i >= disabler_cd_time
+        disablers_enabled && can_cast && bandits_need_disabling
       if cast_disabler
         if Char.prof == 'Wizard' && Spell[410].known?
-          waitrt?
-          waitcastrt?
           multifput 'prep 410', 'cast'
         elsif Char.prof == 'Sorcerer' && Spell[709].known?
           Spell[709].cast
         end
-
-        # cooldown: 0, 3, 8, 15.. (plus cast rt)
-        disabler_cast_count = disabler_cast_count + 1
-        disabler_cd_time =
-          Time.now.to_i + disabler_cast_count.pow(2) + checkcastrt - 1
         next # restart wait_for_battle loop
       end
 
       # check if room needs to be looted
       if room_needs_looting?
+        echo 'room_needs_looting'
         if !@LOOTING_ENABLED
-          echo 'Waiting for looting' if i % 10 == 9
+          echo 'Waiting for looting' if i % 10 == 0
           next # restart wait_for_battle loop
         end
         waitrt?
 
         # search bodies
-        bodies = local_game_obj_bandits.reject { |npc| npc.status != 'dead' }
+        bodies = game_obj_bandits.select { |npc| npc.status == 'dead' }
         bodies.each_with_index { |bandit| fput "loot ##{bandit.id}" }
 
         # loot
@@ -534,19 +393,24 @@ module AzBandit
         next # restart wait_for_battle loop
       end
 
+      # all done?
+      return if AzLib::Targets.bandits.length == 0
+      if (game_obj_bandits.length == 0 && Time.now.to_i > (start_time + timeout_time))
+        echo 'wait_for_battle timed out'
+        echo AzLib::Targets.bandits
+        echo AzLib::Targets.bandits.collect { |x| x.status }
+        return
+      end
+
       # if we're here, it means bandits are still alive
-      if i % 10 == 9
+      if i % 10 == 0
         echo 'Waiting for targets to be killed'
-        echo "game_obj_bandits: #{local_game_obj_bandits.collect { |x| x.noun }}"
-        echo "dialog_data_bandits: #{dialog_data_bandits}"
+        fput 'look'
       end
     end
   end
 
   def self.exit_azbandit()
-    if !@grouplist.all? { |char| checkpcs.include? char }
-      raise 'Failed to find all group'
-    end
     echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
     fput "whisper ooc group #{(Time.now.to_f - @start_time).to_i}"
     Script.start 'fbandit'

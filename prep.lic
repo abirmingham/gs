@@ -12,8 +12,10 @@ end
 
 # start global scripts
 Script.start 'standgroup'
-Script.start 'spellmerge'
-Script.start 'briefcombat'
+if Char.name != 'Aranthius'
+  Script.start 'spellmerge'
+  Script.start 'briefcombat'
+end
 
 # start society scripts
 if Society.status == 'Order of Voln'
