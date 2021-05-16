@@ -1,3 +1,0 @@
-$AZ_BANDIT_ATTACK.call(
-  Proc.new { |targets| put 'incant 1115' if checkmana >= 30 }
-)

@@ -22,7 +22,6 @@ $AZ_CHAR_TAGS =
   Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
     {
       'Azanoth' => Set.new([$AZ_TAG_GIVES_ARMOR_SUPPORT]),
-      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH, $AZ_TAG_RECEIVES_1601]),
       'Aranthius' =>
         Set.new(
           [
@@ -33,9 +32,11 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_SELLS_GEMS
           ]
         ),
+      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH, $AZ_TAG_RECEIVES_1601]),
       'Gossan' =>
         Set.new(
           [
+            $AZ_TAG_LOW_BOUNTY_PRIORITY,
             $AZ_TAG_RUBS_WEAK_BROOCH,
             $AZ_TAG_RESTING_GROUP_LEADER,
             $AZ_TAG_CASTS_SHORT_BUFFS,
@@ -47,12 +48,10 @@ $AZ_CHAR_TAGS =
       'Gherraltis' =>
         Set.new(
           [
-            $AZ_TAG_LOW_BOUNTY_PRIORITY,
             $AZ_TAG_RECEIVES_515,
             $AZ_TAG_CASTS_SHORT_BUFFS
           ]
-        ),
-      'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY])
+        )
     }
   )
 $AZ_HAS_TAG =
@@ -75,6 +74,55 @@ $AZ_PERSONAL_SCRIPTS =
       'Gherraltis' => Proc.new { Spell[1608].cast }
     }
   )
+
+# Poach Warning:
+# Don't use fput for attacks, and check room id for fput on other things
+$AZ_ATTACK_ROUTINE = {
+  'Azanoth' =>
+    Proc.new do |targets, room|
+      if !Spell[506].active?
+        echo 'NO 506!!!!!'
+        sleep 1
+      else
+        fput 'stance off' until checkstance == 'offensive'
+        put 'ambush' if room == Room.current.id
+      end
+    end,
+  'Wizard' =>
+    Proc.new do |targets, room|
+      fput 'stance off' until checkstance == 'offensive'
+      put 'incant 903' if checkmana >= 20 && room == Room.current.id
+    end,
+  'Bard' =>
+    Proc.new do |targets, room|
+      put 'incant 1030' if checkmana >= 60
+      fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
+    end,
+  'Paladin' =>
+    Proc.new do |targets, room|
+      if checkmana >= 40 && targets.any? { |x| !x.status || x.status == 'gone' }
+        put 'incant 1630'
+      else
+        fput 'stance off' until checkstance == 'offensive'
+        if room == current.id
+          if checkstamina >= 30
+            put 'shield strike'
+          else
+            put 'kill'
+          end
+      end
+    end,
+  'Empath' =>
+    Proc.new do |targets, room|
+      if checkmana >= 20
+        put 'incant 1115'
+      elsif checkmana >= 10
+        put 'incant 1106'
+      else
+        echo 'WARNING: out of mana'
+      end
+    end
+}
 
 $AZ_BANDIT_TARGET_SET = {}
 'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'
@@ -343,7 +391,7 @@ $AZ_BANDIT_ATTACK =
         end
       else
         # TODO adjust attack routines to attack specific targets
-        attack_routine.call targets
+        attack_routine.call targets, Room.current.id
       end
 
       # yield

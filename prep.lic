@@ -57,4 +57,13 @@ end
 
 # start personal scripts
 $AZ_PERSONAL_SCRIPTS[Char.name].call
-Script.start "#{Char.name}-bandits"
+
+# start attack routine
+attack_routine =
+  if $AZ_ATTACK_ROUTINE[Char.name]
+    $AZ_ATTACK_ROUTINE[Char.name]
+  else
+    $AZ_ATTACK_ROUTINE[Char.prof]
+  end
+raise 'Failed to find attack routine' if !attack_routine
+$AZ_BANDIT_ATTACK.call attack_routine

@@ -56,7 +56,6 @@ Script.run('go2', 'advguild')
 
 GROUP.each do |char|
   if Char.name != char
-    # exchange and start prep.lic
     $AZ_SEND_ACTION_SYNC.call char, 'exchange-unless', bounty_location
     fput "ask luc to add #{char}"
   end
