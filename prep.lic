@@ -44,11 +44,14 @@ if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
   if Char.prof == 'Empath'
     Spell[211].cast
     Spell[215].cast
-  end
-end
-if $AZ_HAS_TAG.call $AZ_TAG_GIVES_515
-  checkpcs.each do |x|
-    Spell[515].cast x if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_515, x
+  elsif Char.prof == 'Wizard'
+    checkpcs.each do |x|
+      Spell[515].cast x if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_515, x
+    end
+  elsif Char.prof == 'Paladin'
+    checkpcs.each do |x|
+      Spell[1601].cast x if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_1601, x
+    end
   end
 end
 
