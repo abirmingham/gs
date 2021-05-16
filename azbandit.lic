@@ -63,19 +63,22 @@ module AzBandit
     # Main loop
     echo 'Handling remaining rooms' if @DEBUG
     prev_room = nil
-    prev_room_poaching = nil
+    prev_room_owned = nil
     loop do
       # Wait for battle?
       while AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0
         wait_for_battle
       end
 
+      # Done?
+      exit_azbandit if all_done?
+
       # Identify next room
       # (we prefer previous room unless we were poaching or are poaching in this
       #  room, to avoid getting stuck in e.g. y1/x2 in a x1-y1-x2 layout where
       #  another group is in y1)
       next_room =
-        if Room.current.id != prev_room && prev_room && !prev_room_poaching &&
+        if Room.current.id != prev_room && prev_room && prev_room_owned &&
              AzLib::RoomInfo.room_owned?
           prev_room
         else
@@ -90,7 +93,7 @@ module AzBandit
       # Step to next room
       if Room.current.id != next_room
         prev_room = Room.current.id
-        prev_room_poaching = !AzLib::RoomInfo.room_owned?
+        prev_room_owned = AzLib::RoomInfo.room_owned?
         step_to_next_room next_room
       end
       rooms_list = rooms_list.select { |id| id != Room.current.id }
@@ -101,9 +104,6 @@ module AzBandit
          end
         retrieve_stragglers prev_room
       end
-
-      # Done?
-      exit_azbandit if all_done?
     end
   end
 
@@ -422,7 +422,6 @@ module AzBandit
 
   def self.exit_azbandit()
     echo "Azbandit Running Time: #{Time.now.to_f - @start_time}"
-    fput "whisper ooc group #{(Time.now.to_f - @start_time).to_i}"
     Script.start 'fbandit'
     exit
   end
@@ -451,7 +450,7 @@ module AzBandit
     end
 
     return false if !all_done
-    fput 'whisper ooc group Everyone is done!'
+    fput "whisper ooc group Everyone is done! (#{(Time.now.to_f - @start_time).to_i})"
     return true
   end
 end

@@ -314,9 +314,6 @@ $AZ_BANDIT_ATTACK =
           end
       end
 
-      room_owned = AzLib::RoomInfo.room_owned?
-      echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
-
       # identify targets
       targets =
         GameObj.npcs.select do |npc|
@@ -325,6 +322,9 @@ $AZ_BANDIT_ATTACK =
         end
 
       # chill or attack
+      room_owned = AzLib::RoomInfo.room_owned?
+      echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
+      
       if defer || !room_owned || targets.nil? || targets.length == 0
         if checkcastrt == 0
           fput 'stance def' if checkstance != 'defensive'

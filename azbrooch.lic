@@ -1,3 +1,5 @@
+Script.running.each { |x| x.kill unless x == Script.current }
+
 # task
 fput 'reim camp confirm' until Room.current.id == 24_842
 move 'go structure'
@@ -43,7 +45,7 @@ elsif Char.prof == 'Empath'
   start_script 'unpoison'
   start_script 'treim', ['1115']
 elsif Char.prof == 'Wizard'
-  start_script 'treim', ['903']
+  start_script 'treim', ['410']
 elsif Char.prof == 'Bard'
   start_script 'treim', ['1002']
 end
