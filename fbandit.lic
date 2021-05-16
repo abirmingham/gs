@@ -122,7 +122,7 @@ end
 
 if $AZ_HAS_TAG.call $AZ_TAG_WAGGLES_OTHERS
   $AZ_CHARS.each { |x| Script.run 'waggle', x if checkpcs.include? x }
-  Spell[911].cast if Spell[911].affordable?
+  Spell[911].cast if Char.prof == 'wizard' && Spell[911].affordable?
 end
 
 join_resting_group_leader if Spell[9003].active?

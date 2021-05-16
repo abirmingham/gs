@@ -30,7 +30,7 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_RECEIVES_ARMOR_SUPPORT,
             $AZ_TAG_WAGGLES_OTHERS,
             $AZ_TAG_CASTS_SHORT_BUFFS,
-            $AZ_TAG_SELLS_GEMS,
+            $AZ_TAG_SELLS_GEMS
           ]
         ),
       'Gossan' =>
@@ -39,11 +39,19 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_RUBS_WEAK_BROOCH,
             $AZ_TAG_RESTING_GROUP_LEADER,
             $AZ_TAG_CASTS_SHORT_BUFFS,
+            $AZ_TAG_WAGGLES_OTHERS,
             $AZ_TAG_RECEIVES_515,
             $AZ_TAG_RECEIVES_1601
           ]
         ),
-      'Gherraltis' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY, $AZ_TAG_RECEIVES_515, $AZ_TAG_CASTS_SHORT_BUFFS]),
+      'Gherraltis' =>
+        Set.new(
+          [
+            $AZ_TAG_LOW_BOUNTY_PRIORITY,
+            $AZ_TAG_RECEIVES_515,
+            $AZ_TAG_CASTS_SHORT_BUFFS
+          ]
+        ),
       'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY])
     }
   )
@@ -63,13 +71,8 @@ $AZ_PERSONAL_SCRIPTS =
             fput 'cman surge'
           end
           Script.start 'Azanoth-506'
-        end
-    },
-    {
-      'Gherraltis' =>
-        Proc.new do
-          Spell[1608].cast
-        end
+        end,
+      'Gherraltis' => Proc.new { Spell[1608].cast }
     }
   )
 
