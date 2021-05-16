@@ -1,13 +1,7 @@
 $AZ_BANDIT_ATTACK.call(
   Proc.new do |targets|
-    # If I'm the only attacker I need to do some damage
     start_room = Room.current.id
     fput 'stance off' until checkstance == 'offensive'
-    if start_room == Room.current.id
-      # if targets.length >= 2 && checkmana >= 40
-      #   fput 'incant 518 air'
-      # elsif checkmana >= 20
-      fput 'incant 903' if checkmana >= 20
-    end
+    put 'incant 903' if checkmana >= 20 && start_room == Room.current.id
   end
 )
