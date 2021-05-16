@@ -4,7 +4,7 @@ hide_me
 DRb.start_service
 $AZ_REMOTE = DRbObject.new_with_uri('druby://localhost:9999')
 
-$AZ_CHARS = %w[Azanoth Aranthius Idios Gossan Helsfeld]
+$AZ_CHARS = %w[Azanoth Aranthius Idios Gossan Gherraltis] # Helsfeld
 $AZ_CHARS_REGEX = /#{$AZ_CHARS.join('|')}/
 $AZ_CHARS_SET = $AZ_CHARS.collect { |char| [char, true] }.to_h
 
@@ -43,7 +43,8 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_RECEIVES_515
           ]
         ),
-      'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY])
+      'Gherraltis' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY]),
+      'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY]),
     }
   )
 $AZ_HAS_TAG =
