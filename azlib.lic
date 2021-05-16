@@ -44,7 +44,7 @@ $AZ_CHAR_TAGS =
           ]
         ),
       'Gherraltis' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY]),
-      'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY]),
+      'Helsfeld' => Set.new([$AZ_TAG_LOW_BOUNTY_PRIORITY])
     }
   )
 $AZ_HAS_TAG =
@@ -325,7 +325,7 @@ $AZ_BANDIT_ATTACK =
       # chill or attack
       room_owned = AzLib::RoomInfo.room_owned?
       echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
-      
+
       if defer || !room_owned || targets.nil? || targets.length == 0
         if checkcastrt == 0
           fput 'stance def' if checkstance != 'defensive'
