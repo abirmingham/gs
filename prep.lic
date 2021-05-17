@@ -2,6 +2,28 @@
 put 'stance def'
 put 'gird'
 
+# wait for bounty
+loop do
+  if bounty? =~ $AZ_BOUNTY_PATTERN_NUM ||
+        bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+    break
+  end
+  echo 'Waiting for bounty'
+  sleep 1
+end
+
+# send count to remote
+if bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+  # this should only happen if we killed the script and restarted it
+  # mid-run, causing us to skip an update.
+  $AZ_REMOTE['bandits'].set_count(Char.name, 0)
+elsif bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
+  $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
+  echo "Set count #{$1}"
+else
+  throw 'Failed to find bounty count'
+end
+
 # brooch stuff
 if $AZ_HAS_TAG.call $AZ_TAG_RUBS_WEAK_BROOCH
   if percentmind >= 62
@@ -48,15 +70,18 @@ if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
     checkpcs.each do |x|
       Spell[515].cast x if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_515, x
     end
-  elsif Char.prof == 'Paladin'
-    checkpcs.each do |x|
-      Spell[1601].cast x if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_1601, x
-    end
   end
 end
 
 # start personal scripts
 $AZ_PERSONAL_SCRIPTS[Char.name].call
+
+# wait for group registration
+loop do
+  break if $AZ_REMOTE['bandits'].has_group_registered?
+  sleep 1
+  echo 'Waiting for group registration'
+end
 
 # start attack routine
 attack_routine =

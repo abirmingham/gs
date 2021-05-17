@@ -41,7 +41,7 @@ end
 # Form group
 GROUP.each do |char|
   if Char.name != char
-    $AZ_SEND_ACTION_SYNC.call char, 'ungroup', bounty_location
+    $AZ_SEND_ACTION_SYNC.call char, 'ungroup'
   end
 end
 
@@ -53,22 +53,33 @@ $AZ_REMOTE['bandits'].set_new_group GROUP
 
 # Share bounty
 Script.run('go2', 'advguild')
+if bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
+  $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
+else
+  raise 'Failed to find bounty'
+end
 
 GROUP.each do |char|
   if Char.name != char
-    $AZ_SEND_ACTION_SYNC.call char, 'exchange-unless', bounty_location
-    fput "ask luc to add #{char}"
+    $AZ_REMOTE['actions'].queue_action char, 'exchange-unless', bounty_location
   end
 end
 
-# Go!
-Script.start('prep')
+Script.start 'prep'
 
+i = 0
 loop do
+  sleep 1
+  if i % 3 == 0
+    # add chars
+    GROUP.each { |char| put "ask luc to add #{char}" if Char.name != char }
+  end
+  i = i + 1
   # wait until everyone else has registered bounty count
   break if $AZ_REMOTE['bandits'].has_group_registered?
-  sleep 1
 end
 
+# Go!
 waitrt?
-Script.start('azbandit')
+sleep 3 # wait for warcry
+Script.start 'azbandit'

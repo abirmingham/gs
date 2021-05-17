@@ -265,7 +265,8 @@ module AzBandit
       raise 'destination room was not found in the map database'
     end
     if start_room == destination_room
-      raise 'ERROR: start room and destination room are the same'
+      echo 'WARNING: start room and destination room are the same'
+      return
     end
 
     # Identify movement

@@ -17,7 +17,6 @@ $AZ_TAG_LOW_BOUNTY_PRIORITY = 'low_bounty_priority'
 $AZ_TAG_RUBS_WEAK_BROOCH = 'rubs_weak_brooch'
 $AZ_TAG_CASTS_SHORT_BUFFS = 'casts_short_buffs'
 $AZ_TAG_RECEIVES_515 = 'receives_515'
-$AZ_TAG_RECEIVES_1601 = 'receives_1601'
 $AZ_CHAR_TAGS =
   Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
     {
@@ -32,7 +31,7 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_SELLS_GEMS
           ]
         ),
-      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH, $AZ_TAG_RECEIVES_1601]),
+      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH]),
       'Gossan' =>
         Set.new(
           [
@@ -41,17 +40,10 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_RESTING_GROUP_LEADER,
             $AZ_TAG_CASTS_SHORT_BUFFS,
             $AZ_TAG_WAGGLES_OTHERS,
-            $AZ_TAG_RECEIVES_515,
-            $AZ_TAG_RECEIVES_1601
+            $AZ_TAG_RECEIVES_515
           ]
         ),
-      'Gherraltis' =>
-        Set.new(
-          [
-            $AZ_TAG_RECEIVES_515,
-            $AZ_TAG_CASTS_SHORT_BUFFS
-          ]
-        )
+      'Gherraltis' => Set.new([$AZ_TAG_CASTS_SHORT_BUFFS, $AZ_TAG_RECEIVES_515])
     }
   )
 $AZ_HAS_TAG =
@@ -63,7 +55,6 @@ $AZ_PERSONAL_SCRIPTS =
       'Azanoth' =>
         Proc.new do
           # fput 'cman dervish'
-          # waitrt?
           fput 'war shout'
           waitrt?
           if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
@@ -71,49 +62,52 @@ $AZ_PERSONAL_SCRIPTS =
           end
           Script.start 'Azanoth-506'
         end,
-      'Gherraltis' => Proc.new { Spell[1608].cast }
+      'Gherraltis' => Proc.new do
+        if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
+          fput 'cman surge'
+        end
+        Spell[1608].cast
+      end,
     }
   )
 
 # Poach Warning:
-# Don't use fput for attacks, and check room id for fput on other things
+# Don't use fput for attacks or other blocking actions
 $AZ_ATTACK_ROUTINE = {
   'Azanoth' =>
-    Proc.new do |targets, room|
+    Proc.new do |targets|
       if !Spell[506].active?
         echo 'NO 506!!!!!'
         sleep 1
       else
-        fput 'stance off' until checkstance == 'offensive'
-        put 'ambush' if room == Room.current.id
+        put 'stance off'
+        put 'ambush'
       end
     end,
   'Wizard' =>
-    Proc.new do |targets, room|
-      fput 'stance off' until checkstance == 'offensive'
-      put 'incant 903' if checkmana >= 20 && room == Room.current.id
+    Proc.new do |targets|
+      put 'stance off'
+      put 'incant 903' if checkmana >= 20
     end,
   'Bard' =>
-    Proc.new do |targets, room|
+    Proc.new do |targets|
       put 'incant 1030' if checkmana >= 60
       fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
     end,
   'Paladin' =>
-    Proc.new do |targets, room|
-      if checkmana >= 40 && targets.any? { |x| !x.status || x.status == 'gone' }
+    Proc.new do |targets, all_tagged|
+      if checkmana >= 40 && all_tagged && targets.any? do |x|
+           !x.status || x.status == 'gone'
+         end
         put 'incant 1630'
       else
-        fput 'stance off' until checkstance == 'offensive'
-        if room == current.id
-          if checkstamina >= 30
-            put 'shield strike'
-          else
-            put 'kill'
-          end
+        put 'stance off'
+        put 'shield strike' if checkstamina >= 30
+        put 'kill' if checkstamina < 30
       end
     end,
   'Empath' =>
-    Proc.new do |targets, room|
+    Proc.new do |targets|
       if checkmana >= 20
         put 'incant 1115'
       elsif checkmana >= 10
@@ -305,39 +299,10 @@ end
 
 $AZ_BANDIT_ATTACK =
   Proc.new do |attack_routine|
-    # wait for bounty
-    echo 'Waiting for bounty'
-    loop do
-      if bounty? =~ $AZ_BOUNTY_PATTERN_NUM ||
-           bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
-        break
-      end
-      sleep 1
-    end
-
-    # send count to remote
-    if bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
-      # this should only happen if we killed char-bandits.lic and restarted it
-      # mid-run, causing us to skip an update.
-      $AZ_REMOTE['bandits'].set_count(Char.name, 0)
-    elsif bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
-      $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
-      echo "Set count #{$1}"
-    else
-      throw 'Failed to find bounty count'
-    end
-
-    echo 'Waiting for group registration'
-
-    # wait for group registration
-    loop do
-      break if $AZ_REMOTE['bandits'].has_group_registered?
-      sleep 1
-    end
-
     # state
     last_bounty_text = ''
     original_bounty_counts = $AZ_REMOTE['bandits'].get_counts
+    echo "original_bounty_counts: #{original_bounty_counts}"
     i_am_lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
 
     # main loop
@@ -390,8 +355,11 @@ $AZ_BANDIT_ATTACK =
           fput 'stance def'
         end
       else
-        # TODO adjust attack routines to attack specific targets
-        attack_routine.call targets, Room.current.id
+        all_tagged =
+          high_priority_counts.all? do |char, their_count|
+            char == Char.name || their_count != original_bounty_counts[char]
+          end
+        attack_routine.call targets, all_tagged
       end
 
       # yield
@@ -424,18 +392,18 @@ $AZ_RUN_CMD =
       if bounty? =~ bounty_re
         if $1 == arg
           echo 'ALREADY HAVE REQUESTED LOCATION'
-
-          # also prep for bandits
-          Script.start 'prep'
+          Script.start 'prep' # also prep for bandits
           return true
         end
       end
       wait_while { Spell[9056].active? }
-      fput 'ask luc to remove'
-      fput 'ask luc to remove'
-
-      # also prep for bandits
-      Script.start 'prep'
+      put 'ask luc to remove'
+      loop {
+        result = dothistimeout 'ask luc to remove', 2, /I have removed you from your current assignment/
+        break if result
+        sleep 0.25
+      }
+      Script.start 'prep' # also prep for bandits
       return true
     elsif cmd == 'start-script' && arg.length > 0
       Script.start(arg) if !running? arg
