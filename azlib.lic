@@ -62,12 +62,13 @@ $AZ_PERSONAL_SCRIPTS =
           end
           Script.start 'Azanoth-506'
         end,
-      'Gherraltis' => Proc.new do
-        if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-          fput 'cman surge'
+      'Gherraltis' =>
+        Proc.new do
+          if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
+            fput 'cman surge'
+          end
+          Spell[1608].cast
         end
-        Spell[1608].cast
-      end,
     }
   )
 
@@ -99,7 +100,8 @@ $AZ_ATTACK_ROUTINE = {
       if checkmana >= 40 && all_tagged && targets.any? do |x|
            !x.status || x.status == 'gone'
          end
-        put 'incant 1630'
+        put 'prep 1630'
+        put 'cast'
       else
         put 'stance off'
         put 'shield strike' if checkstamina >= 30
@@ -398,11 +400,14 @@ $AZ_RUN_CMD =
       end
       wait_while { Spell[9056].active? }
       put 'ask luc to remove'
-      loop {
-        result = dothistimeout 'ask luc to remove', 2, /I have removed you from your current assignment/
+      loop do
+        result =
+          dothistimeout 'ask luc to remove',
+                        2,
+                        /I have removed you from your current assignment/
         break if result
         sleep 0.25
-      }
+      end
       Script.start 'prep' # also prep for bandits
       return true
     elsif cmd == 'start-script' && arg.length > 0

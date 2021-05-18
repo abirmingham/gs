@@ -4,8 +4,7 @@ put 'gird'
 
 # wait for bounty
 loop do
-  if bounty? =~ $AZ_BOUNTY_PATTERN_NUM ||
-        bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+  if bounty? =~ $AZ_BOUNTY_PATTERN_NUM || bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
     break
   end
   echo 'Waiting for bounty'

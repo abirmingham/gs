@@ -40,9 +40,7 @@ end
 
 # Form group
 GROUP.each do |char|
-  if Char.name != char
-    $AZ_SEND_ACTION_SYNC.call char, 'ungroup'
-  end
+  $AZ_SEND_ACTION_SYNC.call char, 'ungroup' if Char.name != char
 end
 
 multifput 'disband', 'leave'
@@ -75,6 +73,7 @@ loop do
     GROUP.each { |char| put "ask luc to add #{char}" if Char.name != char }
   end
   i = i + 1
+
   # wait until everyone else has registered bounty count
   break if $AZ_REMOTE['bandits'].has_group_registered?
 end
