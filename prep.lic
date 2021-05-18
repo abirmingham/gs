@@ -52,12 +52,17 @@ if Char.prof == 'Wizard'
   Spell[515].cast
   Script.start 'rapid'
 elsif Char.prof == 'Empath'
-  Script.start 'empath-surge'
+  # Script.start 'empath-surge'
+  echo 'trying out something different than empath-surge'
   # fix-vocal-cords and shattered_empath start
   # at launch and have hide_me
 elsif Char.prof == 'Bard'
   Script.start 'bard-unstun'
   Script.start 'tonis'
+end
+
+if $AZ_HAS_TAG.call $AZ_TAG_CASTS_108
+  Script.start '108group'
 end
 
 # group buffs

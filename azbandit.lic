@@ -64,10 +64,12 @@ module AzBandit
     echo 'Handling remaining rooms' if @DEBUG
     prev_room = nil
     prev_room_owned = nil
+    wait_for_battle_timeout = false # every once in awhile a dialog_data bandit gets stuck
     loop do
       # Wait for battle?
+      wait_for_battle_timeout = false
       while AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0
-        wait_for_battle
+        wait_for_battle_timeout = wait_for_battle
       end
 
       # Done?
@@ -94,7 +96,7 @@ module AzBandit
       if Room.current.id != next_room
         prev_room = Room.current.id
         prev_room_owned = AzLib::RoomInfo.room_owned?
-        step_to_next_room next_room
+        step_to_next_room next_room, wait_for_battle_timeout
       end
       rooms_list = rooms_list.select { |id| id != Room.current.id }
 
@@ -232,13 +234,13 @@ module AzBandit
     )
   end
 
-  def self.step_to_next_room(room_id)
+  def self.step_to_next_room(room_id, force_movement)
     # Step towards next room
     start_room_id = Room.current.id
 
     while Room.current.id == start_room_id
       # Return if we no longer need to move
-      return if AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0
+      return if AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0 && !force_movement
 
       # Move
       fput 'stand' until standing?
@@ -381,6 +383,12 @@ module AzBandit
         bodies.each_with_index { |bandit| fput "loot ##{bandit.id}" }
 
         # loot
+        stored = false
+        if !GameObj.left_hand.noun.nil? && !GameObj.right_hand.noun.nil?
+          stored = true
+          fput 'store left'
+        end
+
         GameObj.loot.each do |x|
           if x.type == 'gem'
             if lootsack.nil?
@@ -398,6 +406,7 @@ module AzBandit
           end
         end
 
+        fput 'gird' if stored
         next # restart wait_for_battle loop
       end
 
@@ -410,7 +419,7 @@ module AzBandit
         echo 'wait_for_battle timed out'
         echo AzLib::Targets.bandits
         echo AzLib::Targets.bandits.collect { |x| x.status }
-        return
+        return true
       end
 
       # if we're here, it means bandits are still alive

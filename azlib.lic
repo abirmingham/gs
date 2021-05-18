@@ -17,6 +17,7 @@ $AZ_TAG_LOW_BOUNTY_PRIORITY = 'low_bounty_priority'
 $AZ_TAG_RUBS_WEAK_BROOCH = 'rubs_weak_brooch'
 $AZ_TAG_CASTS_SHORT_BUFFS = 'casts_short_buffs'
 $AZ_TAG_RECEIVES_515 = 'receives_515'
+$AZ_TAG_CASTS_108 = 'casts_108' # This is dangerous! Don't use on PCs with prep/cast damage spell.
 $AZ_CHAR_TAGS =
   Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
     {
@@ -40,10 +41,11 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_RESTING_GROUP_LEADER,
             $AZ_TAG_CASTS_SHORT_BUFFS,
             $AZ_TAG_WAGGLES_OTHERS,
-            $AZ_TAG_RECEIVES_515
+            $AZ_TAG_RECEIVES_515,
+            $AZ_TAG_CASTS_108
           ]
         ),
-      'Gherraltis' => Set.new([$AZ_TAG_CASTS_SHORT_BUFFS, $AZ_TAG_RECEIVES_515])
+      'Gherraltis' => Set.new([$AZ_TAG_CASTS_SHORT_BUFFS, $AZ_TAG_RECEIVES_515, $AZ_TAG_CASTS_108])
     }
   )
 $AZ_HAS_TAG =
@@ -67,6 +69,10 @@ $AZ_PRE_HUNT_SCRIPTS =
           if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
             fput 'cman surge'
           end
+          if !Spell[1617].active?
+            fput "whisper ooc aranthius ERROR: Zealot not active!!!"
+            Spell[1617].cast
+          end
           Spell[1608].cast
         end
     }
@@ -79,7 +85,7 @@ $AZ_POST_HUNT_SCRIPTS =
         Proc.new do
           fput "gird"
           if GameObj.right_hand.noun.nil?
-            echo "Failed to find weapon to beseech"
+            echo "ERROR: Failed to find weapon to beseech"
           else
             wait_while { checkmana < 100 }
             fput "prep 1615"

@@ -5,6 +5,7 @@ killed_script = false
 loop do
   trapped_person = nil
   while line = get?
+    # wait but 1107 doesn't do anything for this does it?
     if line =~ /^Suddenly.*carefully concealed metal jaws slam shut on (\w+)'s/
       trapped_person = $1
     end
