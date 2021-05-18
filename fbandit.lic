@@ -142,16 +142,8 @@ until Room.current.id == rest_room
   Script.run('go2', rest_room.to_s + ' --disable-confirm')
 end
 
-if Char.prof == 'Paladin'
-  fput "gird"
-  if GameObj.right_hand.noun.nil?
-    echo "Failed to find weapon to beseech"
-  else
-    fput "prep 1615"
-    fput "infuse my #{GameObj.right_hand.noun}"
-    fput "beseech #{GameObj.right_hand.noun} ignite"
-  end
-end
+$AZ_POST_HUNT_SCRIPTS[Char.name].call
+
 
 join_resting_group_leader
 do_client ';magic'

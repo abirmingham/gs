@@ -72,8 +72,7 @@ if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
   end
 end
 
-# start personal scripts
-$AZ_PERSONAL_SCRIPTS[Char.name].call
+$AZ_PRE_HUNT_SCRIPTS[Char.name].call
 
 # wait for group registration
 loop do

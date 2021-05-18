@@ -49,7 +49,7 @@ $AZ_CHAR_TAGS =
 $AZ_HAS_TAG =
   Proc.new { |tag, char = Char.name| $AZ_CHAR_TAGS[char].include? tag }
 
-$AZ_PERSONAL_SCRIPTS =
+$AZ_PRE_HUNT_SCRIPTS =
   Hash[*$AZ_CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge(
     {
       'Azanoth' =>
@@ -68,6 +68,24 @@ $AZ_PERSONAL_SCRIPTS =
             fput 'cman surge'
           end
           Spell[1608].cast
+        end
+    }
+  )
+
+$AZ_POST_HUNT_SCRIPTS =
+  Hash[*$AZ_CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge(
+    {
+      'Gherraltis' =>
+        Proc.new do
+          fput "gird"
+          if GameObj.right_hand.noun.nil?
+            echo "Failed to find weapon to beseech"
+          else
+            wait_while { checkmana < 100 }
+            fput "prep 1615"
+            fput "infuse my #{GameObj.right_hand.noun}"
+            fput "beseech #{GameObj.right_hand.noun} ignite"
+          end
         end
     }
   )
