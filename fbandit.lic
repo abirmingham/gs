@@ -31,13 +31,19 @@ Script.running.each { |x| x.kill unless x == Script.current }
 waitrt?
 fput 'stance def' if stance != 'defensive'
 
+# XXX: I think this bug is fixed, (GameObj.pcs wasn't up-to-date) but printing debug info for now anyway
+echo "queue fbandit?, #{[Room.current.id, rest.include?(Room.current.id), group?]}"
 if !rest.include? Room.current.id
   if !group?
     # If I'm not at rest, trigger fbandit on followers
     # (if I am at rest, they probably already did it and
     #  this is being triggered manually)
+    echo 'TRIGGERING START_SCRIPT fbandit ON FOLLOWERS'
     $AZ_CHARS.each do |char|
-      if Char.name != char && GameObj.pcs.any? { |pc| pc.noun == char }
+      if Char.name != char && [
+           *GameObj.pcs,
+           *AzLib::RoomInfo.followers
+         ].any? { |pc| pc.noun == char }
         ACTIONS.queue_action char, 'start-script', 'fbandit'
       end
     end
@@ -143,7 +149,6 @@ until Room.current.id == rest_room
 end
 
 $AZ_POST_HUNT_SCRIPTS[Char.name].call
-
 
 join_resting_group_leader
 do_client ';magic'

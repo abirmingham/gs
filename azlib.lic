@@ -17,7 +17,6 @@ $AZ_TAG_LOW_BOUNTY_PRIORITY = 'low_bounty_priority'
 $AZ_TAG_RUBS_WEAK_BROOCH = 'rubs_weak_brooch'
 $AZ_TAG_CASTS_SHORT_BUFFS = 'casts_short_buffs'
 $AZ_TAG_RECEIVES_515 = 'receives_515'
-$AZ_TAG_CASTS_108 = 'casts_108' # This is dangerous! Don't use on PCs with prep/cast damage spell.
 $AZ_CHAR_TAGS =
   Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
     {
@@ -41,11 +40,10 @@ $AZ_CHAR_TAGS =
             $AZ_TAG_RESTING_GROUP_LEADER,
             $AZ_TAG_CASTS_SHORT_BUFFS,
             $AZ_TAG_WAGGLES_OTHERS,
-            $AZ_TAG_RECEIVES_515,
-            $AZ_TAG_CASTS_108
+            $AZ_TAG_RECEIVES_515
           ]
         ),
-      'Gherraltis' => Set.new([$AZ_TAG_CASTS_SHORT_BUFFS, $AZ_TAG_RECEIVES_515, $AZ_TAG_CASTS_108])
+      'Gherraltis' => Set.new([$AZ_TAG_CASTS_SHORT_BUFFS, $AZ_TAG_RECEIVES_515])
     }
   )
 $AZ_HAS_TAG =
@@ -69,10 +67,6 @@ $AZ_PRE_HUNT_SCRIPTS =
           if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
             fput 'cman surge'
           end
-          if !Spell[1617].active?
-            fput "whisper ooc aranthius ERROR: Zealot not active!!!"
-            Spell[1617].cast
-          end
           Spell[1608].cast
         end
     }
@@ -83,12 +77,12 @@ $AZ_POST_HUNT_SCRIPTS =
     {
       'Gherraltis' =>
         Proc.new do
-          fput "gird"
+          fput 'gird'
           if GameObj.right_hand.noun.nil?
-            echo "ERROR: Failed to find weapon to beseech"
+            echo 'ERROR: Failed to find weapon to beseech'
           else
             wait_while { checkmana < 100 }
-            fput "prep 1615"
+            fput 'prep 1615'
             fput "infuse my #{GameObj.right_hand.noun}"
             fput "beseech #{GameObj.right_hand.noun} ignite"
           end
@@ -181,6 +175,10 @@ module AzLib
       @@room_info_mu.synchronize { @@room_info_snap.clone }
     end
 
+    def self.followers
+      @@room_info_mu.synchronize { @@room_info_snap.followers }
+    end
+
     def self.wait_for_room_change
       @@room_info_mu.synchronize do
         start = @@room_info_snap.count
@@ -212,6 +210,7 @@ module AzLib
           @@room_info.count += 1
           @@room_info.hiders = false
           @@room_info.other_pcs = []
+          @@room_info.followers = []
         elsif @@room_info_snap.count != @@room_info.count
           if server_string =~ /obvious signs of someone hiding/
             @@room_info.hiders = true
@@ -336,7 +335,59 @@ $AZ_BANDIT_ATTACK =
     i = -1
     while true
       i = i + 1
+      raise 'DEAD!' if checkdead
       fput 'stand' if !standing?
+
+      # update bounty count
+      bounty_text = bounty?
+      if last_bounty_text != bounty_text
+        new_count = 100
+        if bounty_text =~ $AZ_BOUNTY_PATTERN_FINISHED
+          new_count = 0
+        elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
+          new_count = $1.to_i
+        end
+        $AZ_REMOTE['bandits'].set_count Char.name, new_count
+        last_bounty_text = bounty_text
+      end
+
+      if Char.prof == 'Bard'
+        trapped = false
+        while line = get?
+          if line =~ /^Suddenly, a carefully concealed net/ ||
+               line =~ /^Suddenly, you hear a soft/ ||
+               line =~ /a well concealed shallow pit of spikes!/
+            trapped = true
+          end
+          sleep 0.25 if line =~ /stunned!/ # yield
+        end
+        friend_in_need =
+          GameObj.pcs.find do |x|
+            $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stun/i
+          end
+        if (checkstunned || friend_in_need || trapped) && checkmana.to_i > 80
+          waitcastrt?
+          fput 'shout 1040'
+          waitcastrt?
+          next
+        end
+      end
+
+      # yield if stunned
+      if checkstunned
+        sleep 0.25
+        next
+      end
+
+      # unstun others
+      stunnedpc =
+        GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /stunned/ }
+      if stunnedpc && checkmana.to_i > 30
+        waitcastrt?
+        Spell[108].cast stunnedpc
+        waitcastrt?
+        next
+      end
 
       # defer to others?
       bounty_counts = $AZ_REMOTE['bandits'].get_counts
@@ -391,22 +442,6 @@ $AZ_BANDIT_ATTACK =
       # yield
       rt = [checkrt, checkcastrt].max
       sleep(rt > 2 ? rt - 1 : 0.25)
-
-      # update bounty count
-      bounty_text = bounty?
-      if last_bounty_text != bounty_text
-        new_count = 100
-        if bounty_text =~ $AZ_BOUNTY_PATTERN_FINISHED
-          new_count = 0
-        elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
-          new_count = $1.to_i
-        end
-        $AZ_REMOTE['bandits'].set_count Char.name, new_count
-        last_bounty_text = bounty_text
-      end
-
-      # yield
-      sleep 0.25
     end
   end
 

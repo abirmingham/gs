@@ -20,7 +20,7 @@ loop do
     Gtk.queue do
       myWindow = Gtk::Window.new
       myWindow.title = Char.name + ' interaction!'
-      myWindow.set_size_request 3050, 1050
+      myWindow.set_size_request 1500, 1050
       label = Gtk::Label.new Char.name + ' interaction!'
       label.set_markup '<span foreground="red" size="xx-large">' + Char.name +
                          ' interaction!</span> ' + (line_matched || '') +

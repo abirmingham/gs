@@ -52,5 +52,4 @@ elsif Char.prof == 'Paladin'
   start_script 'treim', ['attack']
 end
 
-
 start_script 'astrolabe'

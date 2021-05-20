@@ -240,7 +240,10 @@ module AzBandit
 
     while Room.current.id == start_room_id
       # Return if we no longer need to move
-      return if AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0 && !force_movement
+      if AzLib::RoomInfo.room_owned? && AzLib::Targets.bandits.length > 0 &&
+           !force_movement
+        return
+      end
 
       # Move
       fput 'stand' until standing?
@@ -299,7 +302,12 @@ module AzBandit
       raise 'error in the map database'
     end
     room_info = AzLib::RoomInfo.wait_for_room_change
-    echo 'WARNING: step2 timed out' if !room_info
+    if !room_info
+      echo 'WARNING: step2 timed out. Statuses:'
+      echo GameObj.pcs.reject { |x|
+             x.status.nil? || x.status == ''
+           }.collect { |x| "#{x.noun}: #{x.status}" }.join(', ') # TODO remove me
+    end
   end
 
   def self.retrieve_stragglers(prev_room_id)
