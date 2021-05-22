@@ -62,6 +62,7 @@ $AZ_PRE_HUNT_SCRIPTS =
           end
           Script.start 'Azanoth-506'
         end,
+      'Idios' => Proc.new { Script.start 'song-manager' },
       'Gherraltis' =>
         Proc.new do
           if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
@@ -110,7 +111,7 @@ $AZ_ATTACK_ROUTINE = {
     end,
   'Bard' =>
     Proc.new do |targets|
-      put 'incant 1030' if checkmana >= 60
+      put 'incant 1030' if checkmana >= 80
       fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
     end,
   'Paladin' =>
@@ -125,6 +126,7 @@ $AZ_ATTACK_ROUTINE = {
         put 'shield strike' if checkstamina >= 30
         put 'kill' if checkstamina < 30
       end
+      fput 'sym mana' if checkmana < 250 && !Spell[9048].active?
     end,
   'Empath' =>
     Proc.new do |targets|
@@ -239,11 +241,15 @@ module AzLib
     @@targets_mu = Mutex.new
     @@targets_cv = ConditionVariable.new
     @@targets_snap = @@targets.clone
+    @@targets_poofed = Set.new
 
     def self.targets
       @@targets_mu.synchronize do
         # return dialog_data and game_obj together deduped on id
-        [*@@targets_snap.dialog_data, *@@targets_snap.game_obj].uniq do |x|
+        [
+          *@@targets_snap.dialog_data.reject { |x| @@targets_poofed.include? x.id },
+          *@@targets_snap.game_obj
+        ].uniq do |x|
           x.id
         end
       end
@@ -254,6 +260,14 @@ module AzLib
         !npc.name.start_with?('animated ') &&
           (npc.type =~ /bandit/ || $AZ_BANDIT_TARGET_SET.include?(npc.noun))
       end
+    end
+
+    def self.mark_npc_poofed(npc)
+      echo "Uh oh. Something went wrong. Marking NPC poofed: #{npc.id}"
+      if npc.status != 'gone'
+        echo "WARNING: npc marked poofed but status is not 'gone': #{npc.status}"
+      end
+      @@targets_mu.synchronize { @@targets_poofed.add npc.id }
     end
 
     DownstreamHook.add(
@@ -276,6 +290,7 @@ module AzLib
                                          )
             end
           @@targets_mu.synchronize do
+            @@targets_poofed = Set.new
             @@targets_snap = @@targets.clone
             @@targets_cv.broadcast
           end
@@ -359,13 +374,12 @@ $AZ_BANDIT_ATTACK =
                line =~ /a well concealed shallow pit of spikes!/
             trapped = true
           end
-          sleep 0.25 if line =~ /stunned!/ # yield
         end
         friend_in_need =
           GameObj.pcs.find do |x|
             $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stun/i
           end
-        if (checkstunned || friend_in_need || trapped) && checkmana.to_i > 80
+        if (checkstunned || friend_in_need || trapped) && checkmana.to_i > 100
           waitcastrt?
           fput 'shout 1040'
           waitcastrt?
@@ -382,7 +396,8 @@ $AZ_BANDIT_ATTACK =
       # unstun others
       stunnedpc =
         GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /stunned/ }
-      if stunnedpc && checkmana.to_i > 30
+      if Spell[108].known? && Char.prof != 'Paladin' && stunnedpc &&
+           checkmana.to_i > 30
         waitcastrt?
         Spell[108].cast stunnedpc
         waitcastrt?
@@ -463,7 +478,7 @@ $AZ_RUN_CMD =
         result =
           dothistimeout 'ask luc to remove',
                         2,
-                        /I have removed you from your current assignment/
+                        /You haven't been assigned any task|I have removed you from your current assignment/
         break if result
         sleep 0.25
       end

@@ -31,6 +31,7 @@ module AzBandit
   @MY_CHARS_HACK = defined?($AZ_CHARS) ? $AZ_CHARS : []
 
   # dynamic variables
+  @poofed_bandits = []
   @grouplist = []
   @groupset = {}
   @bounty_text = ''
@@ -424,9 +425,10 @@ module AzBandit
            game_obj_bandits.length == 0 &&
              Time.now.to_i > (start_time + timeout_time)
          )
+        AzLib::Targets.bandits.each do |x|
+          AzLib::Targets.mark_npc_poofed x
+        end
         echo 'wait_for_battle timed out'
-        echo AzLib::Targets.bandits
-        echo AzLib::Targets.bandits.collect { |x| x.status }
         return true
       end
 
