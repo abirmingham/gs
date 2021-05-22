@@ -247,11 +247,11 @@ module AzLib
       @@targets_mu.synchronize do
         # return dialog_data and game_obj together deduped on id
         [
-          *@@targets_snap.dialog_data.reject { |x| @@targets_poofed.include? x.id },
+          *@@targets_snap.dialog_data.reject do |x|
+            @@targets_poofed.include? x.id
+          end,
           *@@targets_snap.game_obj
-        ].uniq do |x|
-          x.id
-        end
+        ].uniq { |x| x.id }
       end
     end
 

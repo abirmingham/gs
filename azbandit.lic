@@ -425,9 +425,7 @@ module AzBandit
            game_obj_bandits.length == 0 &&
              Time.now.to_i > (start_time + timeout_time)
          )
-        AzLib::Targets.bandits.each do |x|
-          AzLib::Targets.mark_npc_poofed x
-        end
+        AzLib::Targets.bandits.each { |x| AzLib::Targets.mark_npc_poofed x }
         echo 'wait_for_battle timed out'
         return true
       end
