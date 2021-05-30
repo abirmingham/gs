@@ -12,7 +12,7 @@ loop do
   unless checkdead
     stunnedfriend =
       GameObj.pcs.find do |x|
-        $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stun/i
+        AzConfig::CHARS_SET[x.noun] && x.status =~ /lying|stun/i
       end
 
     if (checkstunned || stunnedfriend || trapped) && checkmana.to_i > 80

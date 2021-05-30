@@ -4,7 +4,8 @@ put 'gird'
 
 # wait for bounty
 loop do
-  if bounty? =~ $AZ_BOUNTY_PATTERN_NUM || bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+  if bounty? =~ AzLib::Bandits::BOUNTY_PATTERN_NUM ||
+       bounty? =~ AzLib::Bandits::BOUNTY_PATTERN_FINISHED
     break
   end
   echo 'Waiting for bounty'
@@ -12,82 +13,28 @@ loop do
 end
 
 # send count to remote
-if bounty? =~ $AZ_BOUNTY_PATTERN_FINISHED
+if bounty? =~ AzLib::Bandits::BOUNTY_PATTERN_FINISHED
   # this should only happen if we killed the script and restarted it
   # mid-run, causing us to skip an update.
-  $AZ_REMOTE['bandits'].set_count(Char.name, 0)
-elsif bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
-  $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
+  AzLib::Remote::RAW['bandits'].set_count(Char.name, 0)
+elsif bounty? =~ AzLib::Bandits::BOUNTY_PATTERN_NUM && $1.to_i
+  AzLib::Remote::RAW['bandits'].set_count(Char.name, $1.to_i)
   echo "Set count #{$1}"
 else
   throw 'Failed to find bounty count'
 end
 
-# brooch stuff
-if $AZ_HAS_TAG.call $AZ_TAG_RUBS_WEAK_BROOCH
-  if percentmind >= 62
-    Script.run 'turnbrooch', 'red 2'
-    Script.run 'turnbrooch', 'blue 1'
-  end
-end
-
-# start global scripts
+# pre-hunt
 Script.start 'standgroup'
-if Char.name != 'Aranthius'
-  Script.start 'spellmerge'
-  Script.start 'briefcombat'
-end
-
-# start society scripts
-if Society.status == 'Order of Voln'
-  Script.start 'symbolz'
-elsif Society.status == 'Council of Light'
-  Script.start 'isigns'
-elsif Society.status == 'Guardians of Sunfist'
-  Script.start 'isigils'
-end
-
-# start profession scripts
-if Char.prof == 'Wizard'
-  Spell[515].cast
-  Script.start 'rapid'
-elsif Char.prof == 'Empath'
-  # Script.start 'empath-surge'
-  echo 'trying out something different than empath-surge'
-  # fix-vocal-cords and shattered_empath start
-  # at launch and have hide_me
-elsif Char.prof == 'Bard'
-  # Script.start 'bard-unstun'
-  Script.start 'tonis'
-end
-
-# group buffs
-if $AZ_HAS_TAG.call $AZ_TAG_CASTS_SHORT_BUFFS
-  if Char.prof == 'Empath'
-    Spell[211].cast
-    Spell[215].cast
-  elsif Char.prof == 'Wizard'
-    checkpcs.each do |x|
-      Spell[515].cast x if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_515, x
-    end
-  end
-end
-
-$AZ_PRE_HUNT_SCRIPTS[Char.name].call
+Script.start AzConfig::SOCIETY_SCRIPTS[Society.status]
+AzConfig::PRE_HUNT[Char.name].call
 
 # wait for group registration
 loop do
-  break if $AZ_REMOTE['bandits'].has_group_registered?
+  break if AzLib::Remote::RAW['bandits'].has_group_registered?
   sleep 1
   echo 'Waiting for group registration'
 end
 
 # start attack routine
-attack_routine =
-  if $AZ_ATTACK_ROUTINE[Char.name]
-    $AZ_ATTACK_ROUTINE[Char.name]
-  else
-    $AZ_ATTACK_ROUTINE[Char.prof]
-  end
-raise 'Failed to find attack routine' if !attack_routine
-$AZ_BANDIT_ATTACK.call attack_routine
+AzLib::Bandits.main

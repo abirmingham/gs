@@ -1,5 +1,5 @@
-if bounty? !~ $AZ_BOUNTY_PATTERN_FINISHED &&
-     !$AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY)
+if bounty? !~ AzLib::Bandits::BOUNTY_PATTERN_FINISHED &&
+     !AzConfig.has_tag?(:LOW_BOUNTY_PRIORITY)
   raise "You aren't ready to finish"
 end
 
@@ -7,20 +7,9 @@ taskfinish = [420, 1957, 28_978]
 taskfinish_match = /sentry|guard|sergeant/
 rest = [1844, 28_813, 29_260]
 
-def turn_off_enh()
-  result = ''
-  loop do
-    result =
-      dothistimeout 'inv enh off',
-                    2,
-                    /You already are not accepting|You are no longer accepting the benefits/
-    return if result
-  end
-end
-
 def join_resting_group_leader()
   leader =
-    $AZ_CHARS.find { |x| $AZ_HAS_TAG.call $AZ_TAG_RESTING_GROUP_LEADER, x }
+    AzConfig::CHARS.find { |x| AzConfig.has_tag? :RESTING_GROUP_LEADER, x }
   return if Char.name == leader
   sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == leader }
   wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } }
@@ -31,20 +20,20 @@ Script.running.each { |x| x.kill unless x == Script.current }
 waitrt?
 fput 'stance def' if stance != 'defensive'
 
-# XXX: I think this bug is fixed, (GameObj.pcs wasn't up-to-date) but printing debug info for now anyway
-echo "queue fbandit?, #{[Room.current.id, rest.include?(Room.current.id), group?]}"
 if !rest.include? Room.current.id
   if !group?
     # If I'm not at rest, trigger fbandit on followers
     # (if I am at rest, they probably already did it and
     #  this is being triggered manually)
     echo 'TRIGGERING START_SCRIPT fbandit ON FOLLOWERS'
-    $AZ_CHARS.each do |char|
+    AzConfig::CHARS.each do |char|
       if Char.name != char && [
            *GameObj.pcs,
            *AzLib::RoomInfo.followers
          ].any? { |pc| pc.noun == char }
-        ACTIONS.queue_action char, 'start-script', 'fbandit'
+        AzLib::Remote::RAW['actions'].queue_action char,
+                                                   'start-script',
+                                                   'fbandit'
       end
     end
   end
@@ -97,7 +86,7 @@ if bounty? =~ /^You (have )?succeeded/
   echo "Experience gained: #{after_exp - before_exp}"
 end
 
-if $AZ_HAS_TAG.call $AZ_TAG_SELLS_GEMS
+if AzConfig.has_tag? :SELLS_GEMS
   fput 'store all'
   fput 'stow all'
   Script.run('go2', 'gemshop')
@@ -117,22 +106,13 @@ Script.run('go2', rest_room.to_s + ' --disable-confirm')
 # support
 Script.run('waggle')
 
-if $AZ_HAS_TAG.call $AZ_TAG_GIVES_ARMOR_SUPPORT
-  fput 'armor support'
-  $AZ_CHARS.each do |x|
-    if $AZ_HAS_TAG.call $AZ_TAG_RECEIVES_ARMOR_SUPPORT, x
-      fput "armor support #{x}" if checkpcs.include? x
-    end
-  end
-end
-
-if $AZ_HAS_TAG.call $AZ_TAG_WAGGLES_OTHERS
-  $AZ_CHARS.each { |x| Script.run 'waggle', x if checkpcs.include? x }
+if AzConfig.has_tag? :WAGGLES_OTHERS
+  AzConfig::CHARS.each { |x| Script.run 'waggle', x if checkpcs.include? x }
   Spell[911].cast if Char.prof == 'wizard' && Spell[911].affordable?
 end
 
 join_resting_group_leader if Spell[9003].active?
-if $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
+if AzConfig.has_tag? :LOW_BOUNTY_PRIORITY
   # always turn in - need to reset count so that spawns
   # keep coming and so that she has a chance to ever finish
   # (which won't happen if their number is low)
@@ -148,7 +128,7 @@ until Room.current.id == rest_room
   Script.run('go2', rest_room.to_s + ' --disable-confirm')
 end
 
-$AZ_POST_HUNT_SCRIPTS[Char.name].call
+AzConfig::POST_HUNT[Char.name].call
 
 join_resting_group_leader
 do_client ';magic'

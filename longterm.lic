@@ -1,0 +1,15 @@
+# Boosts baby!
+# 
+# Version 0.1
+# Tags: LTE, XP, EXP, Longterm, long-term
+# Author: Glaves
+
+
+loop{
+    wait_until { percentmind >= 62 }
+    waitrt?
+    waitcastrt?
+    fput "boost longt"
+
+    sleep 10
+}

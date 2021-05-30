@@ -1,168 +1,253 @@
 require 'drb/drb'
 hide_me
 
-DRb.start_service
-$AZ_REMOTE = DRbObject.new_with_uri('druby://localhost:9999')
+module AzConfig # CHARACTER CONFIG REQUIRED HERE
+  CHARS = %w[Azanoth Aranthius Idios Gossan Gherraltis]
+  CHARS_SET = CHARS.collect { |char| [char, true] }.to_h
+  CHAR_TAGS =
+    Hash[*AzConfig::CHARS.collect { |x| [x, Set.new] }.flatten].merge(
+      {
+        'Aranthius' =>
+          Set.new(%i[WAGGLES_OTHERS RECEIVES_ARMOR_SUPPORT SELLS_GEMS]),
+        'Gossan' => Set.new(%i[WAGGLES_OTHERS RECEIVES_515]),
+        'Gherraltis' =>
+          Set.new(%i[LOW_BOUNTY_PRIORITY RECEIVES_515 RESTING_GROUP_LEADER])
+      }
+    )
+  ALL_TAGS = Set.new(CHAR_TAGS.values.collect { |x| x.to_a }.flatten)
 
-$AZ_CHARS = %w[Azanoth Aranthius Idios Gossan Gherraltis] # Helsfeld
-$AZ_CHARS_REGEX = /#{$AZ_CHARS.join('|')}/
-$AZ_CHARS_SET = $AZ_CHARS.collect { |char| [char, true] }.to_h
+  def self.has_tag?(tag, char = Char.name)
+    raise "ERROR: UNRECOGNIZED TAG: #{tag}" if !ALL_TAGS.include? tag
+    CHAR_TAGS[char].include? tag
+  end
 
-$AZ_TAG_SELLS_GEMS = 'sells_gems'
-$AZ_TAG_GIVES_ARMOR_SUPPORT = 'gives_armor_support'
-$AZ_TAG_RECEIVES_ARMOR_SUPPORT = 'receives_armor_support'
-$AZ_TAG_WAGGLES_OTHERS = 'waggles_others'
-$AZ_TAG_RESTING_GROUP_LEADER = 'resting_group_leader'
-$AZ_TAG_LOW_BOUNTY_PRIORITY = 'low_bounty_priority'
-$AZ_TAG_RUBS_WEAK_BROOCH = 'rubs_weak_brooch'
-$AZ_TAG_CASTS_SHORT_BUFFS = 'casts_short_buffs'
-$AZ_TAG_RECEIVES_515 = 'receives_515'
-$AZ_CHAR_TAGS =
-  Hash[*$AZ_CHARS.collect { |x| [x, Set.new] }.flatten].merge(
-    {
-      'Azanoth' => Set.new([$AZ_TAG_GIVES_ARMOR_SUPPORT]),
-      'Aranthius' =>
-        Set.new(
-          [
-            $AZ_TAG_RUBS_WEAK_BROOCH,
-            $AZ_TAG_RECEIVES_ARMOR_SUPPORT,
-            $AZ_TAG_WAGGLES_OTHERS,
-            $AZ_TAG_CASTS_SHORT_BUFFS,
-            $AZ_TAG_SELLS_GEMS
-          ]
-        ),
-      'Idios' => Set.new([$AZ_TAG_RUBS_WEAK_BROOCH]),
-      'Gossan' =>
-        Set.new(
-          [
-            $AZ_TAG_LOW_BOUNTY_PRIORITY,
-            $AZ_TAG_RUBS_WEAK_BROOCH,
-            $AZ_TAG_RESTING_GROUP_LEADER,
-            $AZ_TAG_CASTS_SHORT_BUFFS,
-            $AZ_TAG_WAGGLES_OTHERS,
-            $AZ_TAG_RECEIVES_515
-          ]
-        ),
-      'Gherraltis' => Set.new([$AZ_TAG_CASTS_SHORT_BUFFS, $AZ_TAG_RECEIVES_515])
-    }
-  )
-$AZ_HAS_TAG =
-  Proc.new { |tag, char = Char.name| $AZ_CHAR_TAGS[char].include? tag }
+  def self.rub_weak_brooch()
+    return if percentmind < 62
+    Script.run 'turnbrooch', 'red 2'
+    Script.run 'turnbrooch', 'blue 1'
+  end
 
-$AZ_PRE_HUNT_SCRIPTS =
-  Hash[*$AZ_CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge(
-    {
-      'Azanoth' =>
-        Proc.new do
-          # fput 'cman dervish'
-          fput 'war shout'
-          waitrt?
-          if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-            fput 'cman surge'
+  SOCIETY_SCRIPTS = {
+    'Order of Voln' => 'symbolz',
+    'Council of Light' => 'isigns',
+    'Guardians of Sunfist' => 'isigils'
+  }
+
+  PRE_HUNT =
+    Hash[*AzConfig::CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge(
+      {
+        'Azanoth' =>
+          Proc.new do
+            # don't use cman dervish - it prevents others timely tagging
+            fput 'war shout'
+            waitrt?
+            if !Spell[9605].active? && !Spell[9606].active? &&
+                 checkstamina >= 30
+              fput 'cman surge'
+            end
+            Script.start 'Azanoth-506'
+          end,
+        'Aranthius' =>
+          Proc.new do
+            rub_weak_brooch
+            Spell[515].cast
+            Script.start 'rapid'
+            checkpcs.each do |x|
+              Spell[515].cast x if AzConfig.has_tag?(:RECEIVES_515, x)
+            end
+          end,
+        'Idios' =>
+          Proc.new do
+            rub_weak_brooch
+            Script.start 'song-manager'
+            Script.start 'tonis'
+          end,
+        'Gossan' =>
+          Proc.new do
+            rub_weak_brooch
+            Spell[211].cast
+            Spell[215].cast
+          end,
+        'Gherraltis' =>
+          Proc.new do
+            if !Spell[9605].active? && !Spell[9606].active? &&
+                 checkstamina >= 30
+              fput 'cman surge'
+            end
+            Spell[1608].cast
           end
-          Script.start 'Azanoth-506'
-        end,
-      'Idios' => Proc.new { Script.start 'song-manager' },
-      'Gherraltis' =>
-        Proc.new do
-          if !Spell[9605].active? && !Spell[9606].active? && checkstamina >= 30
-            fput 'cman surge'
-          end
-          Spell[1608].cast
+      }
+    )
+
+  SWING = {
+    # POACH WARNING:
+    # Don't use fput for attacks or any other blocking actions
+
+    # THROTTLE WARNING:
+    # Don't use AoE - it messes with the intelligent tagging behavior
+    'Azanoth' =>
+      Proc.new do |targets|
+        if !Spell[506].active?
+          echo 'NO 506!!!!!'
+          sleep 1
+        else
+          put 'stance off'
+          put 'ambush'
         end
-    }
-  )
-
-$AZ_POST_HUNT_SCRIPTS =
-  Hash[*$AZ_CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge(
-    {
-      'Gherraltis' =>
-        Proc.new do
-          fput 'gird'
-          if GameObj.right_hand.noun.nil?
-            echo 'ERROR: Failed to find weapon to beseech'
-          else
-            wait_while { checkmana < 100 }
-            fput 'prep 1615'
-            fput "infuse my #{GameObj.right_hand.noun}"
-            fput "beseech #{GameObj.right_hand.noun} ignite"
-          end
+      end,
+    'Wizard' =>
+      Proc.new do |targets|
+        put 'stance off'
+        put 'incant 903' if checkmana >= 20
+      end,
+    'Bard' =>
+      Proc.new do |targets|
+        put 'incant 1030' if checkmana >= 80
+        fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
+      end,
+    'Paladin' =>
+      Proc.new do |targets, all_tagged|
+        if checkmana >= 40 && all_tagged && targets.any? do |x|
+             !x.status || x.status == 'gone'
+           end
+          put 'prep 1630'
+          put 'cast'
+        else
+          put 'stance off'
+          put 'shield strike' if checkstamina >= 30
+          put 'kill' if checkstamina < 30
         end
-    }
-  )
+        fput 'sym mana' if checkmana < 250 && !Spell[9048].active?
+      end,
+    'Empath' =>
+      Proc.new do |targets|
+        if checkmana >= 20
+          put 'incant 1115'
+        elsif checkmana >= 10
+          put 'incant 1106'
+        else
+          echo 'WARNING: out of mana'
+        end
+      end
+  }
 
-# Poach Warning:
-# Don't use fput for attacks or other blocking actions
-$AZ_ATTACK_ROUTINE = {
-  'Azanoth' =>
-    Proc.new do |targets|
-      if !Spell[506].active?
-        echo 'NO 506!!!!!'
-        sleep 1
-      else
-        put 'stance off'
-        put 'ambush'
-      end
-    end,
-  'Wizard' =>
-    Proc.new do |targets|
-      put 'stance off'
-      put 'incant 903' if checkmana >= 20
-    end,
-  'Bard' =>
-    Proc.new do |targets|
-      put 'incant 1030' if checkmana >= 80
-      fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
-    end,
-  'Paladin' =>
-    Proc.new do |targets, all_tagged|
-      if checkmana >= 40 && all_tagged && targets.any? do |x|
-           !x.status || x.status == 'gone'
-         end
-        put 'prep 1630'
-        put 'cast'
-      else
-        put 'stance off'
-        put 'shield strike' if checkstamina >= 30
-        put 'kill' if checkstamina < 30
-      end
-      fput 'sym mana' if checkmana < 250 && !Spell[9048].active?
-    end,
-  'Empath' =>
-    Proc.new do |targets|
-      if checkmana >= 20
-        put 'incant 1115'
-      elsif checkmana >= 10
-        put 'incant 1106'
-      else
-        echo 'WARNING: out of mana'
+  POST_HUNT =
+    Hash[*AzConfig::CHARS.collect { |x| [x, Proc.new {}] }.flatten].merge(
+      {
+        'Azanoth' =>
+          Proc.new do
+            fput 'armor support'
+            CHARS.each do |x|
+              if has_tag?(:RECEIVES_ARMOR_SUPPORT, x) && checkpcs.include?(x)
+                fput "armor support #{x}"
+              end
+            end
+          end,
+        'Gherraltis' =>
+          Proc.new do
+            fput 'gird'
+            if GameObj.right_hand.noun.nil?
+              echo 'ERROR: Failed to find weapon to beseech'
+            else
+              wait_while { checkmana < 100 }
+              fput 'prep 1615'
+              fput "infuse my #{GameObj.right_hand.noun}"
+              fput "beseech #{GameObj.right_hand.noun} ignite"
+            end
+          end
+      }
+    )
+end
+
+module AzLib
+  DRb.start_service
+
+  module Remote
+    RAW = DRbObject.new_with_uri('druby://localhost:9999')
+
+    def self.send_action_sync(char, cmd, arg = '')
+      echo "Queueing action - #{char} #{cmd} #{arg}"
+      id = RAW['actions'].queue_action char, cmd, arg
+      loop do
+        sleep 0.25
+        action = RAW['actions'].get_action char, id
+        throw 'Failed to get expected action' if !action
+        if action['done']
+          RAW['actions'].clear_action char, id
+          throw "ACTION HAS ERROR: #{action['error']}" if action['error']
+          return
+        end
       end
     end
-}
 
-$AZ_BANDIT_TARGET_SET = {}
-'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'
-  .split(' ')
-  .each { |noun| $AZ_BANDIT_TARGET_SET[noun] = true }
-$AZ_BOUNTY_PATTERN_NUM = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?.*\s(?:near|between|under|\.).* (\d+) (?:more )?of them/
-$AZ_BOUNTY_PATTERN_FINISHED = /^You (have )?succeeded/
+    def self.execute_action(cmd, arg)
+      echo "execute_action(#{cmd}, #{arg})"
+      bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
+      if cmd == 'exchange-unless' && arg.length > 0
+        if bounty? =~ bounty_re
+          if $1 == arg
+            echo 'ALREADY HAVE REQUESTED LOCATION'
+            Script.start 'prep' # also prep for bandits
+            return true
+          end
+        end
+        wait_while { Spell[9056].active? }
+        put 'ask luc to remove'
+        loop do
+          result =
+            dothistimeout 'ask luc to remove',
+                          2,
+                          /You haven't been assigned any task|I have removed you from your current assignment/
+          break if result
+          sleep 0.25
+        end
+        Script.start 'prep' # also prep for bandits
+        return true
+      elsif cmd == 'start-script' && arg.length > 0
+        Script.start(arg) if !running? arg
+        return true
+      elsif cmd == 'stop-script' && arg.length > 0
+        Script.kill(arg) if running? arg
+        return true
+      elsif cmd == 'wait_groupbounty_cooldown_unless' && arg.length > 0
+        has_that_bounty = bounty? =~ bounty_re && $1 == arg
+        if Spell[9056].active? && !has_that_bounty
+          AzConfig::CHARS.each do |x|
+            if Char.name != x
+              fput "whisper ooc #{x} Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
+            end
+          end
+        end
+        wait_while { Spell[9056].active? } unless has_that_bounty
+        return true
+      elsif cmd == 'ungroup'
+        Script.running.each { |x| x.kill }
+        fput 'disband'
+        fput 'leave'
+        fput 'group open'
+        return true
+      end
+      echo 'SWITCH FALL THROUGH'
+      return false
+    end
 
-$AZ_SEND_ACTION_SYNC =
-  lambda do |char, cmd, arg = ''|
-    echo "Queueing action - #{char} #{cmd} #{arg}"
-    ACTIONS = $AZ_REMOTE['actions']
-    id = ACTIONS.queue_action char, cmd, arg
-    loop do
-      sleep 0.25
-      action = ACTIONS.get_action char, id
-      throw 'Failed to get expected action' if !action
-      if action['done']
-        ACTIONS.clear_action char, id
-        throw "ACTION HAS ERROR: #{action['error']}" if action['error']
-        return
+    def self.do_action_loop()
+      loop do
+        actions =
+          (RAW['actions'].get_actions(Char.name) || []).reject { |x| x['done'] }
+        actions.each do |action|
+          success = execute_action(action['cmd'], action['args'])
+          RAW['actions'].mark_action_done(
+            Char.name,
+            action['id'],
+            success ? nil : 'FAILED RUN_CMD'
+          )
+        end
+        sleep 1
       end
     end
   end
+end
 
 module AzLib
   module RoomInfo
@@ -197,7 +282,7 @@ module AzLib
       end
     end
 
-    def self.room_owned?(group = $AZ_CHARS_SET)
+    def self.room_owned?(group = AzConfig::CHARS_SET)
       @@room_info_mu.synchronize do
         ri = @@room_info_snap
         ri.other_pcs.find_all { |pc| !group.include?(pc.noun) }.empty? &&
@@ -234,7 +319,9 @@ module AzLib
     echo "Added #{@@HOOK_NAME} hook"
     before_dying { DownstreamHook.remove @@HOOK_NAME }
   end
+end
 
+module AzLib
   module Targets
     @@HOOK_NAME = self.to_s
     @@targets ||= OpenStruct.new(dialog_data: [], game_obj: [])
@@ -258,7 +345,10 @@ module AzLib
     def self.bandits
       targets.select do |npc|
         !npc.name.start_with?('animated ') &&
-          (npc.type =~ /bandit/ || $AZ_BANDIT_TARGET_SET.include?(npc.noun))
+          (
+            npc.type =~ /bandit/ ||
+              AzLib::Bandits::TARGET_SET.include?(npc.noun)
+          )
       end
     end
 
@@ -309,11 +399,154 @@ module AzLib
     before_dying { DownstreamHook.remove @@HOOK_NAME = self.to_s }
   end
 
-  # misc methods
   def self.get_gameobjs(line)
     line
       .scan(%r{<a exist="(-?\d+)" noun="([^"]+)">([^<]+)</a>})
       .map { |m| GameObj.new(m[0], m[1], m[2]) }
+  end
+end
+
+module AzLib
+  module Bandits
+    TARGET_SET = {}
+    'rogue marauder thief mugger bandit brigand robber outlaw thug highwayman'
+      .split(' ')
+      .each { |noun| TARGET_SET[noun] = true }
+    BOUNTY_PATTERN_NUM = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?.*\s(?:near|between|under|\.).* (\d+) (?:more )?of them/
+    BOUNTY_PATTERN_FINISHED = /^You (have )?succeeded/
+
+    def self.main()
+      attack_routine =
+        if AzConfig::SWING[Char.name]
+          AzConfig::SWING[Char.name]
+        else
+          AzConfig::SWING[Char.prof]
+        end
+      raise 'Failed to find attack routine' if !attack_routine
+
+      # state
+      last_bounty_text = ''
+      original_bounty_counts = AzLib::Remote::RAW['bandits'].get_counts
+      echo "original_bounty_counts: #{original_bounty_counts}"
+      i_am_lower_priority = AzConfig.has_tag? :LOW_BOUNTY_PRIORITY
+
+      # main loop
+      echo 'Main attack loop'
+      i = -1
+      while true
+        i = i + 1
+        raise 'DEAD!' if checkdead
+        fput 'stand' if !standing?
+
+        # update bounty count
+        bounty_text = bounty?
+        if last_bounty_text != bounty_text
+          new_count = 100
+          if bounty_text =~ BOUNTY_PATTERN_FINISHED
+            new_count = 0
+          elsif bounty_text =~ BOUNTY_PATTERN_NUM
+            new_count = $1.to_i
+          end
+          AzLib::Remote::RAW['bandits'].set_count Char.name, new_count
+          last_bounty_text = bounty_text
+        end
+
+        # shout 1040
+        if Char.prof == 'Bard'
+          trapped = false
+          while line = get?
+            if line =~ /^Suddenly, a carefully concealed net/ ||
+                 line =~ /^Suddenly, you hear a soft/ ||
+                 line =~ /a well concealed shallow pit of spikes!/
+              trapped = true
+            end
+          end
+          friend_in_need =
+            GameObj.pcs.find do |x|
+              AzConfig::CHARS_SET[x.noun] && x.status =~ /lying|stun/i
+            end
+          if (checkstunned || friend_in_need || trapped) && checkmana.to_i > 100
+            waitcastrt?
+            fput 'shout 1040'
+            waitcastrt?
+            next
+          end
+        end
+
+        # yield if stunned
+        if checkstunned
+          sleep 0.25
+          next
+        end
+
+        # cast 108
+        stunnedpc =
+          GameObj.pcs.find do |x|
+            AzConfig::CHARS_SET[x.noun] && x.status =~ /stunned/
+          end
+        if Spell[108].known? && Char.prof != 'Paladin' && stunnedpc &&
+             checkmana.to_i > 30
+          waitcastrt?
+          Spell[108].cast stunnedpc
+          waitcastrt?
+          next
+        end
+
+        # defer to others?
+        bounty_counts = AzLib::Remote::RAW['bandits'].get_counts
+        high_priority_counts =
+          bounty_counts.reject do |char|
+            AzConfig.has_tag? :LOW_BOUNTY_PRIORITY, char
+          end
+
+        defer = true
+        if i_am_lower_priority
+          # wait until I am last and all high-priority chars have tagged
+          defer =
+            high_priority_counts.any? do |char, their_count|
+              their_count > bounty_counts[Char.name] ||
+                their_count == original_bounty_counts[char]
+            end
+        else
+          defer =
+            high_priority_counts.any? do |char, their_count|
+              should_defer? Char.name,
+                            char,
+                            bounty_counts,
+                            original_bounty_counts
+            end
+        end
+
+        # identify targets
+        targets =
+          GameObj.npcs.select do |npc|
+            AzLib::Bandits::TARGET_SET[npc.noun] && npc.status != 'dead' &&
+              !npc.name.start_with?('animated ')
+          end
+
+        # chill or attack
+        room_owned = AzLib::RoomInfo.room_owned?
+        echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
+
+        if defer || !room_owned || targets.nil? || targets.length == 0
+          if checkcastrt == 0
+            fput 'stance def' if checkstance != 'defensive'
+          elsif checkstance != 'guarded'
+            fput 'stance def'
+          end
+        else
+          all_tagged =
+            high_priority_counts.all? do |char, their_count|
+              char == Char.name || their_count != original_bounty_counts[char]
+            end
+          attack_routine.call targets, all_tagged
+        end
+
+        # yield
+        rt = [checkrt, checkcastrt].max
+        sleep(rt > 2 ? rt - 1 : 0.25)
+      end
+    end
   end
 
   def self.should_defer?(a, b, current_counts, original_counts)
@@ -337,189 +570,4 @@ module AzLib
   end
 end
 
-$AZ_BANDIT_ATTACK =
-  Proc.new do |attack_routine|
-    # state
-    last_bounty_text = ''
-    original_bounty_counts = $AZ_REMOTE['bandits'].get_counts
-    echo "original_bounty_counts: #{original_bounty_counts}"
-    i_am_lower_priority = $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY
-
-    # main loop
-    echo 'Main attack loop'
-    i = -1
-    while true
-      i = i + 1
-      raise 'DEAD!' if checkdead
-      fput 'stand' if !standing?
-
-      # update bounty count
-      bounty_text = bounty?
-      if last_bounty_text != bounty_text
-        new_count = 100
-        if bounty_text =~ $AZ_BOUNTY_PATTERN_FINISHED
-          new_count = 0
-        elsif bounty_text =~ $AZ_BOUNTY_PATTERN_NUM
-          new_count = $1.to_i
-        end
-        $AZ_REMOTE['bandits'].set_count Char.name, new_count
-        last_bounty_text = bounty_text
-      end
-
-      if Char.prof == 'Bard'
-        trapped = false
-        while line = get?
-          if line =~ /^Suddenly, a carefully concealed net/ ||
-               line =~ /^Suddenly, you hear a soft/ ||
-               line =~ /a well concealed shallow pit of spikes!/
-            trapped = true
-          end
-        end
-        friend_in_need =
-          GameObj.pcs.find do |x|
-            $AZ_CHARS_SET[x.noun] && x.status =~ /lying|stun/i
-          end
-        if (checkstunned || friend_in_need || trapped) && checkmana.to_i > 100
-          waitcastrt?
-          fput 'shout 1040'
-          waitcastrt?
-          next
-        end
-      end
-
-      # yield if stunned
-      if checkstunned
-        sleep 0.25
-        next
-      end
-
-      # unstun others
-      stunnedpc =
-        GameObj.pcs.find { |x| $AZ_CHARS_SET[x.noun] && x.status =~ /stunned/ }
-      if Spell[108].known? && Char.prof != 'Paladin' && stunnedpc &&
-           checkmana.to_i > 30
-        waitcastrt?
-        Spell[108].cast stunnedpc
-        waitcastrt?
-        next
-      end
-
-      # defer to others?
-      bounty_counts = $AZ_REMOTE['bandits'].get_counts
-      high_priority_counts =
-        bounty_counts.reject do |char|
-          $AZ_HAS_TAG.call($AZ_TAG_LOW_BOUNTY_PRIORITY, char)
-        end
-
-      defer = true
-      if i_am_lower_priority
-        # wait until I am last and all high-priority chars have tagged
-        defer =
-          high_priority_counts.any? do |char, their_count|
-            their_count > bounty_counts[Char.name] ||
-              their_count == original_bounty_counts[char]
-          end
-      else
-        defer =
-          high_priority_counts.any? do |char, their_count|
-            AzLib.should_defer? Char.name,
-                                char,
-                                bounty_counts,
-                                original_bounty_counts
-          end
-      end
-
-      # identify targets
-      targets =
-        GameObj.npcs.select do |npc|
-          $AZ_BANDIT_TARGET_SET[npc.noun] && npc.status != 'dead' &&
-            !npc.name.start_with?('animated ')
-        end
-
-      # chill or attack
-      room_owned = AzLib::RoomInfo.room_owned?
-      echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
-
-      if defer || !room_owned || targets.nil? || targets.length == 0
-        if checkcastrt == 0
-          fput 'stance def' if checkstance != 'defensive'
-        elsif checkstance != 'guarded'
-          fput 'stance def'
-        end
-      else
-        all_tagged =
-          high_priority_counts.all? do |char, their_count|
-            char == Char.name || their_count != original_bounty_counts[char]
-          end
-        attack_routine.call targets, all_tagged
-      end
-
-      # yield
-      rt = [checkrt, checkcastrt].max
-      sleep(rt > 2 ? rt - 1 : 0.25)
-    end
-  end
-
-$AZ_RUN_CMD =
-  lambda do |cmd, arg|
-    echo "run_cmd(#{cmd}, #{arg})"
-    bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
-    if cmd == 'exchange-unless' && arg.length > 0
-      if bounty? =~ bounty_re
-        if $1 == arg
-          echo 'ALREADY HAVE REQUESTED LOCATION'
-          Script.start 'prep' # also prep for bandits
-          return true
-        end
-      end
-      wait_while { Spell[9056].active? }
-      put 'ask luc to remove'
-      loop do
-        result =
-          dothistimeout 'ask luc to remove',
-                        2,
-                        /You haven't been assigned any task|I have removed you from your current assignment/
-        break if result
-        sleep 0.25
-      end
-      Script.start 'prep' # also prep for bandits
-      return true
-    elsif cmd == 'start-script' && arg.length > 0
-      Script.start(arg) if !running? arg
-      return true
-    elsif cmd == 'stop-script' && arg.length > 0
-      Script.kill(arg) if running? arg
-      return true
-    elsif cmd == 'wait_groupbounty_cooldown_unless' && arg.length > 0
-      has_that_bounty = bounty? =~ bounty_re && $1 == arg
-      if Spell[9056].active? && !has_that_bounty
-        msg =
-          "Group bounty in #{Spell[9056].timeleft.round(2)} minutes (ie #{(Spell[9056].timeleft * 60).round(0)} seconds)"
-        fput "whisper ooc Aranthius #{msg}"
-      end
-      wait_while { Spell[9056].active? } unless has_that_bounty
-      return true
-    elsif cmd == 'ungroup'
-      Script.running.each { |x| x.kill }
-      fput 'disband'
-      fput 'leave'
-      fput 'group open'
-      return true
-    end
-    echo 'SWITCH FALL THROUGH'
-    return false
-  end
-
-loop do
-  ACTIONS = $AZ_REMOTE['actions']
-  actions = (ACTIONS.get_actions(Char.name) || []).reject { |x| x['done'] }
-  actions.each do |action|
-    success = $AZ_RUN_CMD.call(action['cmd'], action['args'])
-    ACTIONS.mark_action_done(
-      Char.name,
-      action['id'],
-      success ? nil : 'FAILED RUN_CMD'
-    )
-  end
-  sleep 1
-end
+AzLib::Remote.do_action_loop

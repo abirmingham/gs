@@ -20,19 +20,19 @@ end
 
 Script.run(
   'foreach',
-  "n=ether in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}"
+  "n=ether in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; waitcastrt?; put item in my #{CONTAINER}"
 )
 take_a_beat
 
 Script.run(
   'foreach',
-  "name=green leaf symbol in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}"
+  "name=green leaf symbol in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; waitcastrt?; put item in my #{CONTAINER}"
 )
 take_a_beat
 
 Script.run(
   'foreach',
-  "name=heroic knight clasp in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; put item in my #{CONTAINER}"
+  "name=heroic knight clasp in my #{CONTAINER}; get item from my #{CONTAINER}; raise item; waitcastrt?; put item in my #{CONTAINER}"
 )
 take_a_beat
 

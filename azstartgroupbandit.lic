@@ -3,7 +3,7 @@ GROUP =
   if args.length > 0
     [Char.name, *args.collect { |name| name.capitalize }].uniq
   else
-    $AZ_CHARS
+    AzConfig::CHARS
   end
 
 echo "GROUP: #{GROUP}"
@@ -21,7 +21,7 @@ end
 
 # clean up previous state
 Script.running.each { |x| x.kill unless x == Script.current }
-$AZ_REMOTE['actions'].clear_all_actions
+AzLib::Remote::RAW['actions'].clear_all_actions
 
 # Identify bounty location
 bounty_re = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*)\s(?:near|between|under|\.)/
@@ -32,34 +32,45 @@ throw 'Failed to find bounty location' unless bounty_location
 # Wait for share-ready
 GROUP.each do |char|
   if Char.name != char
-    $AZ_SEND_ACTION_SYNC.call char,
-                              'wait_groupbounty_cooldown_unless',
-                              bounty_location
+    AzLib::Remote.send_action_sync(
+      char,
+      'wait_groupbounty_cooldown_unless',
+      bounty_location
+    )
   end
 end
 
 # Form group
 GROUP.each do |char|
-  $AZ_SEND_ACTION_SYNC.call char, 'ungroup' if Char.name != char
+  AzLib::Remote.send_action_sync(char, 'ungroup') if Char.name != char
 end
 
 multifput 'disband', 'leave'
-GROUP.each { |char| fput "hold #{char}" if Char.name != char }
+GROUP.each do |char|
+  if Char.name != char
+    loop do
+      result = dothistimeout "group #{char}", 2, /You add.*to your group/
+      break if result
+    end
+  end
+end
 
 # Set new group (clears previous counts)
-$AZ_REMOTE['bandits'].set_new_group GROUP
+AzLib::Remote::RAW['bandits'].set_new_group GROUP
 
 # Share bounty
 Script.run('go2', 'advguild')
-if bounty? =~ $AZ_BOUNTY_PATTERN_NUM && $1.to_i
-  $AZ_REMOTE['bandits'].set_count(Char.name, $1.to_i)
+if bounty? =~ AzLib::Bandits::BOUNTY_PATTERN_NUM && $1.to_i
+  AzLib::Remote::RAW['bandits'].set_count(Char.name, $1.to_i)
 else
   raise 'Failed to find bounty'
 end
 
 GROUP.each do |char|
   if Char.name != char
-    $AZ_REMOTE['actions'].queue_action char, 'exchange-unless', bounty_location
+    AzLib::Remote::RAW['actions'].queue_action char,
+                                               'exchange-unless',
+                                               bounty_location
   end
 end
 
@@ -75,7 +86,7 @@ loop do
   i = i + 1
 
   # wait until everyone else has registered bounty count
-  break if $AZ_REMOTE['bandits'].has_group_registered?
+  break if AzLib::Remote::RAW['bandits'].has_group_registered?
 end
 
 # Go!

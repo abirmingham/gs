@@ -1,0 +1,15 @@
+# Boosts baby!
+# 
+# Version 0.1
+# Tags: LTE, XP, EXP, Instant, absorb
+# Author: Azanoth
+
+
+loop{
+    wait_until { percentmind >= 100 }
+    waitrt?
+    waitcastrt?
+    fput "boost absorb"
+
+    sleep 10
+}

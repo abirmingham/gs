@@ -28,7 +28,7 @@ module AzBandit
   @DEBUG = false
   @BANDIT_BOUNTY = /^You have been tasked to (?:help \w+ )?suppress bandit activity (?:in|on|near|between|under) (?:the )?(.*?)\s(?:near|between|under|\.)/
   @BAD_LOCATIONS = /the town of Kharam-Dzu/
-  @MY_CHARS_HACK = defined?($AZ_CHARS) ? $AZ_CHARS : []
+  @MY_CHARS_HACK = defined?(AzConfig::CHARS) ? AzConfig::CHARS : []
 
   # dynamic variables
   @poofed_bandits = []
@@ -219,7 +219,10 @@ module AzBandit
     return(
       GameObj.npcs.select do |npc|
         !npc.name.start_with?('animated ') &&
-          (npc.type =~ /bandit/ || $AZ_BANDIT_TARGET_SET.include?(npc.noun))
+          (
+            npc.type =~ /bandit/ ||
+              AzLib::Bandits::TARGET_SET.include?(npc.noun)
+          )
       end
     )
   end
@@ -351,7 +354,8 @@ module AzBandit
       end
 
       if !AzLib::RoomInfo.room_owned?
-        raise "ERROR: How did we get here if we don't own the room?"
+        echo "ERROR: How did we get here if we don't own the room?"
+        return true
       end
       i = i + 1
       fput 'stand' until standing?
@@ -447,11 +451,11 @@ module AzBandit
   def self.all_done?()
     echo 'Checking if done' if @DEBUG
     counts = []
-    shared_counts = $AZ_REMOTE['bandits'].get_counts
+    shared_counts = AzLib::Remote::RAW['bandits'].get_counts
 
     [Char.name, *@grouplist].each do |name|
       raise "Unable to find bounty count - #{name}" if !shared_counts[name]
-      next if $AZ_HAS_TAG.call $AZ_TAG_LOW_BOUNTY_PRIORITY, name
+      next if AzConfig.has_tag? :LOW_BOUNTY_PRIORITY, name
       counts.push shared_counts[name]
     end
 

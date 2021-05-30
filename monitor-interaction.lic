@@ -3,7 +3,7 @@ hide_me
 monitor_strings =
   "SEND||POLICY||[Rr](\s)*[Ee](\s)*[Pp](\s)*[Oo](\s)*[Rr](\s)*[Tt](?!ing)||speaking to you||unresponsive||taps you||nods to you||lease respond||not in control||violation||lease speak||peak out loud||Y U SHOU D||whispers,||speaking to you||trying to drag you||\\[Focused\\]||\\[Private\\]"
 monitor_safe_strings =
-  "\[(?!Private)\w*\]-GS(?:T|IV):||I've got a task here from the town||We've noted a troubling increase in bandit activity recently||inviting you to join||Dreavening||Lucrecious||As you approach the bounty board||If you wish to report your success||You have completed your task||(#{$AZ_CHARS.join '|'})'s player whispers"
+  "\[(?!Private)\w*\]-GS(?:T|IV):||I've got a task here from the town||We've noted a troubling increase in bandit activity recently||inviting you to join||Dreavening||Lucrecious||As you approach the bounty board||If you wish to report (on )?your success||You have completed your task||(#{AzConfig::CHARS.join '|'})'s player whispers||If you report back on your success now, you may well lose out on some valuable life"
 watch_list = /#{monitor_strings.gsub('||', '|')}/o
 safe_strings = /#{monitor_safe_strings.gsub('||', '|')}/o
 
