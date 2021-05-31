@@ -8,6 +8,8 @@
 Script.run 'turnbrooch', 'red 2' if Char.name == 'Azanoth'
 Script.run 'turnbrooch', 'blue'
 
+LIABO_MOON_AMOUNT = '2,350'
+
 is_liabo_moon = false
 loop do
   result =
@@ -15,7 +17,7 @@ loop do
                   2,
                   /resulting in the ability to instantly absorb/
   if result =~ /instantly absorb ([,\d]+)/
-    is_liabo_moon = $1 == '2,350' ? true : false
+    is_liabo_moon = $1 == LIABO_MOON_AMOUNT ? true : false
     break
   else
     echo 'Failed to find result'
@@ -27,7 +29,16 @@ loop do
   echo "Liabo Moon: #{is_liabo_moon}"
   wait_until { checkmind == 'must rest' || checkmind == 'saturated' }
   sleep 1
-  12.times { waitfor 'searches an ethereal ' } if is_liabo_moon
+  if Char.name == 'Azanoth' && is_liabo_moon
+    loop {
+      result = dothistimeout 'exp', 2, /Field Exp: \d+/
+      if result && result =~ /Field Exp: ([\d,]+)/
+        exp = $1.gsub(',', '').to_i
+        break if exp >= LIABO_MOON_AMOUNT.gsub(',', '').to_i
+      end
+      sleep 2.5
+    }
+  end
   waitrt?
   waitcastrt?
   fput 'rub my q bro'

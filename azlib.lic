@@ -551,6 +551,7 @@ module AzLib
             end
           all_deferring =
             high_priority_counts.all? do |char, their_count|
+              char == 'Aranthius' || # HACK: Aranthius e-waves so consider him always deferring
               char == Char.name ||
                 should_defer?(
                   char,
@@ -559,15 +560,15 @@ module AzLib
                   original_bounty_counts
                 )
             end
-          echo "all_deferring: #{all_deferring}"
-          echo "bounty_counts: #{bounty_counts}"
-          echo "original_bounty_counts: #{original_bounty_counts}"
           competing =
             high_priority_counts.any? do |char, their_count|
               char != Char.name && char != 'Aranthius' && # HACK: Aranthius e-waves so consider him always deferring
                 their_count == original_bounty_counts[char] &&
                 their_count == bounty_counts[Char.name]
             end
+          echo "all_deferring: #{all_deferring}, all_tagged: #{all_tagged}, competing: #{competing}"
+          echo "bounty_counts: #{bounty_counts}"
+          echo "original_bounty_counts: #{original_bounty_counts}"
           attack_routine.call targets, all_tagged, all_deferring, competing
         end
 
