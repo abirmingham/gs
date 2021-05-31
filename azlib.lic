@@ -10,6 +10,7 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
         'Aranthius' =>
           Set.new(%i[WAGGLES_OTHERS RECEIVES_ARMOR_SUPPORT SELLS_GEMS]),
         'Gossan' => Set.new(%i[WAGGLES_OTHERS RECEIVES_515]),
+        'Idios' => Set.new(%i[RECEIVES_515]),
         'Gherraltis' =>
           Set.new(%i[LOW_BOUNTY_PRIORITY RECEIVES_515 RESTING_GROUP_LEADER])
       }
@@ -84,25 +85,35 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
     # Don't use fput for attacks or any other blocking actions
 
     # THROTTLE WARNING:
-    # Don't use AoE - it messes with the intelligent tagging behavior
+    # Don't use damaging AoE unless all tagged
+    # Damaging AoE messes with the intelligent tagging behavior
     'Azanoth' =>
-      Proc.new do |targets|
+      Proc.new do |_, _, _, competing|
         if !Spell[506].active?
           echo 'NO 506!!!!!'
           sleep 1
         else
           put 'stance off'
-          put 'ambush'
+          if competing
+            put 'close my spikestar'
+            put 'aim right leg'
+            put 'ambush'
+            put 'kill'
+          else
+            put 'open my spikestar' if checkleft.nil?
+            put 'aim head'
+            put 'ambush'
+          end
         end
       end,
     'Wizard' =>
-      Proc.new do |targets|
+      Proc.new do |_|
         put 'stance off'
         put 'incant 903' if checkmana >= 20
       end,
     'Bard' =>
-      Proc.new do |targets|
-        put 'incant 1030' if checkmana >= 80
+      Proc.new do |_, _, all_deferring|
+        put "incant #{all_deferring ? '1030' : '410'}" if checkmana >= 80
         fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
       end,
     'Paladin' =>
@@ -114,13 +125,12 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
           put 'cast'
         else
           put 'stance off'
-          put 'shield strike' if checkstamina >= 30
-          put 'kill' if checkstamina < 30
+          put(checkstamina >= 30 ? 'shield strike' : 'kill')
         end
         fput 'sym mana' if checkmana < 250 && !Spell[9048].active?
       end,
     'Empath' =>
-      Proc.new do |targets|
+      Proc.new do
         if checkmana >= 20
           put 'incant 1115'
         elsif checkmana >= 10
@@ -539,33 +549,53 @@ module AzLib
             high_priority_counts.all? do |char, their_count|
               char == Char.name || their_count != original_bounty_counts[char]
             end
-          attack_routine.call targets, all_tagged
+          all_deferring =
+            high_priority_counts.all? do |char, their_count|
+              char == Char.name ||
+                should_defer?(
+                  char,
+                  Char.name,
+                  bounty_counts,
+                  original_bounty_counts
+                )
+            end
+          echo "all_deferring: #{all_deferring}"
+          echo "bounty_counts: #{bounty_counts}"
+          echo "original_bounty_counts: #{original_bounty_counts}"
+          competing =
+            high_priority_counts.any? do |char, their_count|
+              char != Char.name && char != 'Aranthius' && # HACK: Aranthius e-waves so consider him always deferring
+                their_count == original_bounty_counts[char] &&
+                their_count == bounty_counts[Char.name]
+            end
+          attack_routine.call targets, all_tagged, all_deferring, competing
         end
 
         # yield
-        rt = [checkrt, checkcastrt].max
-        sleep(rt > 2 ? rt - 1 : 0.25)
+        rt = [checkrt || 0, checkcastrt || 0, 0.5].max
+        sleep(rt)
+        # sleep(rt > 2 ? rt - 1 : 0.25)
       end
     end
-  end
 
-  def self.should_defer?(a, b, current_counts, original_counts)
-    # should 'a' defer to 'b'?
-    return false if a == b
-    a_is_tagged =
-      current_counts[a] == 0 || current_counts[a] != original_counts[a]
-    b_is_tagged =
-      current_counts[b] == 0 || current_counts[b] != original_counts[b]
-    if a_is_tagged
-      if b_is_tagged
-        false # may as well attack - neither need credit
+    def self.should_defer?(a, b, current_counts, original_counts)
+      # should 'a' defer to 'b'?
+      return false if a == b
+      a_is_tagged =
+        current_counts[a] == 0 || current_counts[a] != original_counts[a]
+      b_is_tagged =
+        current_counts[b] == 0 || current_counts[b] != original_counts[b]
+      if a_is_tagged
+        if b_is_tagged
+          false # may as well attack - neither need credit
+        else
+          # let them get credit as soon as I have less
+          current_counts[a] <= current_counts[b]
+        end
       else
-        # let them get credit as soon as I have less
-        current_counts[a] <= current_counts[b]
+        # let them get credit if they have more than me
+        current_counts[a] < current_counts[b]
       end
-    else
-      # let them get credit if they have more than me
-      current_counts[a] < current_counts[b]
     end
   end
 end

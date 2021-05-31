@@ -21,20 +21,17 @@ waitrt?
 fput 'stance def' if stance != 'defensive'
 
 if !rest.include? Room.current.id
-  if !group?
-    # If I'm not at rest, trigger fbandit on followers
-    # (if I am at rest, they probably already did it and
-    #  this is being triggered manually)
-    echo 'TRIGGERING START_SCRIPT fbandit ON FOLLOWERS'
-    AzConfig::CHARS.each do |char|
-      if Char.name != char && [
-           *GameObj.pcs,
-           *AzLib::RoomInfo.followers
-         ].any? { |pc| pc.noun == char }
-        AzLib::Remote::RAW['actions'].queue_action char,
-                                                   'start-script',
-                                                   'fbandit'
-      end
+  # If I'm not at rest, trigger fbandit on others
+  # (if I am at rest, they probably already did it and
+  #  this is being triggered manually)
+  # note that this creates a cartesion thing but it doesn't
+  # matter
+  AzConfig::CHARS.each do |char|
+    if Char.name != char && [
+         *GameObj.pcs,
+         *AzLib::RoomInfo.followers
+       ].any? { |pc| pc.noun == char }
+      AzLib::Remote::RAW['actions'].queue_action char, 'start-script', 'fbandit'
     end
   end
   fput 'disband'
