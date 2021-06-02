@@ -40,6 +40,7 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
         'Azanoth' =>
           Proc.new do
             # don't use cman dervish - it prevents others timely tagging
+            put 'stop stance'
             fput 'war shout'
             waitrt?
             if !Spell[9605].active? && !Spell[9606].active? &&
@@ -502,8 +503,9 @@ module AzLib
           next
         end
 
-        # defer to others?
+        # evaluate bounty state
         bounty_counts = AzLib::Remote::RAW['bandits'].get_counts
+
         high_priority_counts =
           bounty_counts.reject do |char|
             AzConfig.has_tag? :LOW_BOUNTY_PRIORITY, char
@@ -527,14 +529,8 @@ module AzLib
             end
         end
 
-        # identify targets
-        targets =
-          GameObj.npcs.select do |npc|
-            AzLib::Bandits::TARGET_SET[npc.noun] && npc.status != 'dead' &&
-              !npc.name.start_with?('animated ')
-          end
-
         # chill or attack
+        targets = AzLib::Targets.bandits
         room_owned = AzLib::RoomInfo.room_owned?
         echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
 
@@ -551,7 +547,7 @@ module AzLib
             end
           all_deferring =
             high_priority_counts.all? do |char, their_count|
-              char == 'Aranthius' || # HACK: Aranthius e-waves so consider him always deferring
+              # char == 'Aranthius' || # HACK: Aranthius e-waves so consider him always deferring
               char == Char.name ||
                 should_defer?(
                   char,
@@ -562,7 +558,7 @@ module AzLib
             end
           competing =
             high_priority_counts.any? do |char, their_count|
-              char != Char.name && char != 'Aranthius' && # HACK: Aranthius e-waves so consider him always deferring
+              char != Char.name && # char != 'Aranthius' && # HACK: Aranthius e-waves so consider him always deferring
                 their_count == original_bounty_counts[char] &&
                 their_count == bounty_counts[Char.name]
             end

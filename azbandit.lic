@@ -373,14 +373,14 @@ module AzBandit
         AzLib::Targets.bandits.any? { |x| x.status.nil? || x.status == 'gone' }
 
       cast_disabler = disablers_enabled && can_cast && bandits_need_disabling
-      if cast_disabler
-        if Char.prof == 'Wizard' && Spell[410].known?
-          multifput 'prep 410', 'cast'
-        elsif Char.prof == 'Sorcerer' && Spell[709].known?
-          Spell[709].cast
-        end
-        next # restart wait_for_battle loop
-      end
+      # if cast_disabler
+      #   if Char.prof == 'Wizard' && Spell[410].known?
+      #     multifput 'prep 410', 'cast'
+      #   elsif Char.prof == 'Sorcerer' && Spell[709].known?
+      #     Spell[709].cast
+      #   end
+      #   next # restart wait_for_battle loop
+      # end
 
       # check if room needs to be looted
       if room_needs_looting?
