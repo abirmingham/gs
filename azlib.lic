@@ -12,7 +12,9 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
         'Gossan' => Set.new(%i[WAGGLES_OTHERS RECEIVES_515]),
         'Idios' => Set.new(%i[RECEIVES_515]),
         'Gherraltis' =>
-          Set.new(%i[LOW_BOUNTY_PRIORITY RECEIVES_515 RESTING_GROUP_LEADER])
+          # Set.new(%i[LOW_BOUNTY_PRIORITY RECEIVES_515 RESTING_GROUP_LEADER])
+          Set.new(%i[RECEIVES_515 RESTING_GROUP_LEADER]),
+          'Nobody' => Set.new(%i[LOW_BOUNTY_PRIORITY]),
       }
     )
   ALL_TAGS = Set.new(CHAR_TAGS.values.collect { |x| x.to_a }.flatten)
@@ -89,56 +91,90 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
     # Don't use damaging AoE unless all tagged
     # Damaging AoE messes with the intelligent tagging behavior
     'Azanoth' =>
-      Proc.new do |_, _, _, competing|
+      Proc.new do |targets, _, _, competing|
         if !Spell[506].active?
           echo 'NO 506!!!!!'
           sleep 1
-        else
-          put 'stance off'
-          if competing
-            put 'close my spikestar'
-            put 'aim right leg'
-            put 'ambush'
-            put 'kill'
-          else
-            put 'open my spikestar' if checkleft.nil?
-            put 'aim head'
-            put 'ambush'
-          end
+          next
         end
+        put 'stance off'
+        if competing
+          put 'close my spikestar'
+          [
+            'left leg',
+            'right leg',
+            'left arm',
+            'right arm'
+          ].each do |loc|
+            put "ambush ##{targets[0].id} #{loc}"
+          end
+          next
+        end
+        put 'open my spikestar' if checkleft.nil?
+        put 'aim head'
+        put 'ambush'
       end,
     'Wizard' =>
-      Proc.new do |_|
+      Proc.new do |targets, room_swing_count, all_tagged, competing|
+        put 'sym mana' if checkmana < 300 && !Spell[9048].active?
+        if checkmana < 80
+          echo "WARNING: out of mana"
+          next
+        end
+        if room_swing_count < (competing ? 2 : 1)
+          put 'prep 410'
+          put 'cast'
+          next
+        end
         put 'stance off'
-        put 'incant 903' if checkmana >= 20
+        put "incant #{targets.length > 1 && all_tagged ? '518' : '903'}"
       end,
     'Bard' =>
-      Proc.new do |_, _, all_deferring|
-        put "incant #{all_deferring ? '1030' : '410'}" if checkmana >= 80
-        fput 'sym mana' if checkmana < 300 && !Spell[9048].active?
+      Proc.new do |targets, room_swing_count, all_tagged, competing|
+        put 'sym mana' if checkmana < 300 && !Spell[9048].active?
+        if checkmana < 80
+          echo "WARNING: out of mana"
+          next
+        end
+        if room_swing_count < (competing ? 2 : 1)
+          put 'prep 410'
+          put 'cast'
+          next
+        end
+        put "incant 1030 #{targets.length > 1 && all_tagged ? 'open' : ''}"
       end,
     'Paladin' =>
-      Proc.new do |targets, all_tagged|
-        if checkmana >= 40 && all_tagged && targets.any? do |x|
-             !x.status || x.status == 'gone'
-           end
+      Proc.new do |targets, room_swing_count, all_tagged, competing, all_deferring|
+        put 'sym mana' if checkmana < 250 && !Spell[9048].active?
+        if checkmana >= 40 && room_swing_count == 0 && all_tagged
           put 'prep 1630'
           put 'cast'
-        else
-          put 'stance off'
-          put(checkstamina >= 30 ? 'shield strike' : 'kill')
+          next
         end
-        fput 'sym mana' if checkmana < 250 && !Spell[9048].active?
+        if competing && room_swing_count < 2
+          put 'incant 1615'
+          next
+        end
+        put 'stance off'
+        if all_deferring
+          put "beseech #{GameObj.right_hand.noun} ignite"
+          put(checkstamina >= 30 ? 'shield strike' : 'kill')
+          next
+        end
+        put "beseech #{GameObj.right_hand.noun} extinguish"
+        put(checkstamina >= 30 ? "shield bash ##{targets[0].id}" : "kill ##{targets[0].id}")
       end,
     'Empath' =>
-      Proc.new do
-        if checkmana >= 20
-          put 'incant 1115'
-        elsif checkmana >= 10
-          put 'incant 1106'
-        else
-          echo 'WARNING: out of mana'
+      Proc.new do |targets, room_swing_count, all_tagged, competing|
+        if checkmana < 40
+          echo "WARNING: out of mana"
+          next
         end
+        if competing && room_swing_count < 2
+          targets.each { |x| put "incant 1101 ##{x.id}" }
+          next
+        end
+        put 'incant 1115'
       end
   }
 
@@ -164,6 +200,7 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
               fput 'prep 1615'
               fput "infuse my #{GameObj.right_hand.noun}"
               fput "beseech #{GameObj.right_hand.noun} ignite"
+              fput "beseech #{GameObj.right_hand.noun} extinguish"
             end
           end
       }
@@ -440,6 +477,8 @@ module AzLib
       original_bounty_counts = AzLib::Remote::RAW['bandits'].get_counts
       echo "original_bounty_counts: #{original_bounty_counts}"
       i_am_lower_priority = AzConfig.has_tag? :LOW_BOUNTY_PRIORITY
+      room_swing_count = 0
+      last_room_count = nil
 
       # main loop
       echo 'Main attack loop'
@@ -447,7 +486,6 @@ module AzLib
       while true
         i = i + 1
         raise 'DEAD!' if checkdead
-        fput 'stand' if !standing?
 
         # update bounty count
         bounty_text = bounty?
@@ -462,7 +500,9 @@ module AzLib
           last_bounty_text = bounty_text
         end
 
-        # shout 1040
+        # address status conditions
+        fput 'stand' if !standing?
+
         if Char.prof == 'Bard'
           trapped = false
           while line = get?
@@ -484,13 +524,11 @@ module AzLib
           end
         end
 
-        # yield if stunned
         if checkstunned
           sleep 0.25
           next
         end
 
-        # cast 108
         stunnedpc =
           GameObj.pcs.find do |x|
             AzConfig::CHARS_SET[x.noun] && x.status =~ /stunned/
@@ -505,7 +543,6 @@ module AzLib
 
         # evaluate bounty state
         bounty_counts = AzLib::Remote::RAW['bandits'].get_counts
-
         high_priority_counts =
           bounty_counts.reject do |char|
             AzConfig.has_tag? :LOW_BOUNTY_PRIORITY, char
@@ -531,6 +568,7 @@ module AzLib
 
         # chill or attack
         targets = AzLib::Targets.bandits
+        room_count = AzLib::RoomInfo.room_info.count
         room_owned = AzLib::RoomInfo.room_owned?
         echo "---- DEFER: #{defer}; room_owned: #{room_owned}" if i % 10 == 0
 
@@ -541,13 +579,24 @@ module AzLib
             fput 'stance def'
           end
         else
+          if last_room_count == room_count
+            room_swing_count = room_swing_count + 1
+          else
+            room_swing_count = 0
+            last_room_count = room_count
+          end
           all_tagged =
             high_priority_counts.all? do |char, their_count|
               char == Char.name || their_count != original_bounty_counts[char]
             end
+          competing =
+            high_priority_counts.any? do |char, their_count|
+              char != Char.name &&
+                their_count == original_bounty_counts[char] &&
+                their_count == bounty_counts[Char.name]
+            end
           all_deferring =
             high_priority_counts.all? do |char, their_count|
-              # char == 'Aranthius' || # HACK: Aranthius e-waves so consider him always deferring
               char == Char.name ||
                 should_defer?(
                   char,
@@ -556,22 +605,15 @@ module AzLib
                   original_bounty_counts
                 )
             end
-          competing =
-            high_priority_counts.any? do |char, their_count|
-              char != Char.name && # char != 'Aranthius' && # HACK: Aranthius e-waves so consider him always deferring
-                their_count == original_bounty_counts[char] &&
-                their_count == bounty_counts[Char.name]
-            end
-          echo "all_deferring: #{all_deferring}, all_tagged: #{all_tagged}, competing: #{competing}"
+          echo "all_tagged: #{all_tagged}, competing: #{competing}"
+          echo "last_room_count: #{last_room_count}, room_count: #{room_count}, room_swing_count: #{room_swing_count}, all_deferring: #{all_deferring}"
           echo "bounty_counts: #{bounty_counts}"
           echo "original_bounty_counts: #{original_bounty_counts}"
-          attack_routine.call targets, all_tagged, all_deferring, competing
+          attack_routine.call targets, room_swing_count, all_tagged, competing, all_deferring
         end
 
         # yield
-        rt = [checkrt || 0, checkcastrt || 0, 0.5].max
-        sleep(rt)
-        # sleep(rt > 2 ? rt - 1 : 0.25)
+        sleep [checkrt || 0, checkcastrt || 0, 0.5].max
       end
     end
 

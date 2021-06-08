@@ -311,6 +311,7 @@ module AzBandit
       echo GameObj.pcs.reject { |x|
              x.status.nil? || x.status == ''
            }.collect { |x| "#{x.noun}: #{x.status}" }.join(', ') # TODO remove me
+      exit_azbandit if all_done?
     end
   end
 

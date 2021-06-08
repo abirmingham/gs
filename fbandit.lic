@@ -13,7 +13,10 @@ def join_resting_group_leader()
   return if Char.name == leader
   sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == leader }
   wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } }
-  fput "join #{leader}"
+  loop {
+    result = dothistimeout "join #{leader}", 2, /You join|You are already a member/
+    break if result
+  }
 end
 
 Script.running.each { |x| x.kill unless x == Script.current }
@@ -125,7 +128,10 @@ until Room.current.id == rest_room
   Script.run('go2', rest_room.to_s + ' --disable-confirm')
 end
 
+join_resting_group_leader
+
 AzConfig::POST_HUNT[Char.name].call
 
 join_resting_group_leader
+
 do_client ';magic'
