@@ -13,10 +13,11 @@ def join_resting_group_leader()
   return if Char.name == leader
   sleep 5 unless GameObj.pcs.any? { |pc| pc.noun == leader }
   wait_until { GameObj.pcs.any? { |pc| pc.noun == leader } }
-  loop {
-    result = dothistimeout "join #{leader}", 2, /You join|You are already a member/
+  loop do
+    result =
+      dothistimeout "join #{leader}", 2, /You join|You are already a member/
     break if result
-  }
+  end
 end
 
 Script.running.each { |x| x.kill unless x == Script.current }
@@ -86,15 +87,6 @@ if bounty? =~ /^You (have )?succeeded/
   echo "Experience gained: #{after_exp - before_exp}"
 end
 
-if AzConfig.has_tag? :SELLS_GEMS
-  fput 'store all'
-  fput 'stow all'
-  Script.run('go2', 'gemshop')
-  fput "rem #{Vars.lootsack}"
-  fput "sell #{Vars.lootsack}"
-  fput "wear #{Vars.lootsack}"
-end
-
 # bank
 Script.run 'go2', 'bank --disable-confirm'
 fput 'deposit all'
@@ -108,7 +100,7 @@ Script.run('waggle')
 
 if AzConfig.has_tag? :WAGGLES_OTHERS
   AzConfig::CHARS.each { |x| Script.run 'waggle', x if checkpcs.include? x }
-  Spell[911].cast if Char.prof == 'wizard' && Spell[911].affordable?
+  Spell[911].cast if Char.prof == 'Wizard' && Spell[911].affordable?
 end
 
 join_resting_group_leader if Spell[9003].active?
@@ -131,6 +123,9 @@ end
 join_resting_group_leader
 
 AzConfig::POST_HUNT[Char.name].call
+until Room.current.id == rest_room
+  Script.run('go2', rest_room.to_s + ' --disable-confirm')
+end
 
 join_resting_group_leader
 

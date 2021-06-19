@@ -30,14 +30,14 @@ loop do
   wait_until { checkmind == 'must rest' || checkmind == 'saturated' }
   sleep 1
   if Char.name == 'Azanoth' && is_liabo_moon
-    loop {
+    loop do
       result = dothistimeout 'exp', 2, /Field Exp: \d+/
       if result && result =~ /Field Exp: ([\d,]+)/
         exp = $1.gsub(',', '').to_i
         break if exp >= LIABO_MOON_AMOUNT.gsub(',', '').to_i
       end
       sleep 2.5
-    }
+    end
   end
   waitrt?
   waitcastrt?

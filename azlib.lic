@@ -2,19 +2,16 @@ require 'drb/drb'
 hide_me
 
 module AzConfig # CHARACTER CONFIG REQUIRED HERE
-  CHARS = %w[Azanoth Aranthius Idios Gossan Gherraltis]
+  CHARS = %w[Azanoth Aranthius Idios Gossan Aplom] # Gherraltis
   CHARS_SET = CHARS.collect { |char| [char, true] }.to_h
   CHAR_TAGS =
     Hash[*AzConfig::CHARS.collect { |x| [x, Set.new] }.flatten].merge(
       {
-        'Aranthius' =>
-          Set.new(%i[WAGGLES_OTHERS RECEIVES_ARMOR_SUPPORT SELLS_GEMS]),
+        'Aranthius' => Set.new(%i[WAGGLES_OTHERS RECEIVES_ARMOR_SUPPORT]),
         'Gossan' => Set.new(%i[WAGGLES_OTHERS RECEIVES_515]),
-        'Idios' => Set.new(%i[RECEIVES_515]),
-        'Gherraltis' =>
-          # Set.new(%i[LOW_BOUNTY_PRIORITY RECEIVES_515 RESTING_GROUP_LEADER])
-          Set.new(%i[RECEIVES_515 RESTING_GROUP_LEADER]),
-          'Nobody' => Set.new(%i[LOW_BOUNTY_PRIORITY]),
+        'Idios' => Set.new(%i[RECEIVES_515 RESTING_GROUP_LEADER]),
+        'Gherraltis' => Set.new(%i[RECEIVES_515 RESTING_GROUP_LEADER]),
+        'Nobody' => Set.new(%i[LOW_BOUNTY_PRIORITY])
       }
     )
   ALL_TAGS = Set.new(CHAR_TAGS.values.collect { |x| x.to_a }.flatten)
@@ -55,11 +52,11 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
           Proc.new do
             rub_weak_brooch
             Spell[515].cast
-            Script.start 'rapid'
             checkpcs.each do |x|
               Spell[515].cast x if AzConfig.has_tag?(:RECEIVES_515, x)
             end
           end,
+        'Aplom' => Proc.new { Spell[515].cast },
         'Idios' =>
           Proc.new do
             rub_weak_brooch
@@ -100,12 +97,7 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
         put 'stance off'
         if competing
           put 'close my spikestar'
-          [
-            'left leg',
-            'right leg',
-            'left arm',
-            'right arm'
-          ].each do |loc|
+          ['left leg', 'right leg', 'left arm', 'right arm'].each do |loc|
             put "ambush ##{targets[0].id} #{loc}"
           end
           next
@@ -118,22 +110,38 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
       Proc.new do |targets, room_swing_count, all_tagged, competing|
         put 'sym mana' if checkmana < 300 && !Spell[9048].active?
         if checkmana < 80
-          echo "WARNING: out of mana"
+          echo 'WARNING: out of mana'
           next
         end
         if room_swing_count < (competing ? 2 : 1)
-          put 'prep 410'
+          put "prep #{Char.name == 'Aplom' ? '912' : '410'}"
           put 'cast'
           next
         end
         put 'stance off'
+
+        # put 'incant 903'
         put "incant #{targets.length > 1 && all_tagged ? '518' : '903'}"
+      end,
+    'Sorcerer' =>
+      Proc.new do |targets, room_swing_count, all_tagged, competing|
+        if checkmana < 80
+          echo 'WARNING: out of mana'
+          next
+        end
+        if room_swing_count < 1
+          put 'prep 709'
+          put 'cast'
+          next
+        end
+        put 'incant 711'
+        # put "incant #{targets.length > 1 && all_tagged ? '518' : '903'}"
       end,
     'Bard' =>
       Proc.new do |targets, room_swing_count, all_tagged, competing|
         put 'sym mana' if checkmana < 300 && !Spell[9048].active?
         if checkmana < 80
-          echo "WARNING: out of mana"
+          echo 'WARNING: out of mana'
           next
         end
         if room_swing_count < (competing ? 2 : 1)
@@ -141,18 +149,21 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
           put 'cast'
           next
         end
+
+        # put 'incant 1030'
         put "incant 1030 #{targets.length > 1 && all_tagged ? 'open' : ''}"
       end,
     'Paladin' =>
-      Proc.new do |targets, room_swing_count, all_tagged, competing, all_deferring|
+      Proc
+        .new do |targets, room_swing_count, all_tagged, competing, all_deferring|
         put 'sym mana' if checkmana < 250 && !Spell[9048].active?
-        if checkmana >= 40 && room_swing_count == 0 && all_tagged
+        if all_tagged && checkmana >= 40 && room_swing_count == 0
           put 'prep 1630'
           put 'cast'
           next
         end
         if competing && room_swing_count < 2
-          put 'incant 1615'
+          put 'incant 1602 open'
           next
         end
         put 'stance off'
@@ -162,12 +173,18 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
           next
         end
         put "beseech #{GameObj.right_hand.noun} extinguish"
-        put(checkstamina >= 30 ? "shield bash ##{targets[0].id}" : "kill ##{targets[0].id}")
+        put(
+          if checkstamina >= 30
+            "shield bash ##{targets[0].id}"
+          else
+            "kill ##{targets[0].id}"
+          end
+        )
       end,
     'Empath' =>
       Proc.new do |targets, room_swing_count, all_tagged, competing|
         if checkmana < 40
-          echo "WARNING: out of mana"
+          echo 'WARNING: out of mana'
           next
         end
         if competing && room_swing_count < 2
@@ -175,6 +192,18 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
           next
         end
         put 'incant 1115'
+      end,
+    'Cleric' =>
+      Proc.new do |targets, room_swing_count, all_tagged, competing|
+        if checkmana < 80
+          echo 'WARNING: out of mana'
+          next
+        end
+        if room_swing_count < (competing ? 2 : 1)
+          put 'incant 316 open'
+          next
+        end
+        put "incant #{targets.length > 1 && all_tagged ? '335' : '302'}"
       end
   }
 
@@ -189,6 +218,16 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
                 fput "armor support #{x}"
               end
             end
+          end,
+        'Aranthius' =>
+          Proc.new do
+            fput 'store all'
+            fput 'stow all'
+            Script.run('go2', 'gemshop')
+            fput "rem #{Vars.lootsack}"
+            fput "sell #{Vars.lootsack}"
+            fput "wear #{Vars.lootsack}"
+            Script.run 'bankdrop'
           end,
         'Gherraltis' =>
           Proc.new do
@@ -575,6 +614,11 @@ module AzLib
         if defer || !room_owned || targets.nil? || targets.length == 0
           if checkcastrt == 0
             fput 'stance def' if checkstance != 'defensive'
+            if Spell[515].known? &&
+                 (!Spell[515].active? || Spell[515].timeleft < 0.1) &&
+                 !Spell[597].active? && !Spell[599].active?
+              Spell[515].cast
+            end
           elsif checkstance != 'guarded'
             fput 'stance def'
           end
@@ -609,7 +653,11 @@ module AzLib
           echo "last_room_count: #{last_room_count}, room_count: #{room_count}, room_swing_count: #{room_swing_count}, all_deferring: #{all_deferring}"
           echo "bounty_counts: #{bounty_counts}"
           echo "original_bounty_counts: #{original_bounty_counts}"
-          attack_routine.call targets, room_swing_count, all_tagged, competing, all_deferring
+          attack_routine.call targets,
+                              room_swing_count,
+                              all_tagged,
+                              competing,
+                              all_deferring
         end
 
         # yield
@@ -624,13 +672,16 @@ module AzLib
         current_counts[a] == 0 || current_counts[a] != original_counts[a]
       b_is_tagged =
         current_counts[b] == 0 || current_counts[b] != original_counts[b]
+      return false if b_is_tagged
       if a_is_tagged
-        if b_is_tagged
-          false # may as well attack - neither need credit
-        else
-          # let them get credit as soon as I have less
-          current_counts[a] <= current_counts[b]
-        end
+        # let them get credit as soon as I have less
+        current_counts[a] <= current_counts[b]
+        # if b_is_tagged
+        #   false # may as well attack - neither need credit
+        # else
+        #   # let them get credit as soon as I have less
+        #   current_counts[a] <= current_counts[b]
+        # end
       else
         # let them get credit if they have more than me
         current_counts[a] < current_counts[b]

@@ -14,7 +14,7 @@ It will work better if followers allow the leader to see their bounty via lichne
 
 status_tags 'on'
 fput 'flag groupmovement on'
-fput 'flag description on'
+# fput 'flag description on'
 
 module AzBandit
   # user configurable (AKA STUFF YOU MIGHT ACTUALLY CARE ABOUT)
@@ -374,6 +374,7 @@ module AzBandit
         AzLib::Targets.bandits.any? { |x| x.status.nil? || x.status == 'gone' }
 
       cast_disabler = disablers_enabled && can_cast && bandits_need_disabling
+
       # if cast_disabler
       #   if Char.prof == 'Wizard' && Spell[410].known?
       #     multifput 'prep 410', 'cast'
@@ -393,6 +394,7 @@ module AzBandit
         waitrt?
 
         # search bodies
+        # bodies = GameObj.npcs.select { |npc| npc.status == 'dead' }
         bodies = game_obj_bandits.select { |npc| npc.status == 'dead' }
         bodies.each_with_index { |bandit| fput "loot ##{bandit.id}" }
 

@@ -90,10 +90,9 @@ if currently_mooned
   message '  You should analyze your quintuple orb brooch to confirm the increased bonus.'
   message "  It will wane around #{Time.at(current_moon_end).strftime '%-I:%M %p'}."
   message '  '
+  message '  You want to know about the NEXT ONE? Well...'
 end
-message "  The next full moon is on #{Time.at(next_full_start).strftime '%A %m/%d around %-I:%M %p'}."
-message '  I hope you catch it!'
-message ''
+message "  The NEXT full moon is on #{Time.at(next_full_start).strftime '%A %m/%d around %-I:%M %p'}."
 message "  That's #{time_until_tokens.join ', '} from now."
 message "  On #{Time.at(next_full_start + full_moon_seconds).strftime '%A around %-I:%M %p'} you may find your brooch waning."
 message ''

@@ -1,28 +1,33 @@
 Script.running.each { |x| x.kill unless x == Script.current }
 
-# task
-fput 'reim camp confirm' until Room.current.id == 24_842
-move 'go structure'
-loop do
-  break if dothistimeout 'turn board', 2, /You do not have a finished task/
-  sleep 1
+start_script 'brooch'
+# waitfor /You trace the central orb of red in your/
+sleep 10 if Char.name == 'Azanoth'
+
+if Room.current.id != 24_912
+  # task
+  fput 'reim camp confirm' until Room.current.id == 24_842
+  move 'go structure'
+  loop do
+    break if dothistimeout 'turn board', 2, /You do not have a finished task/
+    sleep 1
+  end
+  waitrt?
+  fput 'reim task abandon'
+  fput 'reim task abandon'
+  fput 'get board'
+  move 'out'
+
+  fput 'store all'
+  fput 'stow all'
+  fput 'gird'
+
+  fput 'go path' until Room.current.id != 24_842
+  fput 'reim transport confirm' until Room.current.id == 24_888
 end
-waitrt?
-fput 'reim task abandon'
-fput 'reim task abandon'
-fput 'get board'
-move 'out'
-
-fput 'store all'
-fput 'stow all'
-fput 'gird'
-
-fput 'go path' until Room.current.id != 24_842
 
 # main
-fput 'reim transport confirm' until Room.current.id == 24_888
-start_script 'brooch'
-Script.run 'go2', 'treim'
+Script.run('go2', 'treim') until Room.current.id == 24_912
 start_script 'standgroup'
 
 if Society.status == 'Order of Voln'
@@ -34,6 +39,7 @@ elsif Society.status == 'Guardians of Sunfist'
 end
 
 if Char.name == 'Azanoth'
+  fput 'rub my relic'
   start_script 'treim', ['attack']
   start_script 'Azanoth-506'
   loop do
