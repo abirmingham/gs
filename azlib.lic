@@ -104,38 +104,28 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
         end
         put 'open my spikestar' if checkleft.nil?
         put 'aim head'
-        put 'ambush'
+        put "ambush ##{targets[0].id}"
       end,
     'Wizard' =>
       Proc.new do |targets, room_swing_count, all_tagged, competing|
         put 'sym mana' if checkmana < 300 && !Spell[9048].active?
-        if checkmana < 80
+        if checkmana < 40
           echo 'WARNING: out of mana'
           next
         end
-        if room_swing_count < (competing ? 2 : 1)
-          put "prep #{Char.name == 'Aplom' ? '912' : '410'}"
-          put 'cast'
+        if Char.name == 'Aplom' && competing
+          put 'stance off'
+          targets.each { |x| put "incant 901 ##{x.id}" }
           next
+        end
+        if room_swing_count < (competing ? 2 : 1)
+          put 'prep 410'
+          put 'cast'
         end
         put 'stance off'
 
         # put 'incant 903'
-        put "incant #{targets.length > 1 && all_tagged ? '518' : '903'}"
-      end,
-    'Sorcerer' =>
-      Proc.new do |targets, room_swing_count, all_tagged, competing|
-        if checkmana < 80
-          echo 'WARNING: out of mana'
-          next
-        end
-        if room_swing_count < 1
-          put 'prep 709'
-          put 'cast'
-          next
-        end
-        put 'incant 711'
-        # put "incant #{targets.length > 1 && all_tagged ? '518' : '903'}"
+        put "incant #{targets.length > 1 && all_tagged ? '518' : "903 ##{targets[0].id}"}"
       end,
     'Bard' =>
       Proc.new do |targets, room_swing_count, all_tagged, competing|
@@ -149,9 +139,7 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
           put 'cast'
           next
         end
-
-        # put 'incant 1030'
-        put "incant 1030 #{targets.length > 1 && all_tagged ? 'open' : ''}"
+        put "incant 1030 #{targets.length > 1 && all_tagged ? 'open' : " ##{targets[0].id}"}"
       end,
     'Paladin' =>
       Proc
@@ -191,19 +179,7 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
           targets.each { |x| put "incant 1101 ##{x.id}" }
           next
         end
-        put 'incant 1115'
-      end,
-    'Cleric' =>
-      Proc.new do |targets, room_swing_count, all_tagged, competing|
-        if checkmana < 80
-          echo 'WARNING: out of mana'
-          next
-        end
-        if room_swing_count < (competing ? 2 : 1)
-          put 'incant 316 open'
-          next
-        end
-        put "incant #{targets.length > 1 && all_tagged ? '335' : '302'}"
+        put "incant 1115 ##{targets[0].id}"
       end
   }
 
@@ -672,18 +648,17 @@ module AzLib
         current_counts[a] == 0 || current_counts[a] != original_counts[a]
       b_is_tagged =
         current_counts[b] == 0 || current_counts[b] != original_counts[b]
-      return false if b_is_tagged
+
       if a_is_tagged
-        # let them get credit as soon as I have less
-        current_counts[a] <= current_counts[b]
-        # if b_is_tagged
-        #   false # may as well attack - neither need credit
-        # else
-        #   # let them get credit as soon as I have less
-        #   current_counts[a] <= current_counts[b]
-        # end
+        if b_is_tagged
+          false # may as well attack - neither need credit
+        else
+          # let them get credit as soon as I have less
+          current_counts[a] <= current_counts[b]
+        end
       else
         # let them get credit if they have more than me
+        # this maximizes the chance of all aligning on the same #
         current_counts[a] < current_counts[b]
       end
     end
