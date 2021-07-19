@@ -12,12 +12,11 @@ throw 'No bounty' unless bounty?
 
 if bounty? !~ /^You have been tasked/
   echo 'Waiting for bounty'
-  wait_while do
-    bounty? !~ /^You have been tasked/ || running?('fbandit') ||
-      running?('go2') || running?('getbounty')
-  end
-  sleep 5
+  wait_while { bounty? !~ /^You have been tasked/ }
 end
+
+wait_while { running?('fbandit') || running?('go2') || running?('getbounty') }
+sleep 2
 
 # clean up previous state
 Script.running.each { |x| x.kill unless x == Script.current }

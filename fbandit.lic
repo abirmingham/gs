@@ -5,7 +5,8 @@ end
 
 taskfinish = [420, 1957, 28_978]
 taskfinish_match = /sentry|guard|sergeant/
-rest = [1844, 28_813, 29_260]
+rest = [29_623] # hoa
+# rest = [1844, 28813, 29260]
 
 def join_resting_group_leader()
   leader =
@@ -74,7 +75,10 @@ def get_exp()
 end
 
 if bounty? =~ /^You (have )?succeeded/
-  fput 'leave'
+  loop {
+    result = dothistimeout 'leave', 2, /You leave|But you are not in/
+    break if result
+  }
   put 'group open'
   Script.run('go2', 'advguild')
   npc = GameObj.npcs.find { |npc| npc.name =~ /Guild Taskmaster/ }
@@ -116,9 +120,6 @@ until Room.current.id == rest_room
 end
 
 Script.run('getbounty')
-until Room.current.id == rest_room
-  Script.run('go2', rest_room.to_s + ' --disable-confirm')
-end
 
 join_resting_group_leader
 

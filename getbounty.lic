@@ -1,4 +1,4 @@
-rest = [1844, 28_813, 29_260]
+start = Room.current.id
 
 if bounty? != 'You are not currently assigned a task.'
   echo 'Already have bounty'
@@ -39,7 +39,6 @@ end
 kill_script 'azswapbounty' if running? 'azswapbounty'
 Script.run('azswapbounty')
 
-rest_room = Room.current.find_nearest(rest)
-until Room.current.id == rest_room
-  Script.run('go2', rest_room.to_s + ' --disable-confirm')
+until Room.current.id == start
+  Script.run('go2', start.to_s + ' --disable-confirm')
 end

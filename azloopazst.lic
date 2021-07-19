@@ -1,0 +1,7 @@
+hide_me
+
+loop {
+    Script.start 'azstartgroupbandit'
+    wait_until { Script.running? 'fbandit' }
+    wait_while { Script.running?('fbandit') || Script.running?('go2') }
+}

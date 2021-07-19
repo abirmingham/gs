@@ -1,8 +1,10 @@
 require 'drb/drb'
 hide_me
 
+fput 'set desc off'
+
 module AzConfig # CHARACTER CONFIG REQUIRED HERE
-  CHARS = %w[Azanoth Aranthius Idios Gossan Aplom] # Gherraltis
+  CHARS = %w[Azanoth Aranthius Idios Gossan Gherraltis] # Gherraltis
   CHARS_SET = CHARS.collect { |char| [char, true] }.to_h
   CHAR_TAGS =
     Hash[*AzConfig::CHARS.collect { |x| [x, Set.new] }.flatten].merge(
@@ -10,7 +12,7 @@ module AzConfig # CHARACTER CONFIG REQUIRED HERE
         'Aranthius' => Set.new(%i[WAGGLES_OTHERS RECEIVES_ARMOR_SUPPORT]),
         'Gossan' => Set.new(%i[WAGGLES_OTHERS RECEIVES_515]),
         'Idios' => Set.new(%i[RECEIVES_515 RESTING_GROUP_LEADER]),
-        'Gherraltis' => Set.new(%i[RECEIVES_515 RESTING_GROUP_LEADER]),
+        'Gherraltis' => Set.new(%i[RECEIVES_515]),
         'Nobody' => Set.new(%i[LOW_BOUNTY_PRIORITY])
       }
     )

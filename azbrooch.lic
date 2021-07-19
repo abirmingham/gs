@@ -50,6 +50,8 @@ if Char.name == 'Azanoth'
 elsif Char.prof == 'Empath'
   start_script 'unpoison'
   start_script 'treim', ['1115']
+elsif Char.name == 'Aplom'
+  start_script 'treim', ['908']
 elsif Char.prof == 'Wizard'
   start_script 'treim', ['410']
 elsif Char.prof == 'Bard'
